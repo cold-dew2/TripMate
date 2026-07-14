@@ -1,0 +1,32 @@
+body {
+  font-family: "Pretendard", sans-serif;
+  font-size: var(--fs-md);
+  font-weight: var(--fw-regular);
+  color: var(--gray-900);
+  background: var(--white);
+}
+
+#root {
+  min-height: 100vh;
+}
+
+button,
+input,
+textarea,
+select {
+  font-family: inherit;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(-gray-500);
+}
+
+button {
+  transition: var(--transition);
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}

@@ -10,7 +10,7 @@ const Input = ({type = "text", id, label, error, ...props}: InputProps) => {
     <div className="form">
         <label htmlFor={id}>{label}</label>
         <input type={type} id={id} {...props}/>
-
+dddd
         {error && <p className="error-msg">{error}</p>}
     </div>
   )

@@ -1,0 +1,110 @@
+:root {
+  /* Purple */
+  --purple-100: #eef0fe;
+  --purple-200: #e7e8f7;
+  --purple-300: #dadcf0;
+  --purple-500: #5b4fe8;
+  --purple-600: #4b3fe4;
+  --purple-700: #3a2fc0;
+
+  /* Gray */
+  --gray-100: #eeeff6;
+  --gray-200: #e4e5f1;
+  --gray-300: #dadceb;
+  --gray-400: #9496b5;
+  --gray-500: #8a8ca8;
+  --gray-600: #6b6d89;
+  --gray-700: #5a5c78;
+  --gray-900: #1b1d29;
+  --black: #000;
+
+  /* Background */
+  --white: #fff;
+  --white-100: #f8f8fc;
+  --white-200: #f7f7fb;
+  --white-300: #f1f1fa;
+
+  /* Red */
+  --red-500: #ff5a5a;
+  --red-600: #e5484d;
+  --red-700: #d93b3b;
+
+  /* Yellow */
+  --yellow-100: #fff4e3;
+  --yellow-200: #ffe7c2;
+  --yellow-500: #ffb020;
+
+  /* Green */
+  --green-100: #eaf6ec;
+  --green-200: #d6eeda;
+  --green-500: #2ecc71;
+
+  /* Blue */
+  --blue-100: #e3f0ff;
+  --blue-200: #cfe6ff;
+
+  /* Font Size */
+  --fs-2xs: 11px;
+  --fs-xs: 12px;
+  --fs-sm: 13px;
+  --fs-md: 14px;
+  --fs-base: 15px;
+  --fs-lg: 16px;
+  --fs-xl: 18px;
+  --fs-2xl: 20px;
+  --fs-3xl: 22px;
+  --fs-4xl: 24px;
+  --fs-5xl: 26px;
+  --fs-6xl: 32px;
+  --fs-7xl: 38px;
+
+  /* Font Weight */
+  --fw-regular: 400;
+  --fw-medium: 500;
+  --fw-semibold: 600;
+  --fw-bold: 700;
+  --fw-extrabold: 800;
+
+  /* Line Height */
+  --lh-sm: 1.3;
+  --lh-md: 1.5;
+  --lh-lg: 1.7;
+
+  /* border-radius */
+  --radius-xs: 8px;
+  --radius-sm: 10px;
+  --radius-md: 12px;
+  --radius-lg: 14px;
+  --radius-xl: 16px;
+  --radius-2xl: 18px;
+  --radius-pill: 22px;
+  --radius-tablet: 32px;
+  --radius-full: 50%;
+
+  /* Spacing */
+  --space-2xs: 4px;
+  --space-xs: 6px;
+  --space-sm: 8px;
+  --space-md: 10px;
+  --space-lg: 12px;
+  --space-xl: 14px;
+  --space-2xl: 16px;
+  --space-3xl: 20px;
+  --space-4xl: 24px;
+  --space-5xl: 28px;
+  --space-6xl: 32px;
+  --space-7xl: 40px;
+  --space-8xl: 48px; 
+
+  /* Shadow */
+  --shadow-card: 0 2px 10px rgba(30, 20, 80, 0.06);
+  --shadow-card-lg: 0 6px 20px rgba(30, 20, 80, 0.16);
+  --shadow-button: 0 8px 20px rgba(75, 63, 228, 0.35);
+  --shadow-frame: 0 30px 80px rgba(30, 20, 80, 0.18);
+  --shadow-frame-inner: 0 4px 16px rgba(30, 20, 80, 0.08);
+
+  /* transition */
+  --transition-fast: 0.15s ease;
+  --transition: 0.25s ease;
+  --transition-slow: 0.35s ease;
+}
