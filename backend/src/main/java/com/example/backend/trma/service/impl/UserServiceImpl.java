@@ -1,5 +1,6 @@
 package com.example.backend.trma.service.impl;
 
+import com.example.backend.global.jwt.JwtUtil;
 import com.example.backend.trma.dto.request.ExistsUserIdRequest;
 import com.example.backend.trma.dto.request.LoginRequest;
 import com.example.backend.trma.dto.request.SignupRequest;
@@ -8,15 +9,10 @@ import com.example.backend.trma.dto.response.LoginResponse;
 import com.example.backend.trma.dto.response.SignupResponse;
 import com.example.backend.trma.mapper.UserMapper;
 import com.example.backend.trma.service.UserService;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.security.Keys;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-
-import java.nio.charset.StandardCharsets;
-import java.util.Date;
 
 @Service
 @RequiredArgsConstructor
@@ -24,9 +20,7 @@ public class UserServiceImpl implements UserService {
 
     private final UserMapper userMapper;
     private final PasswordEncoder passwordEncoder;
-
-    @Value("${jwt.secret}")
-    private String secretKey;
+    private final JwtUtil jwtUtil;
 
     @Value("${jwt.expiration}")
     private long expiration;
@@ -89,9 +83,20 @@ public class UserServiceImpl implements UserService {
     //로그인
     public LoginResponse login(LoginRequest request) {
 
-        LoginRequest loginInfo = userMapper.login(request);
+        String userPw = userMapper.login(request);
 
-        if (loginInfo == null) {
+        if (userPw == null) {
+            return new LoginResponse(
+                    false,
+                    401,
+                    "UNAUTHORIZED",
+                    "아이디가 올바르지 않습니다.",
+                    "/login/login",
+                    ""
+            );
+        }
+
+        if (!passwordEncoder.matches(request.getUserPw(), userPw)) {
             return new LoginResponse(
                     false,
                     401,
@@ -102,26 +107,12 @@ public class UserServiceImpl implements UserService {
             );
         }
 
-        if (!passwordEncoder.matches(request.getUserPw(), loginInfo.getUserPw())) {
-            return new LoginResponse(
-                    false,
-                    401,
-                    "UNAUTHORIZED",
-                    "아이디 또는 비밀번호가 올바르지 않습니다.",
-                    "/login/login",
-                    ""
-            );
-        }
+        String token = jwtUtil.createToken(
+                request.getUserId(),
+                expiration
+        );
 
-        String token = Jwts.builder()
-                .subject(loginInfo.getUserId())
-                .issuedAt(new Date())
-                .expiration(new Date(System.currentTimeMillis() + expiration))
-                .signWith(
-                        Keys.hmacShaKeyFor(secretKey.getBytes(StandardCharsets.UTF_8)),
-                        Jwts.SIG.HS256
-                )
-                .compact();
+        request.setLoginToken(token);
 
         userMapper.insertUserHist(request);
 

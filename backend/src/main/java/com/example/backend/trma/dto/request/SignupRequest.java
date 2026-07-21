@@ -5,7 +5,6 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 
 @Getter
 @NoArgsConstructor
@@ -20,6 +19,4 @@ public class SignupRequest {
     private LocalDate birthDt;
     private String genderCd;
     private String phoneNum;
-    private LocalDateTime createdDt;
-    private LocalDateTime updatedDt;
 }

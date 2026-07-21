@@ -37,15 +37,14 @@
         ,BIRTH_DT
         ,GENDER_CD
         ,PHONE_NUM
-        ,CREATED_USER
-        ,CREATED_DT
-        ,UPDATED_USER
-        ,UPDATED_DT
+        ,CREATE_USER
+        ,CREATE_DT
+        ,UPDATE_USER
+        ,UPDATE_DT
         )VALUES(
         #{userId}
         ,#{userPw}
         ,#{userNm}
-        ,#{email}
         ,#{stateCd}
         ,#{roleCd}
         ,#{birthDt}
@@ -63,12 +62,11 @@
     <!-- 로그인 -->
     <!-- ========================= -->
     <select id="login"
-            parameterType="string"
-            resultType="int">
+            parameterType="com.example.backend.trma.dto.request.LoginRequest"
+            resultType="String">
 
         SELECT
-            a.USER_ID
-            ,a.USER_PW
+            a.USER_PW
         FROM tb_trma_user_info a
         WHERE
         a.USER_ID = #{userId}
@@ -79,7 +77,7 @@
     <!-- 로그인 이력 등록 -->
     <!-- ========================= -->
     <insert id="insertUserHist"
-            parameterType="string">
+            parameterType="com.example.backend.trma.dto.request.LoginRequest">
 
         INSERT INTO tb_trma_login_hist
         (
@@ -88,7 +86,7 @@
         ,LOGIN_DT
         )VALUES(
         #{userId}
-        ,LOGIN_TOKEN
+        ,#{loginToken}
         ,CURRENT_TIMESTAMP
         )
 

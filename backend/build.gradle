@@ -23,6 +23,7 @@ dependencies {
     // REST API(@RestController), 요청 매핑(@GetMapping),
     // JSON 변환 등을 제공
     implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-json'
 
     // JPA(Hibernate)를 사용한 데이터베이스 연동
     // @Entity, @Repository, JpaRepository 등을 사용 가능
