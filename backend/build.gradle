@@ -1,0 +1,77 @@
+plugins {
+    id 'java'
+    id 'org.springframework.boot' version '4.0.6'
+    id 'io.spring.dependency-management' version '1.1.7'
+}
+
+group = 'com.example'
+version = '0.0.1-SNAPSHOT'
+description = 'backend'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+dependencies {
+
+    // Spring MVC 기반 웹 애플리케이션 개발
+    // REST API(@RestController), 요청 매핑(@GetMapping),
+    // JSON 변환 등을 제공
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+
+    // JPA(Hibernate)를 사용한 데이터베이스 연동
+    // @Entity, @Repository, JpaRepository 등을 사용 가능
+    //implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    //--> mybatis로 변경
+    implementation 'org.mybatis.spring.boot:mybatis-spring-boot-starter:3.0.4'
+
+    // 인증(Authentication) 및 인가(Authorization)
+    // 로그인, 권한 관리, JWT 연동 시 사용
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+
+    // 요청 데이터 검증
+    // @Valid, @NotBlank, @Email, @Size 등을 사용
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+
+    // 스웨거
+    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:3.0.0'
+
+    // MySQL JDBC 드라이버
+    // 실제 실행 시에만 필요하므로 runtimeOnly 사용
+    runtimeOnly 'com.mysql:mysql-connector-j'
+
+    // Lombok 사용
+    // 컴파일 시 Getter, Setter, Builder 등을 자동 생성
+    compileOnly 'org.projectlombok:lombok'
+
+    // Lombok 어노테이션 처리기
+    annotationProcessor 'org.projectlombok:lombok'
+
+    // Spring Boot 통합 테스트
+    // JUnit5, MockMvc, AssertJ 등을 포함
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+
+    // Spring Security 관련 테스트 지원
+    // @WithMockUser 등을 사용 가능
+    testImplementation 'org.springframework.security:spring-security-test'
+
+    // 테스트 코드에서도 Lombok 사용
+    testCompileOnly 'org.projectlombok:lombok'
+
+    // 테스트 코드 Lombok 어노테이션 처리기
+    testAnnotationProcessor 'org.projectlombok:lombok'
+
+    //jjwt-api
+    implementation 'io.jsonwebtoken:jjwt-api:0.12.7'
+    runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.7'
+    runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.7'
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+}
