@@ -1,0 +1,17 @@
+.form input {
+  width: 100%;
+  padding: 12px 14px;
+  color: var(--gray-900);
+  border: 1px solid var(--gray-200);
+  border-radius: 12px;
+  background: var(--white);
+  box-sizing: border-box;
+}
+.form input:placeholder {
+  color: var(--gray-600);
+}
+.form input:disabled,
+.form input[readonly] {
+  border: 1px solid var(--gray-100);
+  background: var(--gray-100);
+}
