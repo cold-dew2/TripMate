@@ -1,0 +1,11 @@
+{
+  "home": {
+    "greeting": "안녕하세요!",
+    "userName": "{{name}}님",
+    "notice": "알림",
+    "mypage": "마이페이지",
+    "searchLabel": "여행지, 소모임 검색",
+    "searchPlaceholder": "여행지 또는 소모임을 검색해보세요"
+    
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "home": {
+    "greeting": "Hello!",
+    "userName": "{{name}}",
+    "notice": "Notifications",
+    "mypage": "My page",
+    "searchLabel": "Search destinations or gatherings",
+    "searchPlaceholder": "Search for a destination or gathering"
+  }
+}
