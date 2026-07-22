@@ -19,11 +19,7 @@ select {
 
 input::placeholder,
 textarea::placeholder {
-  color: var(-gray-500);
-}
-
-button {
-  transition: var(--transition);
+  color: var(--gray-500);
 }
 
 button:disabled {

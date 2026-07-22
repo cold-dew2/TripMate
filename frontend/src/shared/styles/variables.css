@@ -25,6 +25,7 @@
   --white-300: #f1f1fa;
 
   /* Red */
+  --red-400: #F3B8B8;
   --red-500: #ff5a5a;
   --red-600: #e5484d;
   --red-700: #d93b3b;
@@ -59,11 +60,11 @@
   --fs-7xl: 38px;
 
   /* Font Weight */
-  --fw-regular: 400;
-  --fw-medium: 500;
-  --fw-semibold: 600;
+  --fw-rg: 400;
+  --fw-md: 500;
+  --fw-sbold: 600;
   --fw-bold: 700;
-  --fw-extrabold: 800;
+  --fw-ebold: 800;
 
   /* Line Height */
   --lh-sm: 1.3;
