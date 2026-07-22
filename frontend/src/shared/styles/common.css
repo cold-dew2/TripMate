@@ -1,13 +1,11 @@
 /* Layout */
 .container {
   width: 100%;
-  max-width: 1200px;
+  padding: 0 var(--space-5xl);
   margin: 0 auto;
-  padding: 0 var(--space-4xl);
 }
-
-.section {
-  padding: var(--space-6xl) 0;
+section {
+  padding: var(--space-3xl) 0;
 }
 
 /* Display */
