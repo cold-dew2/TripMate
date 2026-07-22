@@ -8,6 +8,7 @@ interface InputProps {
   type?: string;
   name: string;
   placeholder: string;
+  value?: string;
   disabled?: boolean;
   readonly?: boolean;
   error?: string;  
@@ -15,12 +16,12 @@ interface InputProps {
 }
 
 const Input = ({ 
-  type = "text", id, className, label, blind, name, placeholder, disabled, readonly, error, onChange 
+  type = "text", id, className, label, blind, name, placeholder, value, disabled, readonly, error, onChange 
 }: InputProps) => {
   return (
     <div className={`form ${className ? `${className}` : ""}`}>
       <label htmlFor={id} className={blind ? "blind" : ""}>{label}</label>
-      <input type={type} id={id} placeholder={placeholder} name={name} disabled={disabled} readOnly={readonly} onChange={onChange}/>
+      <input type={type} id={id} placeholder={placeholder} name={name} disabled={disabled} readOnly={readonly} onChange={onChange} value={value}/>
         {error && <p className="error-msg">{error}</p>}
     </div>
   )
