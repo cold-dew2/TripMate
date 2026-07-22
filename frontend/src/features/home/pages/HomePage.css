@@ -1,0 +1,28 @@
+.header + .container {
+  margin-top: -44px;
+}
+
+.icon-card {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  overflow-x: scroll;
+}
+.icon-item .icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  font-size: var(--fs-3xl);
+  border-radius: 50%;
+  background-color: var(--purple-100);
+  box-sizing: border-box;
+}
+.icon-item .title {
+  margin-top: 10px;
+  color: var(--gray-700);
+  font-size: var(--fs-md);
+  font-weight: var(--fw-bold);
+  text-align: center;
+}

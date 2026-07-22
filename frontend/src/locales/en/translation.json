@@ -6,5 +6,12 @@
     "mypage": "My page",
     "searchLabel": "Search destinations or gatherings",
     "searchPlaceholder": "Search for a destination or gathering"
+  },
+  "category": {
+    "culture": "Culture",
+    "nature": "Nature",
+    "food": "Food",
+    "beach": "Beach",
+    "night": "Night view"
   }
 }

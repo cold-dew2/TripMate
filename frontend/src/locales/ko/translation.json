@@ -6,6 +6,12 @@
     "mypage": "마이페이지",
     "searchLabel": "여행지, 소모임 검색",
     "searchPlaceholder": "여행지 또는 소모임을 검색해보세요"
-    
+  },
+  "category": {
+    "culture": "문화",
+    "nature": "자연",
+    "food": "맛집",
+    "beach": "해변",
+    "night": "야경"
   }
 }
