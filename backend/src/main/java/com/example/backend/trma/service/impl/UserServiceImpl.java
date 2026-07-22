@@ -26,103 +26,139 @@ public class UserServiceImpl implements UserService {
     private long expiration;
 
     //아이디 중복확인
+    @Override
     public ExistsUserIdResponse existsUserId(ExistsUserIdRequest request) {
 
-        int count = userMapper.existsUserId(request.getUserId());
+        try {
+            int count = userMapper.existsUserId(request.getUserId());
 
-        if (count > 0) {
+            if (count > 0) {
+                return new ExistsUserIdResponse(
+                        false,
+                        409,
+                        "USER_ALREADY_EXISTS",
+                        "이미 존재하는 아이디",
+                        "/login/existsUserId",
+                        ""
+                );
+            }
+
+            return new ExistsUserIdResponse(
+                    true,
+                    200,
+                    "SUCCESS",
+                    "사용가능한 아이디",
+                    "/login/existsUserId",
+                    ""
+            );
+        } catch (Exception e) {
             return new ExistsUserIdResponse(
                     false,
-                    409,
-                    "USER_ALREADY_EXISTS",
-                    "이미 존재하는 아이디",
+                    500,
+                    "FAIL",
+                    "아이디 중복확인 중 오류가 발생했습니다.",
                     "/login/existsUserId",
                     ""
             );
         }
-
-        return new ExistsUserIdResponse(
-                true,
-                200,
-                "SUCCESS",
-                "사용가능한 아이디",
-                "/login/existsUserId",
-                ""
-        );
     }
 
     //회원가입
+    @Override
     public SignupResponse signup(SignupRequest request) {
 
-        if (userMapper.existsUserId(request.getUserId()) > 0) {
+        try {
+            if (userMapper.existsUserId(request.getUserId()) > 0) {
+                return new SignupResponse(
+                        false,
+                        409,
+                        "USER_ALREADY_EXISTS",
+                        "이미 존재하는 아이디",
+                        "/login/signup",
+                        ""
+                );
+            }
+
+            request.setUserPw(passwordEncoder.encode(request.getUserPw()));
+            request.setStateCd("A");
+
+            userMapper.insertUser(request);
+
+            return new SignupResponse(
+                    true,
+                    200,
+                    "SUCCESS",
+                    "회원가입 성공",
+                    "/login/signup",
+                    ""
+            );
+        } catch (Exception e) {
             return new SignupResponse(
                     false,
-                    409,
-                    "USER_ALREADY_EXISTS",
-                    "이미 존재하는 아이디",
+                    500,
+                    "FAIL",
+                    "회원가입 중 오류가 발생했습니다.",
                     "/login/signup",
                     ""
             );
         }
-
-        request.setUserPw(passwordEncoder.encode(request.getUserPw()));
-        request.setStateCd("A");
-
-        userMapper.insertUser(request);
-
-        return new SignupResponse(
-                true,
-                200,
-                "SUCCESS",
-                "회원가입 성공",
-                "/login/signup",
-                ""
-        );
     }
 
     //로그인
+    @Override
     public LoginResponse login(LoginRequest request) {
 
-        String userPw = userMapper.login(request);
+        try {
+            String userPw = userMapper.login(request);
 
-        if (userPw == null) {
+            if (userPw == null) {
+                return new LoginResponse(
+                        false,
+                        401,
+                        "UNAUTHORIZED",
+                        "아이디가 올바르지 않습니다.",
+                        "/login/login",
+                        ""
+                );
+            }
+
+            if (!passwordEncoder.matches(request.getUserPw(), userPw)) {
+                return new LoginResponse(
+                        false,
+                        401,
+                        "UNAUTHORIZED",
+                        "아이디 또는 비밀번호가 올바르지 않습니다.",
+                        "/login/login",
+                        ""
+                );
+            }
+
+            String token = jwtUtil.createToken(
+                    request.getUserId(),
+                    expiration
+            );
+
+            request.setLoginToken(token);
+
+            userMapper.insertUserHist(request);
+
+            return new LoginResponse(
+                    true,
+                    200,
+                    "SUCCESS",
+                    "로그인 성공",
+                    "/login/login",
+                    token
+            );
+        } catch (Exception e) {
             return new LoginResponse(
                     false,
-                    401,
-                    "UNAUTHORIZED",
-                    "아이디가 올바르지 않습니다.",
-                    "/login/login",
+                    500,
+                    "FAIL",
+                    "로그인 중 오류가 발생했습니다.",
+                    "/login/signup",
                     ""
             );
         }
-
-        if (!passwordEncoder.matches(request.getUserPw(), userPw)) {
-            return new LoginResponse(
-                    false,
-                    401,
-                    "UNAUTHORIZED",
-                    "아이디 또는 비밀번호가 올바르지 않습니다.",
-                    "/login/login",
-                    ""
-            );
-        }
-
-        String token = jwtUtil.createToken(
-                request.getUserId(),
-                expiration
-        );
-
-        request.setLoginToken(token);
-
-        userMapper.insertUserHist(request);
-
-        return new LoginResponse(
-                true,
-                200,
-                "SUCCESS",
-                "로그인 성공",
-                "/login/login",
-                token
-        );
     }
 }

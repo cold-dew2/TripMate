@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.example.backend.trma.mapper.TrmaHomeMapper">
+
+    <!-- ========================= -->
+    <!-- 사용자 정보 조회 -->
+    <!-- ========================= -->
+    <select id="userInfo"
+            parameterType="com.example.backend.trma.dto.request.UserInfoRequest"
+            resultType="com.example.backend.trma.dto.dataList.UserInfoData">
+
+        SELECT
+            a.USER_NM
+            ,a.LANG_CD
+            ,a.STATE_CD
+            ,a.ROLE_CD
+            ,a.BIRTH_DT
+            ,a.GENDER_CD
+            ,a.PHONE_NUM
+        FROM tb_trma_user_info a
+        WHERE a.USER_ID = #{userId}
+
+    </select>
+
+    <!-- ========================= -->
+    <!-- 공통코드(카테고리) -->
+    <!-- ========================= -->
+    <select id="tourCategory"
+            parameterType="com.example.backend.trma.dto.request.TourCategoryRequest"
+            resultType="com.example.backend.trma.dto.dataList.CategoryInfoData">
+
+        SELECT
+            a.CMM_CDV
+            ,a.CMM_CM_NM
+        FROM tb_trma_cmm_cd_d a
+        WHERE a.CMM_CD_ID = #{cmmCdId}
+
+    </select>
+
+    <!-- ========================= -->
+    <!-- 인기 여행지(리뷰기반) -->
+    <!-- ========================= -->
+    <select id="bestTourList"
+            resultType="com.example.backend.trma.dto.dataList.BestTourListData">
+
+        SELECT
+            b.TOUR_ID
+            ,b.TOUR_NM
+            ,b.SIDO_CD
+            ,c1.CMM_CM_NM AS SIDO_NM
+            ,b.SGG_CD
+            ,c2.CMM_CM_NM AS SGG_NM
+            ,b.EMD_CD
+            ,c3.CMM_CM_NM AS END_NM
+            ,b.ROAD_ADDR
+            ,b.DETAIL_ADDR
+            ,b.ZIP_CD
+            ,AVG(a.REVIEW_SCORE) AS AVG_SCORE
+        FROM tb_trma_moim_review a
+        LEFT JOIN tb_trma_tour_list b ON a.TOUR_ID = b.TOUR_ID
+        LEFT JOIN tb_trma_cmm_cd_d c1 ON b.SIDO_CD = c1.CMM_CDV AND c1.CMM_CD_ID = 'SIDO_CD'
+        LEFT JOIN tb_trma_cmm_cd_d c2 ON b.SIDO_CD = c1.CMM_CDV AND c2.CMM_CD_ID = 'SGG_CD'
+        LEFT JOIN tb_trma_cmm_cd_d c3 ON b.SIDO_CD = c1.CMM_CDV AND c3.CMM_CD_ID = 'EMD_CD'
+        WHERE b.USE_YN = 'Y'
+        GROUP BY b.TOUR_ID
+            ,b.TOUR_NM
+            ,b.SIDO_CD
+            ,c1.CMM_CM_NM
+            ,b.SGG_CD
+            ,c2.CMM_CM_NM
+            ,b.EMD_CD
+            ,c3.CMM_CM_NM
+            ,b.ROAD_ADDR
+            ,b.DETAIL_ADDR
+            ,b.ZIP_CD
+        ORDER BY AVG_SCORE DESC
+        LIMIT 10;
+
+    </select>
+
+    <!-- ========================= -->
+    <!-- 인기 모임(클릭 수 많은 모임) -->
+    <!-- ========================= -->
+    <select id="bestMoimList"
+            resultType="com.example.backend.trma.dto.dataList.BestMoimListData">
+
+        SELECT
+            b.MOIM_ID
+            ,b.MOIM_TITLE
+            ,b.MOIM_DSCR
+            ,b.MOIM_CATE_CD
+            ,c.CMM_CM_NM AS MOIM_CATE_NM
+            ,b.MOIM_START_DT
+            ,b.MOIM_END_DT
+            ,b.CREATE_DT AS USER_ID
+            ,d.USER_NM
+            ,(SELECT
+                    COUNT(1)
+                FROM tb_trma_moim_member mm
+                WHERE mm.MOIM_ID = b.MOIM_ID
+                    AND mm.ROLE_CD = 'A') AS MEMBER_CNT
+            ,COUNT(*) AS VISIT_CNT
+        FROM tb_trma_moim_visit_h a
+        LEFT JOIN tb_trma_moim_list b ON a.MOIM_ID = b.MOIM_ID
+        LEFT JOIN tb_trma_cmm_cd_d c ON b.MOIM_CATE_CD = c.CMM_CDV AND c.CMM_CD_ID = 'CATE_ID'
+        LEFT JOIN tb_trma_user_info d ON b.CREATE_USER = d.USER_ID
+        WHERE b.USE_YN = 'Y'
+        GROUP BY a.MOIM_ID
+        ORDER BY VISIT_CNT DESC
+        LIMIT 10;
+
+    </select>
+
+</mapper>

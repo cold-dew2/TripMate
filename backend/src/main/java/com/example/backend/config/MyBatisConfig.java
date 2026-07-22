@@ -2,14 +2,15 @@ package com.example.backend.config;
 
 import javax.sql.DataSource;
 
+import org.apache.ibatis.logging.stdout.StdOutImpl;
 import org.apache.ibatis.session.SqlSessionFactory;
 import org.mybatis.spring.SqlSessionFactoryBean;
 import org.mybatis.spring.SqlSessionTemplate;
+
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 
-@Configuration
+@org.springframework.context.annotation.Configuration
 public class MyBatisConfig {
 
     @Bean
@@ -22,6 +23,15 @@ public class MyBatisConfig {
                 new PathMatchingResourcePatternResolver()
                         .getResources("classpath:mapper/**/*.xml")
         );
+
+        // MyBatis Configuration
+        org.apache.ibatis.session.Configuration mybatisConfig =
+                new org.apache.ibatis.session.Configuration();
+
+        mybatisConfig.setMapUnderscoreToCamelCase(true);
+        mybatisConfig.setLogImpl(StdOutImpl.class);
+
+        factoryBean.setConfiguration(mybatisConfig);
 
         return factoryBean.getObject();
     }

@@ -32,6 +32,7 @@
         USER_ID
         ,USER_PW
         ,USER_NM
+        ,LANG_CD
         ,STATE_CD
         ,ROLE_CD
         ,BIRTH_DT
@@ -45,6 +46,7 @@
         #{userId}
         ,#{userPw}
         ,#{userNm}
+        ,#{langCd}
         ,#{stateCd}
         ,#{roleCd}
         ,#{birthDt}

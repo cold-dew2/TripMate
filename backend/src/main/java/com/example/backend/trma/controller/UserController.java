@@ -12,10 +12,7 @@ import com.example.backend.trma.dto.response.ExistsUserIdResponse;
 import com.example.backend.trma.dto.response.LoginResponse;
 import com.example.backend.trma.dto.response.SignupResponse;
 import com.example.backend.trma.service.UserService;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 // 3. 클래스 어노테이션
 @RestController
@@ -45,8 +42,8 @@ public class UserController {
     }
 
     //로그인
-    @PostMapping("/login")
-    public LoginResponse login(@RequestBody LoginRequest request){
+    @GetMapping("/login")
+    public LoginResponse login(@ModelAttribute LoginRequest request){
         //System.out.println("request : " + request);
         return userService.login(request);
     }
