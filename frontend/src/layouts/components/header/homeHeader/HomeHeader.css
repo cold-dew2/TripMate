@@ -1,0 +1,28 @@
+.header {
+  border: 1px solid red;
+  padding: 24px 28px 44px;
+  background: var(--purple-500);
+  color: var(--white);
+}
+
+.header-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.header-top .user .greeting {
+  font-size: var(--fs-md);
+  opacity: 0.85;
+}
+.header-top .user .name {
+  font-size: var( --fs-3xl);
+  font-weight: var(--fw-ebold)
+}
+.header-search {
+  margin-top: 20px;
+}
+.header-search.form input {
+  padding: 14px 20px;
+  border-radius: 25px;
+  box-shadow: var(--shadow-button);
+}
