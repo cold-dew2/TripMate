@@ -3,17 +3,18 @@ import { useTranslation } from "react-i18next";
 import { Link, useNavigate } from "react-router-dom";
 import i18n from "@/i18n";
 import Button from "@/shared/components/button/Button";
-import Input from "@/shared/components/Input/Input";
+import Input from "@/shared/components/input/Input";
 import "./HomeHeader.css"
+import useUser from "@/shared/hooks/useUser";
+import Skeleton from "@/shared/components/skeleton/Skeleton";
 
 const HomeHeader = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [query, setQuery] = useState("");
+  const { data: user, isError, error } = useUser();
 
-  const user = {
-    name: "연찬민"
-  }
+  const status = (error as Error & { status?: number } | undefined)?.status;
 
   const handleSearchSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -29,7 +30,13 @@ const HomeHeader = () => {
             {t("home.greeting")}
           </span>
           <p className="name">
-            {t("home.userName", { name: user.name })}
+            {isError && status !== 401 ? (
+              <span>{t("home.userError")}</span>
+            ) : user ? (
+              t("home.userName", {name: user.name})
+            ) : (
+              t("home.guest")
+            )}
           </p>
         </div>
         <div className="buttons">

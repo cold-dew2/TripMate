@@ -5,7 +5,16 @@
     "notice": "알림",
     "mypage": "마이페이지",
     "searchLabel": "여행지, 소모임 검색",
-    "searchPlaceholder": "여행지 또는 소모임을 검색해보세요"
+    "searchPlaceholder": "여행지 또는 소모임을 검색해보세요",
+    "userError": "불러오기 실패",
+    "guest": "게스트님"
+  },
+  "nav": {
+    "home": "홈",
+    "places": "관광지",
+    "groups": "소모임",
+    "chat": "채팅",
+    "my": "마이" 
   },
   "category": {
     "culture": "문화",

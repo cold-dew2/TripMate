@@ -3,7 +3,7 @@
   display: flex;
   gap: 12px;
 }
-.buttons.flex-2-1 .btn:last-child {
+.buttons.flex-2 .btn:last-child {
   flex: 2;
 }
 

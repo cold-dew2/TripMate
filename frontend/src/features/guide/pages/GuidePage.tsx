@@ -1,5 +1,5 @@
 import Button from '@/shared/components/button/Button'
-import Input from '@/shared/components/Input/Input';
+import Input from '@/shared/components/input/Input';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom'
@@ -23,17 +23,19 @@ const GuidePage = () => {
 
       <div>
 
-        <Button as={Link} to="/" variant="ghost" icon size="icon" text={t("home.notice")} img="/icons/icon-notice.png" />
-        <Button as={Link} to="/mypage" size="icon" icon text={t("home.mypage")} img="/icons/icon-my.png" />
+        <div className="buttons" style={{width: '100px', height: '40px'}}>
+            <Button as={Link} to="/" variant="ghost" icon size="icon" text={t("home.notice")} img="/icons/icon-notice.png" />
+            <Button as={Link} to="/mypage" size="icon" icon text={t("home.mypage")} img="/icons/icon-my.png" />
+        </div>
 
         <Button text="Primary Button" />
-        <Button text="Primary Button" disabled />
+        <Button text="Primary Button disabled" disabled />
         <Button text="secondary Button" variant="secondary" />
-        <Button text="secondary Button" variant="secondary" disabled />
+        <Button text="secondary Button disabled" variant="secondary" disabled />
         <Button text="ghost Button" variant="ghost" />
-        <Button text="ghost Button" variant="ghost" disabled />
+        <Button text="ghost Button disabled" variant="ghost" disabled />
         <Button text="destructive Button" variant="destructive" />
-        <Button text="destructive Button" variant="destructive" disabled />
+        <Button text="destructive Button disabled" variant="destructive" disabled />
 
         <div className="buttons">
           <Button text="secondary Button" variant="secondary" />

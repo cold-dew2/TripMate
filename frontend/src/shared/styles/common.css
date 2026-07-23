@@ -1,6 +1,7 @@
 /* Layout */
 .container {
   width: 100%;
+  min-height: calc(100vh - 191px - 78px + 44px);
   padding: 0 var(--space-5xl);
   margin: 0 auto;
 }
@@ -234,4 +235,15 @@ section {
   clip: rect(0, 0, 0, 0);
   clip-path: inset(50%);
   border: 0;
+}
+
+/* img */
+img {
+  width: 100%;
+  height: 100%;
+}
+.icon {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
 }

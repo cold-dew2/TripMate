@@ -5,7 +5,16 @@
     "notice": "Notifications",
     "mypage": "My page",
     "searchLabel": "Search destinations or gatherings",
-    "searchPlaceholder": "Search for a destination or gathering"
+    "searchPlaceholder": "Search for a destination or gathering",
+    "userError": "Unavailable",
+    "guest": "guest"
+  },
+  "nav": {
+    "home": "Home",
+    "places": "Places",
+    "groups": "Meetups",
+    "chat": "Chat",
+    "my": "My"
   },
   "category": {
     "culture": "Culture",
