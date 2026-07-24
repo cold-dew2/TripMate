@@ -3,4 +3,9 @@
   border-radius: 20px;
   background: var(--white);
   box-shadow: var(--shadow-card);
+  scrollbar-width: none;
+  overflow: hidden;
+}
+.card::-webkit-scrollbar {
+  display: none;
 }

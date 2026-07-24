@@ -27,3 +27,27 @@
   font-weight: var(--fw-bold);
   text-align: center;
 }
+
+.spot-list {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+}
+.spot-list li {
+  min-width: 0;
+}
+
+.moim-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+@media (max-width: 768px) {
+  .spot-list {
+    display: block;
+  }
+  .spot-list li + li {
+    margin-top: 20px;
+  }
+}

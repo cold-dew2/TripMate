@@ -1,0 +1,27 @@
+.content-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.content-title .link {
+  display: inline-block;
+  color: var(--purple-600);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-sbold);
+}
+.content-title .link:after {
+  content: "›";
+  display: inline-block;
+  margin-left: 5px;
+  color: var(--purple-600);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-sbold);
+
+}
+
+.title-info .title {
+  font-size: var(--fs-xl);
+  font-weight: var(--fw-bold);
+}

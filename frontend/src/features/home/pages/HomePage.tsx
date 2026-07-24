@@ -1,7 +1,12 @@
-import Card from '@/shared/components/card/Card'
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
-import "./HomePage.css"
+import Card from '@/shared/components/card/Card';
+import ContentTitle from '@/shared/components/contentTitle/ContentTitle';
+import "./HomePage.css";
+import SpotCard from '@/shared/components/spotCard/SpotCard';
+import usePlace from '@/shared/hooks/usePlace';
+import MoimCard from '@/shared/components/moimCard/moimCard';
+import useMoim from '@/shared/hooks/useMoim';
 
 const categories = [
   { id: "culture", icon: "🏛️", title: "category.culture" },
@@ -14,6 +19,10 @@ const categories = [
 
 const HomePage = () => {
   const { t } = useTranslation();
+  const { data: spots = [], isLoading: isPlaceLoading, isError: isPlaceError } = usePlace();
+  const { data: moims = [], isLoading: isMoimLoading,
+    isError: isMoimError, } = useMoim();
+
   return (
     <>
       <section>
@@ -26,6 +35,55 @@ const HomePage = () => {
             </Link>
           ))}
         </Card>
+      </section>
+
+      <section>
+        <ContentTitle title="인기 여행지" href="/place?filter=popular" linkText="전체"/>
+
+        <ul className="spot-list">
+          {isPlaceLoading ? (
+            Array.from({ length: 4 }).map((_, index) => (
+              <li key={index}>
+                <SpotCard loading />
+              </li>
+            ))
+          ) : isPlaceError ? (
+            <li className="spot-error">{t("home.errorMsg")}</li>
+          ) : (
+            spots.slice(0, 4)?.map(spot => (
+              <li key={spot.tourId}>
+                <Link to="/">
+                  <SpotCard imageUrl={`/images/places/${spot.tourId}.jpeg`} title={t(spot.tourNm)} place={`${t(spot.roadAddr)}`} rating={spot.avgScore} badge={t(spot.cateNm)} />
+                </Link>
+              </li>
+            ))
+          )}
+        </ul>
+      </section>
+
+      <section>
+        <ContentTitle title="인기 소모임" href="/meeting?filter=popular" linkText="전체" />
+
+        <ul className="moim-list">
+          {isMoimLoading ? (
+            Array.from({ length: 4 }).map((_, index) => (
+              <li key={index}>
+                <SpotCard loading />
+              </li>
+            ))
+          ) : isMoimError ? (
+            <li className="spot-error">{t("home.errorMsg")}</li>
+          ) : (
+            moims.slice(0, 4)?.map(moim => (
+              <li key={moim.moimId}>
+                <Link to="/">
+                  <MoimCard badge={t(moim.cateNm)} imageUrl={`/images/places/${moim.moimId}.jpeg`} title={t(moim.moimTitle)} date={t(moim.moimStartDt)} member={t(moim.memberCnt)} views={moim.visitCnt}/>
+                </Link>
+              </li>
+            ))
+          )}
+        </ul>
+
       </section>
     </>
   )

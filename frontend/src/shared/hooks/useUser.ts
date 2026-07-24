@@ -1,22 +1,19 @@
 import { useQuery } from "@tanstack/react-query";
 import { apiClient } from './../api/client';
-
-interface User {
-    name: string;
-}
+import type { UserResponse } from "@/types/user";
 
 const useUser = () => {
     return useQuery({
         queryKey: ["user"],
         queryFn: async() => {
           
-          const result = await apiClient.get<User>("/auth/me.json");
+          const result = await apiClient.get<UserResponse>("/trmaHome/userInfo.json");
 
           if (!result.success) {
             throw result;
           }
 
-          return result.data;
+          return result.data.data;
         }
     });
 }

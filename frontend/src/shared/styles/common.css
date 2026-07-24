@@ -2,8 +2,9 @@
 .container {
   width: 100%;
   min-height: calc(100vh - 191px - 78px + 44px);
-  padding: 0 var(--space-5xl);
   margin: 0 auto;
+  padding: 0 var(--space-5xl) 100px;
+  overflow: auto;
 }
 section {
   padding: var(--space-3xl) 0;
@@ -241,6 +242,7 @@ section {
 img {
   width: 100%;
   height: 100%;
+  object-fit: cover;
 }
 .icon {
   display: inline-block;

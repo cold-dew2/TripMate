@@ -3,10 +3,9 @@ import { useTranslation } from "react-i18next";
 import { Link, useNavigate } from "react-router-dom";
 import i18n from "@/i18n";
 import Button from "@/shared/components/button/Button";
-import Input from "@/shared/components/input/Input";
 import "./HomeHeader.css"
 import useUser from "@/shared/hooks/useUser";
-import Skeleton from "@/shared/components/skeleton/Skeleton";
+import Input from "@/shared/components/input/Input";
 
 const HomeHeader = () => {
   const { t } = useTranslation();
@@ -33,7 +32,7 @@ const HomeHeader = () => {
             {isError && status !== 401 ? (
               <span>{t("home.userError")}</span>
             ) : user ? (
-              t("home.userName", {name: user.name})
+                t("home.userName", { name: user.userNm })
             ) : (
               t("home.guest")
             )}

@@ -1,5 +1,9 @@
 import Button from '@/shared/components/button/Button'
+import Card from '@/shared/components/card/Card';
+import ContentTitle from '@/shared/components/contentTitle/ContentTitle';
 import Input from '@/shared/components/input/Input';
+import MoimCard from '@/shared/components/moimCard/moimCard';
+import SpotCard from '@/shared/components/spotCard/SpotCard';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom'
@@ -50,8 +54,6 @@ const GuidePage = () => {
 
       <div>input</div>
       <div className="input">
-
-
         <form onSubmit={handleSearchSubmit}>
           <Input className="header-search" label={t("home.searchLabel")} placeholder={t("home.searchPlaceholder")} name="search" id="home-search" blind onChange={(e) => setQuery(e.target.value)} />
         </form>
@@ -60,6 +62,17 @@ const GuidePage = () => {
         <Input label={t("home.searchLabel")} placeholder={t("home.searchPlaceholder")} name="search" id="home-search" blind disabled />
         <Input label={t("home.searchLabel")} placeholder={t("home.searchPlaceholder")} name="search" id="home-search" blind readonly />
       </div>
+
+      <div>title</div>
+      <div>
+          <ContentTitle title="dd" href="/" linkText="예시"/>
+      </div>
+
+      <div>card</div>
+      <Card>test</Card>
+      <SpotCard imageUrl={`/images/places/T001.jpeg`} title="title" place="place" rating="4.8" badge="badge" />
+      <MoimCard badge="badge" imageUrl={`/images/places/M001.jpeg`} title="title" date="2027-06-01" member="10" views={0} />
+
     </>
   
   )
