@@ -3,6 +3,7 @@ import "./Button.css"
 
 interface Props {
   as?: ElementType;
+  href?: string;
   id?: string;
   className?: string;
   type?: "button" | "submit" | "reset";
@@ -12,7 +13,7 @@ interface Props {
   img?: string;
   icon?: boolean;
   size?: "icon" | "md" | "lg";
-  variant?: "primary" | "secondary" | "destructive" | "ghost";
+  variant?: "primary" | "secondary" | "destructive" | "ghost" | "fixed";
   onClick?: (e: React.MouseEvent<HTMLButtonElement>) => void;
   onFocus?: (e: React.FocusEvent<HTMLButtonElement>) => void;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -20,7 +21,7 @@ interface Props {
 }
 
 const Button = ({ 
-  as: Tag = "button", id, className, type = "button", text, blind, disabled, img, icon, size = "md", variant = "primary", onClick, onFocus, ...rest 
+  as: Tag = "button", href, id, className, type = "button", text, blind, disabled, img, icon, size = "md", variant = "primary", onClick, onFocus, ...rest 
 }: Props) => {
   const isButton = Tag === "button"
   const classNames = `btn btn-${variant} btn-${size} ${icon ? "btn-icon" : ""} ${disabled ? "is-disabled" : ""} ${className ?? ""}`
@@ -29,6 +30,7 @@ const Button = ({
     <Tag
       type={isButton ? type : undefined}
       id={id}
+      href={href}
       className={classNames}
       disabled={isButton ? disabled : undefined}
       onClick={onClick}

@@ -1,0 +1,24 @@
+{
+  "success": true,
+  "status": 0,
+  "code": "SUCCESS",
+  "message": "조회 성공",
+  "path": "/trmaHome/moimList.json",
+  "token": "",
+  "data": [
+    {
+      "moimId": "M001",
+      "moimTitle": "서울 근교 당일치기 여행 같이가요!",
+      "moimDscr": "남산타워에서 한강공원까지 서울의 밤을 함께 걷는 소모임",
+      "moimStartDt": "2026-07-20",
+      "region": "서울",
+      "memberCnt": 2,
+      "userId": "U001",
+      "userNm": "Alice",
+      "userRating": 4.8,
+      "cateCd": "C01",
+      "cateNm": "서울",
+      "imageUrl": "/images/moim/M001.jpeg"
+    }
+  ]
+}

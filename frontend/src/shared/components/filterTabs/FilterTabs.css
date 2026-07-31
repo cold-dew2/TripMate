@@ -1,0 +1,28 @@
+/* FilterTabs.css */
+.filter-tabs {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 8px;
+  margin-top: 14px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.filter-tabs .filter-tab {
+  flex-shrink: 0;
+  display: inline-block;
+  padding: 10px 16px;
+  color: var(--gray-600);
+  font-size: var(--fs-sm);
+  line-height: normal;
+  border-radius: var(--radius-2xl);
+  background: var(--white-300);
+  white-space: nowrap; 
+}
+
+.filter-tabs .filter-tab.active {
+  color: var(--white);
+  font-weight: var(--fw-bold);
+  background: var(--purple-600);
+}

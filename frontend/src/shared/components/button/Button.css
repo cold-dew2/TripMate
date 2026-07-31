@@ -36,16 +36,19 @@
 }
 
 /* button variant */
-.btn-primary {
+.btn-primary,
+.btn-fixed {
   color: var(--white);
   border: 1px solid var(--purple-500);
   background-color: var(--purple-500);
 }
-.btn-primary:hover:not(:disabled) {
+.btn-primary:hover:not(:disabled),
+.btn-fixed:hover:not(:disabled), {
   border-color: var(--purple-600);
   background-color: var(--purple-600);
 }
-.btn-primary:disabled {
+.btn-primary:disabled,
+.btn-fixed:disabled {
   color: var(--gray-600);
   border-color: var(--purple-300);
   background-color: var(--purple-300);
@@ -104,4 +107,13 @@
 .btn-icon img {
   width: 100%;
   height: 100%;
+}
+
+/* button fixed */
+.btn-fixed {
+  position: fixed;
+  bottom: 100px;
+  right: 28px;
+  width: auto;
+  border-radius: 28px;
 }

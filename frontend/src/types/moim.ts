@@ -10,6 +10,9 @@ export interface Moim {
   cateNm: string;         
   memberCnt: string;      
   visitCnt: number;
+  imageUrl: string;
+  region: string;
+  userRating: string;
 }
 
 export interface MoimResponse {

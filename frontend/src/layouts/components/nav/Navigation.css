@@ -5,7 +5,8 @@ nav {
   width: 100%;
   border-top: 1px solid var(--gray-100);
   background: var(--white);
-  box-shadow: var(--shadow-frame)
+  box-shadow: var(--shadow-frame);
+  z-index: 10000;
 }
 .menu-list {
   display: flex;

@@ -37,12 +37,6 @@
   min-width: 0;
 }
 
-.moim-list {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
 @media (max-width: 768px) {
   .spot-list {
     display: block;

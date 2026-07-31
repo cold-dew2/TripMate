@@ -24,6 +24,22 @@
     "beach": "해변",
     "night": "야경"
   },
+  "moim": {
+    "listTitle": "소모임 찾기",
+    "searchLabel": "소모임 검색",
+    "searchPlaceholder": "소모임을 검색해주세요",
+    "myPlan": "내 일정",
+    "emptyMsg": "소모임이 존재하지 않아요!",
+    "errorMsg": "다시 시도해주세요!",
+    "button": "+ 새모임 만들기"
+  },
+  "place": {
+    "listTitle": "관광지 찾기",
+    "searchLabel": "관광지 검색",
+    "searchPlaceholder": "관광지를 검색해주세요",
+    "emptyMsg": "관광지가 존재하지 않아요!",
+    "errorMsg": "다시 시도해주세요!"
+  },
   "image": {
     "alt": "{{title}} 이미지"
   },

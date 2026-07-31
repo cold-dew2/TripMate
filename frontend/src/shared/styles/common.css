@@ -3,11 +3,14 @@
   width: 100%;
   min-height: calc(100vh - 191px - 78px + 44px);
   margin: 0 auto;
-  padding: 0 var(--space-5xl) 100px;
+  padding: 0 28px 100px;
   overflow: auto;
 }
+.container section:first-child {
+  padding-top: 0;
+}
 section {
-  padding: var(--space-3xl) 0;
+  padding: 20px 0;
 }
 
 /* Display */
@@ -214,6 +217,11 @@ section {
   border-radius: var(--radius-full);
 }
 
+/* margin */
+.mt-20 {
+  margin-top: 20px;
+}
+
 /* Overflow */
 .overflow-hidden {
   overflow: hidden;
@@ -248,4 +256,17 @@ img {
   display: inline-block;
   width: 18px;
   height: 18px;
+}
+
+/* hr */
+.hr {
+  border-top: 1px solid var(--gray-100);
+  padding-bottom: var(--space-xl);
+}
+
+/* moimList */
+.moim-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
 }

@@ -1,0 +1,25 @@
+.page-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 61px;
+  padding: 24px 28px 14px;
+}
+
+.page-title .title {
+  font-size: var(--space-3xl);
+  font-weight: var(--fw-ebold);
+}
+
+.page-title .link {
+  color: var(--purple-600);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-bold);
+}
+.page-title .link:after {
+  content: ">";
+  display: inline-block;
+  padding-left: 3px;
+  font-size: var(--fs-2xs);
+  vertical-align: text-bottom;
+}

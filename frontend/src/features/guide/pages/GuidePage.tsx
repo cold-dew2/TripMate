@@ -2,7 +2,7 @@ import Button from '@/shared/components/button/Button'
 import Card from '@/shared/components/card/Card';
 import ContentTitle from '@/shared/components/contentTitle/ContentTitle';
 import Input from '@/shared/components/input/Input';
-import MoimCard from '@/shared/components/moimCard/moimCard';
+import MoimCard from '@/shared/components/moimCard/MoimCard';
 import SpotCard from '@/shared/components/spotCard/SpotCard';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -70,6 +70,8 @@ const GuidePage = () => {
 
       <div>card</div>
       <Card>test</Card>
+      <Card error="에러메시지" />
+      <Card error="데이터 없음" />
       <SpotCard imageUrl={`/images/places/T001.jpeg`} title="title" place="place" rating="4.8" badge="badge" />
       <MoimCard badge="badge" imageUrl={`/images/places/M001.jpeg`} title="title" date="2027-06-01" member="10" views={0} />
 

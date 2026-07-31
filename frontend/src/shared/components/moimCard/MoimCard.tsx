@@ -9,13 +9,16 @@ interface Props {
   badge?: string;
   imageUrl?: string;
   title?: string;
+  desc?: string;
   place?: string;
   date?: string;
   member?: string;
   views?: number;
+  userNm?: string;
+  userRating?: string;
 }
 
-const MoimCard = ({ loading = false, badge, imageUrl, title, date, member, views }: Props) => {
+const MoimCard = ({ loading = false, badge, imageUrl, title, date, member, views, desc, place, userNm, userRating }: Props) => {
   const { t } = useTranslation();
   return (
     <Card className="moim-card">
@@ -49,10 +52,18 @@ const MoimCard = ({ loading = false, badge, imageUrl, title, date, member, views
             <img src={imageUrl} alt={t("image.alt", { title })} />
             <p className="title">{title}</p>
           </div>
-          <div className="info">
+          {desc && (
+            <p className="desc">{desc}</p>
+          )}
+          <div className={`info ${views ? "views" : ""}`}>
             <div className="info-left">
-              {date && (
-                <span className="place">🗓️ {date}</span>
+              {(date || place) && (
+                <div className="date-place">
+                    <span className="date">{date ? `🗓️ ${date} ` : undefined}</span>
+                    <span className="place">{place ? `📍${place}` : undefined}
+                  </span>
+                </div>
+                
               )}
               {member && (
                   <span className="member">👥 {t("people", { count: member })}</span>
@@ -62,6 +73,12 @@ const MoimCard = ({ loading = false, badge, imageUrl, title, date, member, views
                 <div className="views">🔥 {views ?? 0}</div>
             )}
           </div>
+          {userNm && (
+            <div className="user-info">
+                <span className="user-name">{userNm}</span>
+                <span className="user-rating">★ {userRating}</span>
+            </div>
+          )}
         </>
       )}
     </Card>

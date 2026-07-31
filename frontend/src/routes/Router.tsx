@@ -1,20 +1,17 @@
 import MainLayout from "@/layouts/MainLayout"
-import { BrowserRouter, Route, Routes } from "react-router-dom"
-import HomePage  from '@/features/home/pages/HomePage';
-import GuidePage from "@/features/guide/pages/GuidePage";
+import { createBrowserRouter, RouterProvider } from "react-router-dom"
+import { contentRoutes, mainRoutes } from "./path/paths";
+import ContentLayout from "@/layouts/ContentLayout";
 
-const Router = () => {
-    return (
-      <BrowserRouter>
-        <Routes>
-          <Route>
-            <Route path="/guide" element={<GuidePage />} />
-          </Route>
-          <Route element={<MainLayout />}>
-            <Route path="/" element={<HomePage />} />
-          </Route>
-        </Routes>
-      </BrowserRouter>
-    )
-}
+const router = createBrowserRouter([
+  {
+    element: <MainLayout />,
+    children: mainRoutes,
+  },
+  {
+    element: <ContentLayout />,
+    children: contentRoutes,
+  },
+]); 
+const Router = () => <RouterProvider router={router} />;
 export default Router

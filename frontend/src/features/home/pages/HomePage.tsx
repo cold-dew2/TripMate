@@ -4,9 +4,9 @@ import Card from '@/shared/components/card/Card';
 import ContentTitle from '@/shared/components/contentTitle/ContentTitle';
 import "./HomePage.css";
 import SpotCard from '@/shared/components/spotCard/SpotCard';
-import usePlace from '@/shared/hooks/usePlace';
-import MoimCard from '@/shared/components/moimCard/moimCard';
-import useMoim from '@/shared/hooks/useMoim';
+import usePlace from '@/features/home/hooks/usePlace';
+import MoimCard from '@/shared/components/moimCard/MoimCard';
+import useMoim from '@/features/home/hooks/useMoim';
 
 const categories = [
   { id: "culture", icon: "🏛️", title: "category.culture" },
@@ -25,7 +25,7 @@ const HomePage = () => {
 
   return (
     <>
-      <section>
+      <section className="mt-20">
         <Card className="icon-card">
           {categories.map((category) => (
             // 링크는 임시값
@@ -52,7 +52,7 @@ const HomePage = () => {
           ) : (
             spots.slice(0, 4)?.map(spot => (
               <li key={spot.tourId}>
-                <Link to="/">
+                <Link to={`/place/${spot.tourId}`}>
                   <SpotCard imageUrl={`/images/places/${spot.tourId}.jpeg`} title={t(spot.tourNm)} place={`${t(spot.roadAddr)}`} rating={spot.avgScore} badge={t(spot.cateNm)} />
                 </Link>
               </li>
@@ -68,7 +68,7 @@ const HomePage = () => {
           {isMoimLoading ? (
             Array.from({ length: 4 }).map((_, index) => (
               <li key={index}>
-                <SpotCard loading />
+                <MoimCard loading />
               </li>
             ))
           ) : isMoimError ? (
@@ -76,7 +76,7 @@ const HomePage = () => {
           ) : (
             moims.slice(0, 4)?.map(moim => (
               <li key={moim.moimId}>
-                <Link to="/">
+                <Link to={`/moim/${moim.moimId}`}>
                   <MoimCard badge={t(moim.cateNm)} imageUrl={`/images/places/${moim.moimId}.jpeg`} title={t(moim.moimTitle)} date={t(moim.moimStartDt)} member={t(moim.memberCnt)} views={moim.visitCnt}/>
                 </Link>
               </li>

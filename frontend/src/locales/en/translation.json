@@ -24,6 +24,22 @@
     "beach": "Beach",
     "night": "Night View"
   },
+  "moim": {
+    "listTitle": "Find Meetups",
+    "searchLabel": "Search meetups",
+    "searchPlaceholder": "Search for a meetup",
+    "myPlan": "My Plan",
+    "emptyMsg": "No meetups found!",
+    "errorMsg": "Please try again!"
+  },
+  "place": {
+    "listTitle": "Find Places",
+    "searchLabel": "Search places",
+    "searchPlaceholder": "Search for a place",
+    "emptyMsg": "No places found!",
+    "errorMsg": "Please try again!",
+    "button": "+ creat new moim"
+  },
   "image": {
     "alt": "Image of {{title}}"
   },

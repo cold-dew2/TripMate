@@ -7,8 +7,8 @@ const Navigation = () => {
 
   const menus = [
     {id: 0, path: "/", label: "nav.home", icon: "home"},
-    { id: 1, path: "/places", label: "nav.places", icon: "place"},
-    { id: 2, path: "/groups", label: "nav.groups", icon: "group"},
+    { id: 1, path: "/placeList", label: "nav.places", icon: "place"},
+    { id: 2, path: "/moimList", label: "nav.groups", icon: "group"},
     { id: 3, path: "/chat", label: "nav.chat", icon: "chat"},
     { id: 4, path: "/my", label: "nav.my", icon: "my"},
   ]
