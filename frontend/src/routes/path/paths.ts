@@ -1,7 +1,7 @@
 import type { RouteObject } from "react-router-dom";
 
 export interface RouteHandle {
-  title: string;
+  title?: string;
   showBack?: boolean;
   href?: string;
   linkText?: string;
@@ -47,5 +47,12 @@ export const contentRoutes: (RouteObject & { handle?: RouteHandle })[] = [
     path: "/place/:tourId", 
     lazy: () => import("@/features/place/pages/placeDetail/PlaceDetail").then((m) => ({ Component: m.default })),
     handle: { showBack: true },
+  },
+];
+
+export const noLayoutRoutes: (RouteObject & { handle?: RouteHandle })[] = [
+  {
+    path: "/my",
+    lazy: () => import("@/features/my/pages/myPage/Mypage").then((m) => ({Component: m.default,})),
   },
 ];
