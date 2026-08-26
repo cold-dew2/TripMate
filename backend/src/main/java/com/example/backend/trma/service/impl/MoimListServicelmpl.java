@@ -2,16 +2,14 @@ package com.example.backend.trma.service.impl;
 
 import com.example.backend.trma.dto.dataList.*;
 import com.example.backend.trma.dto.request.*;
-import com.example.backend.trma.dto.response.GeminiResponse;
-import com.example.backend.trma.dto.response.MoimAiSearchResponse;
-import com.example.backend.trma.dto.response.MoimDetailResponse;
-import com.example.backend.trma.dto.response.MoimSearchResponse;
+import com.example.backend.trma.dto.response.*;
 import com.example.backend.trma.mapper.MoimListMapper;
 import com.example.backend.trma.service.MoimListService;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.NonNull;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestClient;
 import tools.jackson.databind.ObjectMapper;
 
@@ -302,12 +300,14 @@ public class MoimListServicelmpl implements MoimListService {
     }
 
     //모임 상세조회(기본)
-    public MoimDetailResponse moimDetail(MoimDetailRequest request) {
+    public MoimDetailResponse moimDetail(MoimDetailRequest request, String userId) {
 
         try {
             MoimDetailData moimDetail = moimListMapper.moimDetail(request.getMoimId());
             List<MoimCateData> moimCate = moimListMapper.moimCate(request.getMoimId());
             List<MoimPlanData> moimPlan = moimListMapper.moimPlan(request.getMoimId());
+            MoimJoinStatusData moimJoinStatus = moimListMapper.moimJoinStatus(request.getMoimId(), userId);
+
             return new MoimDetailResponse(
                     true,
                     200,
@@ -317,7 +317,8 @@ public class MoimListServicelmpl implements MoimListService {
                     "",
                     moimDetail,
                     moimCate,
-                    moimPlan
+                    moimPlan,
+                    moimJoinStatus
             );
         } catch (Exception e) {
             return new MoimDetailResponse(
@@ -329,6 +330,114 @@ public class MoimListServicelmpl implements MoimListService {
                     "",
                     null,
                     null,
+                    null,
+                    null
+            );
+        }
+    }
+
+    //모임 테마 조회
+    public MoimCateSearchResponse moimCateSearch() {
+
+        try {
+            List<MoimCateData> moimCateList = moimListMapper.moimCateSearch();
+
+            return new MoimCateSearchResponse(
+                    true,
+                    200,
+                    "SUCCESS",
+                    "모임 테마 조회를 정상적으로 조회했습니다.",
+                    "/moimList/moimDetail",
+                    "",
+                    moimCateList
+            );
+        } catch (Exception e) {
+            return new MoimCateSearchResponse(
+                    false,
+                    500,
+                    "FAIL",
+                    "조회 중 오류가 발생했습니다.",
+                    "/moimList/moimDetail",
+                    "",
+                    null
+            );
+        }
+    }
+
+    //내 모임 목록 조회
+    public MyMoimResponse myMoim(String userId) {
+
+        try {
+            List<MyMoimData> myMoimList = moimListMapper.myMoim(userId);
+
+            return new MyMoimResponse(
+                    true,
+                    200,
+                    "SUCCESS",
+                    "내 모임 목록 조회를 정상적으로 조회했습니다.",
+                    "/moimList/myMoim",
+                    "",
+                    myMoimList
+            );
+        } catch (Exception e) {
+            return new MyMoimResponse(
+                    false,
+                    500,
+                    "FAIL",
+                    "조회 중 오류가 발생했습니다.",
+                    "/moimList/myMoim",
+                    "",
+                    null
+            );
+        }
+    }
+
+    //모임 생성
+    @Override
+    @Transactional
+    public CreateMoimResponse createMoim(CreateMoimRequest request, String userId) {
+
+        try {
+
+            //모임ID 생성
+            String moimId = moimListMapper.moimIdCreate();
+
+            //모임 등록
+            moimListMapper.createMoimList(request, moimId, userId);
+
+            //모임 테마 등록
+            if (request.getMoimCateData() != null) {
+
+                for (MoimCateData cateData : request.getMoimCateData()) {
+
+                    moimListMapper.insertMoimCate(cateData, moimId, userId);
+                }
+            }
+
+            //모임 일정 등록
+            if (request.getMoimPlanData() != null) {
+
+                for (MoimPlanInsertData moimPlan : request.getMoimPlanData()) {
+
+                    moimListMapper.insertMoimPlan(moimPlan, moimId, userId);
+                }
+            }
+
+            return new CreateMoimResponse(
+                    true,
+                    200,
+                    "SUCCESS",
+                    "모임 생성 성공",
+                    "/moimList/createMoim",
+                    null
+            );
+        } catch (Exception e) {
+            return new CreateMoimResponse(
+                    false,
+                    500,
+                    "FAIL",
+                    "모임 생성 중 오류가 발생했습니다.",
+                    "/moimList/createMoim",
                     null
             );
         }

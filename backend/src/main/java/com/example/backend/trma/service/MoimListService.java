@@ -1,11 +1,7 @@
 package com.example.backend.trma.service;
 
-import com.example.backend.trma.dto.request.MoimAiSearchRequest;
-import com.example.backend.trma.dto.request.MoimDetailRequest;
-import com.example.backend.trma.dto.request.MoimSearchRequest;
-import com.example.backend.trma.dto.response.MoimAiSearchResponse;
-import com.example.backend.trma.dto.response.MoimDetailResponse;
-import com.example.backend.trma.dto.response.MoimSearchResponse;
+import com.example.backend.trma.dto.request.*;
+import com.example.backend.trma.dto.response.*;
 
 public interface MoimListService {
     //관광지 검색
@@ -15,5 +11,14 @@ public interface MoimListService {
     MoimAiSearchResponse moimAiSearch(MoimAiSearchRequest request);
 
     //모임 상세조회(기본)
-    MoimDetailResponse moimDetail(MoimDetailRequest request);
+    MoimDetailResponse moimDetail(MoimDetailRequest request, String userId);
+
+    //내 모임 목록 조회
+    MyMoimResponse myMoim(String userId);
+
+    //내 모임 목록 조회
+    MoimCateSearchResponse moimCateSearch();
+
+    //모임 생성
+    CreateMoimResponse createMoim(CreateMoimRequest request, String userId);
 }

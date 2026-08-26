@@ -188,4 +188,183 @@
         ORDER BY a.RMKS
 
     </select>
+
+    <!-- ========================= -->
+    <!-- 모임 가입여부 검토 -->
+    <!-- ========================= -->
+    <select id="moimJoinStatus"
+            resultType="com.example.backend.trma.dto.dataList.MoimJoinStatusData">
+
+        SELECT
+            a.ROLE_CD
+            ,a.STATE_CD
+        FROM tb_trma_moim_member a
+        WHERE 1=1
+            AND a.MOIM_ID = #{moimId}
+            AND a.USER_ID = #{userId}
+
+    </select>
+
+    <!-- ========================= -->
+    <!-- 내 모임 목록 조회 -->
+    <!-- ========================= -->
+    <select id="myMoim"
+            resultType="com.example.backend.trma.dto.dataList.MyMoimData">
+
+        SELECT
+            a.MOIM_ID
+            ,a.MOIM_TITLE
+            ,a.MOIM_DSCR
+            ,a.MOIM_START_DT
+            ,a.MOIM_END_DT
+            ,a.MAX_MEMBER
+            ,COALESCE(m.MEMBER_CNT, 0) AS MEMBER_CNT
+            ,my_m.ROLE_CD
+            ,my_m.STATE_CD
+            ,c.CATE_CD
+            ,c.CATE_NM
+        FROM tb_trma_moim_list a
+        LEFT JOIN (
+                SELECT
+                    MOIM_ID,
+                    COUNT(USER_ID) AS MEMBER_CNT
+                FROM tb_trma_moim_member
+                GROUP BY MOIM_ID
+            ) m ON a.MOIM_ID = m.MOIM_ID
+        LEFT JOIN (
+                SELECT
+                    e.MOIM_ID,
+                    GROUP_CONCAT(e.CATE_CD ORDER BY e.CATE_CD) AS CATE_CD,
+                    GROUP_CONCAT(f.CMM_CM_NM ORDER BY f.CMM_CM_NM) AS CATE_NM
+                FROM tb_trma_moim_cate e
+                LEFT JOIN tb_trma_cmm_cd_d f
+                    ON e.CATE_CD = f.CMM_CDV
+                    AND f.CMM_CD_ID = 'CATE_ID'
+                    AND f.USE_YN = 'Y'
+                GROUP BY e.MOIM_ID
+            ) c ON a.MOIM_ID = c.MOIM_ID
+        LEFT JOIN tb_trma_moim_member my_m ON my_m.MOIM_ID = a.MOIM_ID
+        WHERE a.USE_YN = 'Y'
+        AND my_m.USER_ID = #{userId}
+
+    </select>
+
+    <!-- ========================= -->
+    <!-- 모임 테마 조회 -->
+    <!-- ========================= -->
+    <select id="moimCateSearch"
+            resultType="com.example.backend.trma.dto.dataList.MoimCateData">
+
+        SELECT
+            a.CMM_CDV AS CATE_CD
+            ,a.CMM_CM_NM AS CATE_NM
+        FROM tb_trma_cmm_cd_d a
+        WHERE a.CMM_CD_ID = 'CATE_ID'
+            AND a.USE_YN = 'Y'
+
+    </select>
+
+    <!-- ========================= -->
+    <!-- 모임ID 생성 -->
+    <!-- ========================= -->
+    <select id="moimIdCreate"
+            resultType="String">
+
+        SELECT FN_GET_MOIM_ID()
+
+    </select>
+
+    <!-- ========================= -->
+    <!-- 모임 등록 -->
+    <!-- ========================= -->
+    <insert id="createMoimList">
+
+        INSERT INTO tb_trma_moim_list
+        (
+            MOIM_ID
+            ,MOIM_TITLE
+            ,MOIM_DSCR
+            ,MOIM_START_DT
+            ,MOIM_END_DT
+            ,MAX_MEMBER
+
+            ,USE_YN
+            ,CREATE_USER
+            ,CREATE_DT
+            ,UPDATE_USER
+            ,UPDATE_DT
+        )VALUES(
+            #{moimId}
+            ,#{request.moimTitle}
+            ,#{request.moimDscr}
+            ,#{request.moimStartDt}
+            ,#{request.moimEndDt}
+            ,#{request.maxMember}
+
+            ,'Y'
+            ,#{userId}
+            ,CURRENT_TIMESTAMP
+            ,#{userId}
+            ,CURRENT_TIMESTAMP
+        )
+
+    </insert>
+
+    <!-- ========================= -->
+    <!-- 모임 테마 등록 -->
+    <!-- ========================= -->
+    <insert id="insertMoimCate">
+
+        INSERT INTO tb_trma_moim_cate
+        (
+            MOIM_ID
+            ,CATE_CD
+
+            ,USE_YN
+            ,CREATE_USER
+            ,CREATE_DT
+            ,UPDATE_USER
+            ,UPDATE_DT
+        )VALUES(
+            #{moimId}
+            ,#{cateData.cateCd}
+
+            ,'Y'
+            ,#{userId}
+            ,CURRENT_TIMESTAMP
+            ,#{userId}
+            ,CURRENT_TIMESTAMP
+        )
+
+    </insert>
+
+    <!-- ========================= -->
+    <!-- 모임 일정 등록 -->
+    <!-- ========================= -->
+    <insert id="insertMoimPlan">
+
+        INSERT INTO tb_trma_moim_calendar
+        (
+        MOIM_ID
+        ,RMKS
+        ,TOUR_ID
+        ,START_DT
+
+        ,CREATE_USER
+        ,CREATE_DT
+        ,UPDATE_USER
+        ,UPDATE_DT
+        )VALUES(
+        #{moimId}
+        ,#{moimPlan.rmks}
+        ,#{moimPlan.tourId}
+        ,#{moimPlan.startDt}
+
+        ,#{userId}
+        ,CURRENT_TIMESTAMP
+        ,#{userId}
+        ,CURRENT_TIMESTAMP
+        )
+
+    </insert>
 </mapper>

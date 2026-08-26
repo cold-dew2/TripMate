@@ -7,10 +7,7 @@ import lombok.Setter;
 @Getter
 @NoArgsConstructor
 @Setter
-public class MoimPlanData {
-    private String startDt;
-    private String rmks;
-    private String tourNm;
-    private String cateCd;
-    private String cateNm;
+public class MoimJoinStatusData {
+    private String roleCd;
+    private String stateCd;
 }

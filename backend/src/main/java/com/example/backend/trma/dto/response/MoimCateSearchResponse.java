@@ -1,6 +1,7 @@
 package com.example.backend.trma.dto.response;
 
-import com.example.backend.trma.dto.dataList.*;
+import com.example.backend.trma.dto.dataList.MoimCateData;
+import com.example.backend.trma.dto.dataList.MoimSearchData;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
@@ -8,7 +9,7 @@ import java.util.List;
 
 @Getter
 @AllArgsConstructor
-public class MoimDetailResponse {
+public class MoimCateSearchResponse {
     private boolean success;
     private int status;
     private String code;
@@ -16,8 +17,5 @@ public class MoimDetailResponse {
     private String path;
     private String token;
 
-    private MoimDetailData data;
-    private List<MoimCateData> cate;
-    private List<MoimPlanData> plan;
-    private MoimJoinStatusData joinStatus;
+    private List<MoimCateData> data;
 }

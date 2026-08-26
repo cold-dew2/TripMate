@@ -8,7 +8,7 @@ import java.util.List;
 
 @Getter
 @AllArgsConstructor
-public class MoimDetailResponse {
+public class MyMoimResponse {
     private boolean success;
     private int status;
     private String code;
@@ -16,8 +16,5 @@ public class MoimDetailResponse {
     private String path;
     private String token;
 
-    private MoimDetailData data;
-    private List<MoimCateData> cate;
-    private List<MoimPlanData> plan;
-    private MoimJoinStatusData joinStatus;
+    private List<MyMoimData> data;
 }

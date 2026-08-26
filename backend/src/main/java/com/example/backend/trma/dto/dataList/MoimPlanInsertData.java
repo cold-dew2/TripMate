@@ -7,10 +7,8 @@ import lombok.Setter;
 @Getter
 @NoArgsConstructor
 @Setter
-public class MoimPlanData {
+public class MoimPlanInsertData {
     private String startDt;
     private String rmks;
-    private String tourNm;
-    private String cateCd;
-    private String cateNm;
+    private String tourId;
 }
