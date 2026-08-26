@@ -1,0 +1,191 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.example.backend.trma.mapper.MoimListMapper">
+
+    <!-- ========================= -->
+    <!-- 모임 검색 -->
+    <!-- ========================= -->
+    <select id="moimSearch"
+            parameterType="com.example.backend.trma.dto.request.MoimSearchRequest"
+            resultType="com.example.backend.trma.dto.dataList.MoimSearchData">
+
+        SELECT
+            a.MOIM_ID
+            ,a.MOIM_TITLE
+            ,a.MOIM_DSCR
+            ,a.MOIM_START_DT
+            ,a.MOIM_END_DT
+            ,d.USER_NM
+            ,COALESCE(v.VISIT_CNT, 0) AS VISIT_CNT
+            ,a.MAX_MEMBER
+            ,COALESCE(m.MEMBER_CNT, 0) AS MEMBER_CNT
+            ,c.CATE_CD
+            ,c.CATE_NM
+        FROM tb_trma_moim_list a
+        LEFT JOIN tb_trma_user_info d ON a.CREATE_USER = d.USER_ID
+        LEFT JOIN (
+            SELECT
+            MOIM_ID,
+            COUNT(USER_ID) AS MEMBER_CNT
+            FROM tb_trma_moim_member
+            GROUP BY MOIM_ID
+        ) m ON a.MOIM_ID = m.MOIM_ID
+        LEFT JOIN (
+            SELECT
+            MOIM_ID,
+            COUNT(VISIT_ID) AS VISIT_CNT
+            FROM tb_trma_moim_visit_h
+            GROUP BY MOIM_ID
+        ) v ON a.MOIM_ID = v.MOIM_ID
+        LEFT JOIN (
+            SELECT
+            e.MOIM_ID,
+            GROUP_CONCAT(e.CATE_CD ORDER BY e.CATE_CD) AS CATE_CD,
+            GROUP_CONCAT(f.CMM_CM_NM ORDER BY f.CMM_CM_NM) AS CATE_NM
+            FROM tb_trma_moim_cate e
+            LEFT JOIN tb_trma_cmm_cd_d f
+            ON e.CATE_CD = f.CMM_CDV
+            AND f.CMM_CD_ID = 'CATE_ID'
+            AND f.USE_YN = 'Y'
+            GROUP BY e.MOIM_ID
+        ) c ON a.MOIM_ID = c.MOIM_ID
+        WHERE a.USE_YN = 'Y'
+            AND a.MOIM_START_DT > NOW()
+            <if test="keyword != null and keyword != ''">
+                AND (
+                a.MOIM_TITLE LIKE CONCAT('%', #{keyword}, '%')
+                OR a.MOIM_DSCR LIKE CONCAT('%', #{keyword}, '%')
+                )
+            </if>
+            <if test="cateCd != null and cateCd != ''">
+                AND c.CATE_CD = #{cateCd}
+            </if>
+
+    </select>
+
+    <!-- ========================= -->
+    <!-- 소모임 상세 -->
+    <!-- ========================= -->
+    <select id="moimInfo"
+            parameterType="String"
+            resultType="com.example.backend.trma.dto.dataList.MoimSearchData">
+
+        SELECT
+            a.MOIM_ID
+            ,a.MOIM_TITLE
+            ,a.MOIM_DSCR
+            ,a.MOIM_START_DT
+            ,a.MOIM_END_DT
+            ,d.USER_NM
+            ,COALESCE(v.VISIT_CNT, 0) AS VISIT_CNT
+            ,a.MAX_MEMBER
+            ,COALESCE(m.MEMBER_CNT, 0) AS MEMBER_CNT
+            ,c.CATE_CD
+            ,c.CATE_NM
+        FROM tb_trma_moim_list a
+        LEFT JOIN tb_trma_user_info d ON a.CREATE_USER = d.USER_ID
+        LEFT JOIN (
+            SELECT
+                MOIM_ID
+                ,COUNT(USER_ID) AS MEMBER_CNT
+            FROM tb_trma_moim_member
+            GROUP BY MOIM_ID
+        ) m ON a.MOIM_ID = m.MOIM_ID
+        LEFT JOIN (
+            SELECT
+                MOIM_ID
+                ,COUNT(VISIT_ID) AS VISIT_CNT
+            FROM tb_trma_moim_visit_h
+            GROUP BY MOIM_ID
+        ) v ON a.MOIM_ID = v.MOIM_ID
+        LEFT JOIN (
+            SELECT
+                e.MOIM_ID
+                ,GROUP_CONCAT(e.CATE_CD ORDER BY e.CATE_CD) AS CATE_CD
+                ,GROUP_CONCAT(f.CMM_CM_NM ORDER BY f.CMM_CM_NM) AS CATE_NM
+            FROM tb_trma_moim_cate e
+            LEFT JOIN tb_trma_cmm_cd_d f ON e.CATE_CD = f.CMM_CDV AND f.CMM_CD_ID = 'CATE_ID' AND f.USE_YN = 'Y'
+            GROUP BY e.MOIM_ID
+        ) c ON a.MOIM_ID = c.MOIM_ID
+        WHERE
+            a.MOIM_ID = #{moimId}
+
+    </select>
+
+    <!-- ========================= -->
+    <!-- 모임 상세조회(기본) -->
+    <!-- ========================= -->
+    <select id="moimDetail"
+            parameterType="com.example.backend.trma.dto.request.MoimDetailRequest"
+            resultType="com.example.backend.trma.dto.dataList.MoimDetailData">
+
+        SELECT
+            a.MOIM_ID
+            ,a.MOIM_TITLE
+            ,a.MOIM_DSCR
+            ,a.MOIM_START_DT
+            ,a.MOIM_END_DT
+            ,a.MAX_MEMBER
+            ,COUNT(c.USER_ID) AS memberCnt
+            ,b.USER_NM
+            ,AVG(d.REVIEW_SCORE) AS REVIEW_SCORE
+        FROM tb_trma_moim_list a
+        LEFT JOIN tb_trma_user_info b ON a.CREATE_USER = b.USER_ID
+        LEFT JOIN tb_trma_moim_member c ON a.MOIM_ID = c.MOIM_ID AND c.ROLE_CD = 'A'
+        LEFT JOIN tb_trma_moim_review d ON a.MOIM_ID = d.MOIM_ID AND d.REVIEW_TYPE_CD = 'O'
+        WHERE a.MOIM_ID = #{moimId}
+        GROUP BY
+            a.MOIM_ID
+            ,a.MOIM_TITLE
+            ,a.MOIM_DSCR
+            ,a.MOIM_START_DT
+            ,a.MOIM_END_DT
+            ,a.MAX_MEMBER
+            ,b.USER_NM
+
+    </select>
+
+    <!-- ========================= -->
+    <!-- 모임 카테고리 조회 -->
+    <!-- ========================= -->
+    <select id="moimCate"
+            parameterType="com.example.backend.trma.dto.request.MoimDetailRequest"
+            resultType="com.example.backend.trma.dto.dataList.MoimCateData">
+
+        SELECT
+            b.CMM_CDV AS CATE_CD
+            ,b.CMM_CM_NM AS CATE_NM
+        FROM tb_trma_moim_cate a
+        LEFT JOIN tb_trma_cmm_cd_d b ON a.CATE_CD = b.CMM_CDV
+            AND b.CMM_CD_ID = 'CATE_ID'
+            AND b.USE_YN = 'Y'
+        WHERE a.MOIM_ID = #{moimId}
+
+    </select>
+
+    <!-- ========================= -->
+    <!-- 모임 상세조회(일정) -->
+    <!-- ========================= -->
+    <select id="moimPlan"
+            parameterType="com.example.backend.trma.dto.request.MoimDetailRequest"
+            resultType="com.example.backend.trma.dto.dataList.MoimPlanData">
+
+        SELECT
+            a.START_DT
+            ,a.RMKS
+            ,b.TOUR_NM
+            ,d.CMM_CDV AS CATE_CD
+            ,d.CMM_CM_NM AS CATE_NM
+        FROM tb_trma_moim_calendar a
+        LEFT JOIN tb_trma_tour_list b ON a.TOUR_ID = b.TOUR_ID
+        LEFT JOIN tb_trma_tour_cate c ON b.TOUR_ID = c.TOUR_ID AND c.USE_YN = 'Y'
+        LEFT JOIN tb_trma_cmm_cd_d d ON c.CATE_CD = d.CMM_CDV AND d.CMM_CD_ID = 'TOUR_LCLS_CD'
+        WHERE a.MOIM_ID = #{moimId}
+        ORDER BY a.RMKS
+
+    </select>
+</mapper>

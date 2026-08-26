@@ -7,7 +7,7 @@ import lombok.Setter;
 @Getter
 @NoArgsConstructor
 @Setter
-public class TourSearchRequest {
+public class MoimAiSearchRequest {
     private String keyword;
     private String cateCd;
 }

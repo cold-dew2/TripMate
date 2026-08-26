@@ -16,13 +16,22 @@
         SELECT
             a.USER_NM
             ,a.LANG_CD
+            ,b1.CMM_CM_NM AS LANG_NM
             ,a.STATE_CD
+            ,b2.CMM_CM_NM AS STATE_NM
             ,a.ROLE_CD
+            ,b3.CMM_CM_NM AS ROLE_NM
             ,a.BIRTH_DT
             ,a.GENDER_CD
+            ,b4.CMM_CM_NM AS GENDER_NM
             ,a.PHONE_NUM
         FROM tb_trma_user_info a
-        WHERE a.USER_ID = #{userId}
+        LEFT JOIN tb_trma_cmm_cd_d b1 ON a.LANG_CD = b1.CMM_CDV AND b1.CMM_CD_ID = 'LANG_CD'
+        LEFT JOIN tb_trma_cmm_cd_d b2 ON a.STATE_CD = b2.CMM_CDV AND b2.CMM_CD_ID = 'STATE_CD'
+        LEFT JOIN tb_trma_cmm_cd_d b3 ON a.ROLE_CD = b3.CMM_CDV AND b3.CMM_CD_ID = 'ROLE_CD'
+        LEFT JOIN tb_trma_cmm_cd_d b4 ON a.GENDER_CD = b4.CMM_CDV AND b4.CMM_CD_ID = 'GENDER_CD'
+        WHERE
+            a.USER_ID = #{userId}
 
     </select>
 
@@ -54,31 +63,31 @@
             ,c1.CMM_CM_NM AS SIDO_NM
             ,b.SGG_CD
             ,c2.CMM_CM_NM AS SGG_NM
-            ,b.EMD_CD
-            ,c3.CMM_CM_NM AS END_NM
             ,b.ROAD_ADDR
             ,b.DETAIL_ADDR
             ,b.ZIP_CD
+            ,GROUP_CONCAT(d.CATE_CD ORDER BY d.CATE_CD) AS CATE_CD
+            ,GROUP_CONCAT(e.CMM_CM_NM ORDER BY e.CMM_CM_NM) AS CATE_NM
             ,AVG(a.REVIEW_SCORE) AS AVG_SCORE
         FROM tb_trma_moim_review a
         LEFT JOIN tb_trma_tour_list b ON a.TOUR_ID = b.TOUR_ID
         LEFT JOIN tb_trma_cmm_cd_d c1 ON b.SIDO_CD = c1.CMM_CDV AND c1.CMM_CD_ID = 'SIDO_CD'
         LEFT JOIN tb_trma_cmm_cd_d c2 ON b.SIDO_CD = c1.CMM_CDV AND c2.CMM_CD_ID = 'SGG_CD'
-        LEFT JOIN tb_trma_cmm_cd_d c3 ON b.SIDO_CD = c1.CMM_CDV AND c3.CMM_CD_ID = 'EMD_CD'
-        WHERE b.USE_YN = 'Y'
+        LEFT JOIN tb_trma_tour_cate d ON b.TOUR_ID = d.TOUR_ID
+        LEFT JOIN tb_trma_cmm_cd_d e ON d.CATE_CD = e.CMM_CDV AND e.CMM_CD_ID = 'CATE_ID'
+        WHERE
+            b.USE_YN = 'Y'
         GROUP BY b.TOUR_ID
             ,b.TOUR_NM
             ,b.SIDO_CD
             ,c1.CMM_CM_NM
             ,b.SGG_CD
             ,c2.CMM_CM_NM
-            ,b.EMD_CD
-            ,c3.CMM_CM_NM
             ,b.ROAD_ADDR
             ,b.DETAIL_ADDR
             ,b.ZIP_CD
         ORDER BY AVG_SCORE DESC
-        LIMIT 10;
+        LIMIT 5;
 
     </select>
 
@@ -92,26 +101,29 @@
             b.MOIM_ID
             ,b.MOIM_TITLE
             ,b.MOIM_DSCR
-            ,b.MOIM_CATE_CD
-            ,c.CMM_CM_NM AS MOIM_CATE_NM
             ,b.MOIM_START_DT
             ,b.MOIM_END_DT
             ,b.CREATE_DT AS USER_ID
             ,d.USER_NM
+            ,GROUP_CONCAT(e.CATE_CD ORDER BY e.CATE_CD) AS CATE_CD
+            ,GROUP_CONCAT(f.CMM_CM_NM ORDER BY f.CMM_CM_NM) AS CATE_CD
             ,(SELECT
-                    COUNT(1)
-                FROM tb_trma_moim_member mm
-                WHERE mm.MOIM_ID = b.MOIM_ID
-                    AND mm.ROLE_CD = 'A') AS MEMBER_CNT
+            COUNT(1)
+            FROM tb_trma_moim_member mm
+            WHERE mm.MOIM_ID = b.MOIM_ID
+            AND mm.ROLE_CD = 'A') AS MEMBER_CNT
+            ,a.MAX_MEMBER
             ,COUNT(*) AS VISIT_CNT
         FROM tb_trma_moim_visit_h a
         LEFT JOIN tb_trma_moim_list b ON a.MOIM_ID = b.MOIM_ID
-        LEFT JOIN tb_trma_cmm_cd_d c ON b.MOIM_CATE_CD = c.CMM_CDV AND c.CMM_CD_ID = 'CATE_ID'
         LEFT JOIN tb_trma_user_info d ON b.CREATE_USER = d.USER_ID
-        WHERE b.USE_YN = 'Y'
+        LEFT JOIN tb_trma_moim_cate e ON e.MOIM_ID = b.MOIM_ID
+        LEFT JOIN tb_trma_cmm_cd_d f ON e.CATE_CD = f.CMM_CDV AND f.CMM_CD_ID = 'CATE_ID'
+        WHERE
+            b.USE_YN = 'Y'
         GROUP BY a.MOIM_ID
         ORDER BY VISIT_CNT DESC
-        LIMIT 10;
+        LIMIT 5;
 
     </select>
 

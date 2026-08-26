@@ -7,7 +7,7 @@ import lombok.Setter;
 @Getter
 @NoArgsConstructor
 @Setter
-public class BestTourListData {
+public class TourAiSearchData {
     private String tourId;
     private String tourNm;
     private String sidoCd;
@@ -20,4 +20,6 @@ public class BestTourListData {
     private String cateCd;
     private String cateNm;
     private int avgScore;
+    private String score;
+    private String reason;
 }

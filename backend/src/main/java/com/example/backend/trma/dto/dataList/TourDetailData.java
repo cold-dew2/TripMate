@@ -7,8 +7,9 @@ import lombok.Setter;
 @Getter
 @NoArgsConstructor
 @Setter
-public class BestTourListData {
+public class TourDetailData {
     private String tourId;
+    private String firstImage;
     private String tourNm;
     private String sidoCd;
     private String sidoNm;

@@ -1,5 +1,6 @@
 package com.example.backend.trma.dto.response;
 
+import com.example.backend.trma.dto.dataList.TourDetailData;
 import com.example.backend.trma.dto.dataList.TourSearchData;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -8,7 +9,7 @@ import java.util.List;
 
 @Getter
 @AllArgsConstructor
-public class TourSearchResponse {
+public class TourDetailResponse {
     private boolean success;
     private int status;
     private String code;
@@ -16,5 +17,5 @@ public class TourSearchResponse {
     private String path;
     private String token;
 
-    private List<TourSearchData> data;
+    private TourDetailData data;
 }

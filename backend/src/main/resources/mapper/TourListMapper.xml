@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.example.backend.trma.mapper.TourListMapper">
+
+    <!-- ========================= -->
+    <!-- 관광지 검색 -->
+    <!-- ========================= -->
+    <select id="tourSearch"
+            parameterType="com.example.backend.trma.dto.request.TourSearchRequest"
+            resultType="com.example.backend.trma.dto.dataList.TourSearchData">
+
+        SELECT
+            b.TOUR_ID,
+            b.TOUR_NM,
+            c1.CMM_CM_NM AS SIDO_NM,
+            c2.CMM_CM_NM AS SGG_NM,
+            b.ROAD_ADDR,
+            b.DETAIL_ADDR,
+            b.ZIP_CD,
+            d.CATE_CD,
+            d.CATE_NM,
+            IFNULL(a.AVG_SCORE,0) AS AVG_SCORE
+        FROM tb_trma_tour_list b
+            LEFT JOIN (
+                SELECT
+                TOUR_ID,
+                AVG(REVIEW_SCORE) AS AVG_SCORE
+                FROM tb_trma_moim_review
+                GROUP BY TOUR_ID
+            ) a ON b.TOUR_ID = a.TOUR_ID
+            LEFT JOIN (
+                SELECT
+                tc.TOUR_ID,
+                GROUP_CONCAT(tc.CATE_CD ORDER BY tc.CATE_CD) AS CATE_CD,
+                GROUP_CONCAT(cd.CMM_CM_NM ORDER BY cd.CMM_CM_NM) AS CATE_NM
+                FROM tb_trma_tour_cate tc
+                LEFT JOIN tb_trma_cmm_cd_d cd
+                ON tc.CATE_CD = cd.CMM_CDV
+                AND cd.CMM_CD_ID = 'TOUR_LCLS_CD'
+                GROUP BY tc.TOUR_ID
+            ) d ON b.TOUR_ID = d.TOUR_ID
+            LEFT JOIN tb_trma_cmm_cd_d c1 ON CONCAT(b.SIDO_CD,'00000000') = c1.CMM_CDV AND c1.CMM_CD_ID = 'SIDO_CD'
+            LEFT JOIN tb_trma_cmm_cd_d c2 ON CONCAT(b.SIDO_CD,b.SGG_CD,'00000') = c2.CMM_CDV AND c2.CMM_CD_ID = 'SGG_CD'
+        WHERE b.USE_YN='Y'
+        <if test="keyword != null and keyword != ''">
+            AND (
+            b.TOUR_NM LIKE CONCAT('%', #{keyword}, '%')
+            OR b.TOUR_CONTENT LIKE CONCAT('%', #{keyword}, '%')
+            )
+        </if>
+        <if test="cateCd != null and cateCd != ''">
+            AND d.CATE_CD = #{cateCd}
+        </if>
+        ORDER BY AVG_SCORE DESC;
+
+    </select>
+
+    <!-- ========================= -->
+    <!-- 관광지 상세 -->
+    <!-- ========================= -->
+    <select id="tourInfo"
+            parameterType="String"
+            resultType="com.example.backend.trma.dto.dataList.TourSearchData">
+
+        SELECT
+            a.TOUR_ID,
+            a.TOUR_NM,
+            a.TOUR_CONTENT,
+            b1.CMM_CM_NM AS SIDO_NM,
+            b2.CMM_CM_NM AS SGG_NM,
+            a.ROAD_ADDR,
+            a.DETAIL_ADDR,
+            a.ZIP_CD,
+            (
+                SELECT
+                    GROUP_CONCAT(c.CATE_CD ORDER BY c.CATE_CD)
+                FROM tb_trma_tour_cate c
+                WHERE c.TOUR_ID = a.TOUR_ID
+            ) AS CATE_CD,
+
+            (
+                SELECT
+                    GROUP_CONCAT(d.CMM_CM_NM ORDER BY d.CMM_CM_NM)
+                FROM tb_trma_tour_cate c
+                JOIN tb_trma_cmm_cd_d d ON c.CATE_CD = d.CMM_CDV AND d.CMM_CD_ID = 'TOUR_LCLS_CD'
+                WHERE c.TOUR_ID = a.TOUR_ID
+            ) AS CATE_NM
+        FROM tb_trma_tour_list a
+        LEFT JOIN tb_trma_cmm_cd_d b1 ON CONCAT(a.SIDO_CD,'00000000') = b1.CMM_CDV AND b1.CMM_CD_ID = 'SIDO_CD'
+        LEFT JOIN tb_trma_cmm_cd_d b2 ON CONCAT(a.SIDO_CD,a.SGG_CD,'00000') = b2.CMM_CDV AND b2.CMM_CD_ID = 'SGG_CD'
+        WHERE
+            a.TOUR_ID = #{tourId}
+
+    </select>
+
+    <!-- ========================= -->
+    <!-- 관광지 상세조회(기본) -->
+    <!-- ========================= -->
+    <select id="tourDetail"
+            parameterType="String"
+            resultType="com.example.backend.trma.dto.dataList.TourDetailData">
+        SELECT
+            a.TOUR_ID,
+            a.FIRST_IMAGE,
+            a.TOUR_NM,
+            a.TOUR_CONTENT,
+            b1.CMM_CDV AS SIDO_CD,
+            b1.CMM_CM_NM AS SIDO_NM,
+            b2.CMM_CDV AS AS SGG_CD,
+            b2.CMM_CM_NM AS SGG_NM,
+            a.ROAD_ADDR,
+            a.DETAIL_ADDR,
+            a.ZIP_CD,
+            (
+                SELECT
+                    GROUP_CONCAT(c.CATE_CD ORDER BY c.CATE_CD)
+                FROM tb_trma_tour_cate c
+                WHERE c.TOUR_ID = a.TOUR_ID
+            ) AS CATE_CD,
+
+            (
+                SELECT
+                    GROUP_CONCAT(d.CMM_CM_NM ORDER BY d.CMM_CM_NM)
+                FROM tb_trma_tour_cate c
+                JOIN tb_trma_cmm_cd_d d ON c.CATE_CD = d.CMM_CDV AND d.CMM_CD_ID = 'TOUR_LCLS_CD'
+                WHERE c.TOUR_ID = a.TOUR_ID
+            ) AS CATE_NM
+        FROM tb_trma_tour_list a
+        LEFT JOIN tb_trma_cmm_cd_d b1 ON CONCAT(a.SIDO_CD,'00000000') = b1.CMM_CDV AND b1.CMM_CD_ID = 'SIDO_CD
+        LEFT JOIN tb_trma_cmm_cd_d b2 ON CONCAT(a.SIDO_CD,a.SGG_CD,'00000') = b2.CMM_CDV AND b2.CMM_CD_ID = 'SGG_CD'
+        WHERE 1=1
+        	AND a.TOUR_ID = #{tourId}
+    </select>
+
+    <!-- ========================= -->
+    <!-- 관광지 상세조회(리뷰) -->
+    <!-- ========================= -->
+    <select id="tourDetailReview"
+            parameterType="String"
+            resultType="com.example.backend.trma.dto.dataList.TourDetailReviewData">
+        SELECT
+            b.MOIM_TITLE
+            , b.MOIM_START_DT
+            , b.MOIM_END_DT
+            , a.REVIEW_TITLE
+            , a.REVIEW_CONTENT
+            , a.REVIEW_SCORE
+            , a.CREATE_DT
+            , CASE
+                WHEN CHAR_LENGTH(c.USER_NM) = 1 THEN '*'
+                WHEN CHAR_LENGTH(c.USER_NM) = 2 THEN CONCAT(LEFT(c.USER_NM, 1), '*')
+                ELSE CONCAT(LEFT(c.USER_NM, 1), '***', RIGHT(c.USER_NM, 1))
+             END AS USER_NM
+        FROM tb_trma_moim_review a
+        LEFT JOIN tb_trma_moim_list b ON a.MOIM_ID = b.MOIM_ID
+        LEFT JOIN tb_trma_user_info c ON b.CREATE_USER = c.USER_ID
+        WHERE a.REVIEW_TYPE_CD = 'T'
+            AND a.TOUR_ID = #{tourId}
+    </select>
+</mapper>

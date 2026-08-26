@@ -34,7 +34,7 @@ public class TrmaHomeController {
 
 
     //공통코드(카테고리)
-    @GetMapping("/tourCategory")
+    //@GetMapping("/tourCategory")
     public TourCategoryResponse tourCategory(@ModelAttribute TourCategoryRequest request) {
 
         return trmaHomeService.tourCategory(request);

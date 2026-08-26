@@ -86,7 +86,7 @@ public class TrmaHomeServicelmpl implements TrmaHomeService {
                     true,
                     200,
                     "SUCCESS",
-                    "인기 모임을 정상적으로 조회했습니다.",
+                    "인기 관광지를 정상적으로 조회했습니다.",
                     "/trmaHome/tourCategory",
                     "",
                     BestTourList

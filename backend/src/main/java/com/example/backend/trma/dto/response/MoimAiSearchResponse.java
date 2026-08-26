@@ -1,6 +1,6 @@
 package com.example.backend.trma.dto.response;
 
-import com.example.backend.trma.dto.dataList.TourSearchData;
+import com.example.backend.trma.dto.dataList.MoimAiSearchData;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
@@ -8,7 +8,7 @@ import java.util.List;
 
 @Getter
 @AllArgsConstructor
-public class TourSearchResponse {
+public class MoimAiSearchResponse {
     private boolean success;
     private int status;
     private String code;
@@ -16,5 +16,5 @@ public class TourSearchResponse {
     private String path;
     private String token;
 
-    private List<TourSearchData> data;
+    private List<MoimAiSearchData> data;
 }

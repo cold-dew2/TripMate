@@ -39,7 +39,7 @@ public class UserServiceImpl implements UserService {
                         "USER_ALREADY_EXISTS",
                         "이미 존재하는 아이디",
                         "/login/existsUserId",
-                        ""
+                        null
                 );
             }
 
@@ -49,7 +49,7 @@ public class UserServiceImpl implements UserService {
                     "SUCCESS",
                     "사용가능한 아이디",
                     "/login/existsUserId",
-                    ""
+                    null
             );
         } catch (Exception e) {
             return new ExistsUserIdResponse(
@@ -58,7 +58,7 @@ public class UserServiceImpl implements UserService {
                     "FAIL",
                     "아이디 중복확인 중 오류가 발생했습니다.",
                     "/login/existsUserId",
-                    ""
+                    null
             );
         }
     }
@@ -75,7 +75,7 @@ public class UserServiceImpl implements UserService {
                         "USER_ALREADY_EXISTS",
                         "이미 존재하는 아이디",
                         "/login/signup",
-                        ""
+                        null
                 );
             }
 
@@ -90,7 +90,7 @@ public class UserServiceImpl implements UserService {
                     "SUCCESS",
                     "회원가입 성공",
                     "/login/signup",
-                    ""
+                    null
             );
         } catch (Exception e) {
             return new SignupResponse(
@@ -99,7 +99,7 @@ public class UserServiceImpl implements UserService {
                     "FAIL",
                     "회원가입 중 오류가 발생했습니다.",
                     "/login/signup",
-                    ""
+                    null
             );
         }
     }
@@ -118,7 +118,7 @@ public class UserServiceImpl implements UserService {
                         "UNAUTHORIZED",
                         "아이디가 올바르지 않습니다.",
                         "/login/login",
-                        ""
+                        null
                 );
             }
 
@@ -129,7 +129,7 @@ public class UserServiceImpl implements UserService {
                         "UNAUTHORIZED",
                         "아이디 또는 비밀번호가 올바르지 않습니다.",
                         "/login/login",
-                        ""
+                        null
                 );
             }
 
@@ -157,7 +157,7 @@ public class UserServiceImpl implements UserService {
                     "FAIL",
                     "로그인 중 오류가 발생했습니다.",
                     "/login/signup",
-                    ""
+                    null
             );
         }
     }

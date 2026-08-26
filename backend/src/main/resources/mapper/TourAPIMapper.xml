@@ -1,0 +1,457 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.example.backend.trma.mapper.TourAPIMapper">
+
+    <!-- ========================= -->
+    <!-- 공통코드: 구 -->
+    <!-- ========================= -->
+    <select id="ssgList"
+            resultType="com.example.backend.trma.dto.dataList.SsgListData">
+
+        SELECT
+            a.CMM_CDV AS SGG_CD
+        FROM tb_trma_cmm_cd_d a
+        WHERE a.CMM_CD_ID = 'SGG_CD'
+
+    </select>
+
+    <insert id="areaBased"
+            parameterType="com.example.backend.trma.dto.dataList.AreaBasedListData">
+
+        INSERT INTO TB_TRMA_AREA_BASE_API (
+            HUB_TATS_CD
+            ,HUB_TATS_NM
+            ,HUB_CTGRY_LCLS_NM
+            ,HUB_CTGRY_MCLS_NM
+            ,AREA_CD
+            ,AREA_NM
+            ,SIGNGU_CD
+            ,SIGNGU_NM
+            ,BASE_YM
+            ,MAP_X
+            ,MAP_Y
+            ,HUB_RANK
+            ,CREATE_USER
+            ,CREATE_DT
+            ,UPDATE_USER
+            ,UPDATE_DT
+            )
+            VALUES (
+            #{hubTatsCd}
+            ,#{hubTatsNm}
+            ,#{hubCtgryLclsNm}
+            ,#{hubCtgryMclsNm}
+            ,#{areaCd}
+            ,#{areaNm}
+            ,#{signguCd}
+            ,#{signguNm}
+            ,#{baseYm}
+            ,#{mapX}
+            ,#{mapY}
+            ,#{hubRank}
+            ,'batch'
+            ,CURRENT_TIMESTAMP
+            ,'batch'
+            ,CURRENT_TIMESTAMP
+        )
+        ON DUPLICATE KEY UPDATE
+            HUB_TATS_NM         = #{hubTatsNm}
+            ,HUB_CTGRY_LCLS_NM   = #{hubCtgryLclsNm}
+            ,HUB_CTGRY_MCLS_NM   = #{hubCtgryMclsNm}
+            ,AREA_CD             = #{areaCd}
+            ,AREA_NM             = #{areaNm}
+            ,SIGNGU_CD           = #{signguCd}
+            ,SIGNGU_NM           = #{signguNm}
+            ,BASE_YM             = #{baseYm}
+            ,MAP_X               = #{mapX}
+            ,MAP_Y               = #{mapY}
+            ,HUB_RANK            = #{hubRank}
+            ,UPDATE_USER         = 'batch'
+            ,UPDATE_DT           = CURRENT_TIMESTAMP
+        ;
+
+    </insert>
+
+    <insert id="areaBasedList2"
+            parameterType="com.example.backend.trma.dto.dataList.AreaBasedListData">
+
+        INSERT INTO TB_TRMA_AREA_BASE_API (
+            CONTENTID
+            ,MODIFIEDTIME
+            ,TITLE
+            ,CONTENTTYPEID
+            ,LCLS_SYSTM1
+            ,LCLS_SYSTM2
+            ,LCLS_SYSTM3
+            ,L_DONG_REGN_CD
+            ,L_DONG_SIGNGU_CD
+            ,FIRSTIMAGE
+            ,FIRSTIMAGE2
+            ,ZIPCODE
+            ,ADDR1
+            ,ADDR2
+            ,MAP_X
+            ,MAP_Y
+            ,CREATE_USER
+            ,CREATE_DT
+            ,UPDATE_USER
+            ,UPDATE_DT
+        )VALUES (
+            #{contentid}
+            ,#{modifiedtime}
+            ,#{title}
+            ,#{contenttypeid}
+            ,#{lclsSystm1}
+            ,#{lclsSystm2}
+            ,#{lclsSystm3}
+            ,#{lDongRegnCd}
+            ,#{lDongSignguCd}
+            ,#{firstimage}
+            ,#{firstimage2}
+            ,#{zipcode}
+            ,#{addr1}
+            ,#{addr2}
+            ,#{mapx}
+            ,#{mapy}
+            ,'batch'
+            ,CURRENT_TIMESTAMP
+            ,'batch'
+            ,CURRENT_TIMESTAMP
+        )
+        ON DUPLICATE KEY UPDATE
+            MODIFIEDTIME      = VALUES(MODIFIEDTIME)
+            ,TITLE             = VALUES(TITLE)
+            ,CONTENTTYPEID     = VALUES(CONTENTTYPEID)
+            ,LCLS_SYSTM1       = VALUES(LCLS_SYSTM1)
+            ,LCLS_SYSTM2       = VALUES(LCLS_SYSTM2)
+            ,LCLS_SYSTM3       = VALUES(LCLS_SYSTM3)
+            ,L_DONG_REGN_CD    = VALUES(L_DONG_REGN_CD)
+            ,L_DONG_SIGNGU_CD  = VALUES(L_DONG_SIGNGU_CD)
+            ,FIRSTIMAGE        = VALUES(FIRSTIMAGE)
+            ,FIRSTIMAGE2       = VALUES(FIRSTIMAGE2)
+            ,ZIPCODE           = VALUES(ZIPCODE)
+            ,ADDR1             = VALUES(ADDR1)
+            ,ADDR2             = VALUES(ADDR2)
+            ,MAP_X             = VALUES(MAP_X)
+            ,MAP_Y             = VALUES(MAP_Y)
+            ,UPDATE_USER       = 'batch'
+            ,UPDATE_DT         = CURRENT_TIMESTAMP
+        ;
+    </insert>
+
+    <!-- ========================= -->
+    <!-- 한국관광공사 ContentId PK 조회 -->
+    <!-- ========================= -->
+    <select id="tourAPIPK"
+            resultType="com.example.backend.trma.dto.dataList.TourAPIPKData">
+
+        SELECT
+            a.CONTENTID
+        FROM TB_TRMA_AREA_BASE_API a
+        LEFT JOIN TB_TRMA_TOUR_CMM_API b ON a.CONTENTID = b.CONTENT_ID
+        WHERE
+            b.CONTENT_ID IS NULL
+            AND a.CONTENTTYPEID NOT IN ('32')
+        GROUP BY a.CONTENTID;
+
+    </select>
+
+    <!-- ========================= -->
+    <!-- 관광공통정보 입력 -->
+    <!-- ========================= -->
+    <insert id="detailCommon2"
+            parameterType="com.example.backend.trma.dto.dataList.TourCmmData">
+
+        INSERT INTO TB_TRMA_TOUR_CMM_API (
+            CONTENT_ID
+            ,CONTENT_TYPE_ID
+            ,TITLE
+            ,CREATED_TIME
+            ,MODIFIED_TIME
+            ,HOMEPAGE
+            ,TEL
+            ,TEL_NAME
+            ,FIRST_IMAGE
+            ,FIRST_IMAGE2
+            ,CPYRHT_DIV_CD
+            ,AREA_CODE
+            ,SIGUNGU_CODE
+            ,L_DONG_REGN_CD
+            ,L_DONG_SIGNGU_CD
+            ,LCLS_SYSTM1
+            ,LCLS_SYSTM2
+            ,LCLS_SYSTM3
+            ,CAT1
+            ,CAT2
+            ,CAT3
+            ,ADDR1
+            ,ADDR2
+            ,ZIPCODE
+            ,MAP_X
+            ,MAP_Y
+            ,M_LEVEL
+            ,OVERVIEW
+            ,CREATE_USER
+            ,CREATE_DT
+            ,UPDATE_USER
+            ,UPDATE_DT
+        ) VALUES (
+            #{contentId}
+            ,#{contentTypeId}
+            ,#{title}
+            ,#{createdTime}
+            ,#{modifiedTime}
+            ,#{homepage}
+            ,#{tel}
+            ,#{telName}
+            ,#{firstImage}
+            ,#{firstImage2}
+            ,#{cpyrhtDivCd}
+            ,#{areaCode}
+            ,#{sigunguCode}
+            ,#{lDongRegnCd}
+            ,#{lDongSignguCd}
+            ,#{lclsSystm1}
+            ,#{lclsSystm2}
+            ,#{lclsSystm3}
+            ,#{cat1}
+            ,#{cat2}
+            ,#{cat3}
+            ,#{addr1}
+            ,#{addr2}
+            ,#{zipcode}
+            ,#{mapX}
+            ,#{mapY}
+            ,#{mLevel}
+            ,#{overview}
+            ,'batch'
+            ,CURRENT_TIMESTAMP
+            ,'batch'
+            ,CURRENT_TIMESTAMP
+        )
+        ON DUPLICATE KEY UPDATE
+            CONTENT_TYPE_ID    = VALUES(CONTENT_TYPE_ID)
+            ,TITLE              = VALUES(TITLE)
+            ,CREATED_TIME       = VALUES(CREATED_TIME)
+            ,MODIFIED_TIME      = VALUES(MODIFIED_TIME)
+            ,HOMEPAGE           = VALUES(HOMEPAGE)
+            ,TEL                = VALUES(TEL)
+            ,TEL_NAME           = VALUES(TEL_NAME)
+            ,FIRST_IMAGE        = VALUES(FIRST_IMAGE)
+            ,FIRST_IMAGE2       = VALUES(FIRST_IMAGE2)
+            ,CPYRHT_DIV_CD      = VALUES(CPYRHT_DIV_CD)
+            ,AREA_CODE          = VALUES(AREA_CODE)
+            ,SIGUNGU_CODE       = VALUES(SIGUNGU_CODE)
+            ,L_DONG_REGN_CD     = VALUES(L_DONG_REGN_CD)
+            ,L_DONG_SIGNGU_CD   = VALUES(L_DONG_SIGNGU_CD)
+            ,LCLS_SYSTM1        = VALUES(LCLS_SYSTM1)
+            ,LCLS_SYSTM2        = VALUES(LCLS_SYSTM2)
+            ,LCLS_SYSTM3        = VALUES(LCLS_SYSTM3)
+            ,CAT1               = VALUES(CAT1)
+            ,CAT2               = VALUES(CAT2)
+            ,CAT3               = VALUES(CAT3)
+            ,ADDR1              = VALUES(ADDR1)
+            ,ADDR2              = VALUES(ADDR2)
+            ,ZIPCODE            = VALUES(ZIPCODE)
+            ,MAP_X              = VALUES(MAP_X)
+            ,MAP_Y              = VALUES(MAP_Y)
+            ,M_LEVEL            = VALUES(M_LEVEL)
+            ,OVERVIEW           = VALUES(OVERVIEW)
+            ,UPDATE_USER        = VALUES(UPDATE_USER)
+            ,UPDATE_DT          = CURRENT_TIMESTAMP
+        ;
+    </insert>
+
+    <!-- ========================= -->
+    <!-- 행사정보 입력 -->
+    <!-- ========================= -->
+    <insert id="searchFestival2"
+            parameterType="com.example.backend.trma.dto.dataList.FastivalData">
+
+        INSERT INTO TB_TRMA_FEST_IVAL_API (
+            CONTENT_ID
+            ,CONTENT_TYPE_ID
+            ,TITLE
+            ,CREATED_TIME
+            ,MODIFIED_TIME
+            ,EVENT_START_DATE
+            ,EVENT_END_DATE
+            ,FIRST_IMAGE
+            ,FIRST_IMAGE2
+            ,CPYRHT_DIV_CD
+            ,ADDR1
+            ,ADDR2
+            ,ZIPCODE
+            ,MAP_X
+            ,MAP_Y
+            ,M_LEVEL
+            ,L_DONG_REGN_CD
+            ,L_DONG_SIGNGU_CD
+            ,LCLS_SYSTM1
+            ,LCLS_SYSTM2
+            ,LCLS_SYSTM3
+            ,PROGRESS_TYPE
+            ,FESTIVAL_TYPE
+            ,CREATE_USER
+            ,CREATE_DT
+            ,UPDATE_USER
+            ,UPDATE_DT
+        )
+        VALUES (
+            #{contentId}
+            ,#{contentTypeId}
+            ,#{title}
+            ,#{createdTime}
+            ,#{modifiedTime}
+            ,#{eventStartDate}
+            ,#{eventEndDate}
+            ,#{firstImage}
+            ,#{firstImage2}
+            ,#{cpyrhtDivCd}
+            ,#{addr1}
+            ,#{addr2}
+            ,#{zipcode}
+            ,#{mapX}
+            ,#{mapY}
+            ,#{mLevel}
+            ,#{lDongRegnCd}
+            ,#{lDongSignguCd}
+            ,#{lclsSystm1}
+            ,#{lclsSystm2}
+            ,#{lclsSystm3}
+            ,#{progressType}
+            ,#{festivalType}
+            ,'batch'
+            ,CURRENT_TIMESTAMP
+            ,'batch'
+            ,CURRENT_TIMESTAMP
+        )
+        ON DUPLICATE KEY UPDATE
+            CONTENT_TYPE_ID   = VALUES(CONTENT_TYPE_ID)
+            ,TITLE            = VALUES(TITLE)
+            ,CREATED_TIME     = VALUES(CREATED_TIME)
+            ,MODIFIED_TIME    = VALUES(MODIFIED_TIME)
+            ,EVENT_START_DATE = VALUES(EVENT_START_DATE)
+            ,EVENT_END_DATE   = VALUES(EVENT_END_DATE)
+            ,FIRST_IMAGE      = VALUES(FIRST_IMAGE)
+            ,FIRST_IMAGE2     = VALUES(FIRST_IMAGE2)
+            ,CPYRHT_DIV_CD    = VALUES(CPYRHT_DIV_CD)
+            ,ADDR1            = VALUES(ADDR1)
+            ,ADDR2            = VALUES(ADDR2)
+            ,ZIPCODE          = VALUES(ZIPCODE)
+            ,MAP_X            = VALUES(MAP_X)
+            ,MAP_Y            = VALUES(MAP_Y)
+            ,M_LEVEL          = VALUES(M_LEVEL)
+            ,L_DONG_REGN_CD   = VALUES(L_DONG_REGN_CD)
+            ,L_DONG_SIGNGU_CD = VALUES(L_DONG_SIGNGU_CD)
+            ,LCLS_SYSTM1      = VALUES(LCLS_SYSTM1)
+            ,LCLS_SYSTM2      = VALUES(LCLS_SYSTM2)
+            ,LCLS_SYSTM3      = VALUES(LCLS_SYSTM3)
+            ,PROGRESS_TYPE    = VALUES(PROGRESS_TYPE)
+            ,FESTIVAL_TYPE    = VALUES(FESTIVAL_TYPE)
+            ,UPDATE_USER      = 'batch'
+            ,UPDATE_DT        = CURRENT_TIMESTAMP
+        ;
+    </insert>
+
+    <!-- ========================= -->
+    <!-- 관광지정보 Master -->
+    <!-- ========================= -->
+    <insert id="tourMaster">
+        INSERT INTO TB_TRMA_TOUR_LIST
+        (
+            TOUR_ID,
+            MODIFIED_TIME,
+            TOUR_NM,
+            TOUR_CONTENT,
+            SIDO_CD,
+            SGG_CD,
+            ROAD_ADDR,
+            DETAIL_ADDR,
+            ZIP_CD,
+            LCLS_CD,
+            FIRST_IMAGE,
+            USE_YN,
+            CREATE_USER,
+            CREATE_DT,
+            UPDATE_USER,
+            UPDATE_DT
+        )
+        SELECT
+        *
+        FROM (
+        SELECT
+        a.CONTENTID                                     AS TOUR_ID,
+        a.MODIFIEDTIME                                  AS MODIFIED_TIME,
+        a.TITLE                                         AS TOUR_NM,
+        c.OVERVIEW                                      AS TOUR_CONTENT,
+        a.L_DONG_REGN_CD                                AS SIDO_CD,
+        a.L_DONG_SIGNGU_CD                              AS SGG_CD,
+        a.ADDR1                                         AS ROAD_ADDR,
+        a.ADDR2                                         AS DETAIL_ADDR,
+        a.ZIPCODE                                       AS ZIP_CD,
+        a.LCLS_SYSTM3                                   AS LCLS_CD,
+        COALESCE(NULLIF(c.FIRST_IMAGE, ''), c.FIRST_IMAGE2) AS FIRST_IMAGE,
+        'Y'                                             AS USE_YN,
+        'batch'                                         AS CREATE_USER,
+        CURRENT_TIMESTAMP                               AS CREATE_DT,
+        'batch'                                         AS UPDATE_USER,
+        CURRENT_TIMESTAMP                               AS UPDATE_DT
+        FROM tb_trma_area_base_api a
+        LEFT JOIN tb_trma_tour_cmm_api c ON a.CONTENTID = c.CONTENT_ID
+        WHERE a.MODIFIEDTIME >= DATE_FORMAT(DATE_SUB(CURRENT_DATE(), INTERVAL 1 MONTH),'%Y%m01000000')
+        ) AS new
+        ON DUPLICATE KEY UPDATE
+            MODIFIED_TIME = new.MODIFIED_TIME,
+            TOUR_NM = new.TOUR_NM,
+            TOUR_CONTENT = new.TOUR_CONTENT,
+            SIDO_CD = new.SIDO_CD,
+            SGG_CD = new.SGG_CD,
+            ROAD_ADDR = new.ROAD_ADDR,
+            DETAIL_ADDR = new.DETAIL_ADDR,
+            ZIP_CD = new.ZIP_CD,
+            LCLS_CD = new.LCLS_CD,
+            FIRST_IMAGE = new.FIRST_IMAGE,
+            USE_YN = new.USE_YN,
+            UPDATE_USER = 'batch',
+            UPDATE_DT = CURRENT_TIMESTAMP;
+        ;
+    </insert>
+
+    <!-- ========================= -->
+    <!-- 관광지 카테고리 Master -->
+    <!-- ========================= -->
+    <insert id="tourCateMaster">
+        INSERT INTO TB_TRMA_TOUR_CATE
+        (
+            CATE_CD
+            ,TOUR_ID
+            ,USE_YN
+            ,CREATE_USER
+            ,CREATE_DT
+            ,UPDATE_USER
+            ,UPDATE_DT
+        )
+        SELECT
+        *
+        FROM (
+            SELECT
+                a.LCLS_SYSTM3                                   AS CATE_CD,
+                a.CONTENTID                                     AS TOUR_ID,
+                'Y'                                             AS USE_YN,
+                'batch'                                         AS CREATE_USER,
+                CURRENT_TIMESTAMP                               AS CREATE_DT,
+                'batch'                                         AS UPDATE_USER,
+                CURRENT_TIMESTAMP                               AS UPDATE_DT
+            FROM tb_trma_area_base_api a
+            WHERE a.MODIFIEDTIME >= DATE_FORMAT(DATE_SUB(CURRENT_DATE(), INTERVAL 1 MONTH),'%Y%m01000000')
+        ) AS new
+        ON DUPLICATE KEY UPDATE
+        UPDATE_USER = 'batch',
+        UPDATE_DT = CURRENT_TIMESTAMP;
+    </insert>
+</mapper>

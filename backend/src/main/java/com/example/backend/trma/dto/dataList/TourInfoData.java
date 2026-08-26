@@ -8,11 +8,16 @@ import lombok.Setter;
 @NoArgsConstructor
 @Setter
 public class TourInfoData {
-    private String userNm;
-    private String langCd;
-    private String stateCd;
-    private String roleCd;
-    private String birthDt;
-    private String genderCd;
-    private String phoneNum;
+    private String tourId;
+    private String tourNm;
+    private String sidoCd;
+    private String sidoNm;
+    private String sggCd;
+    private String sggNm;
+    private String roadAddr;
+    private String detailAddr;
+    private String zipCd;
+    private String cateCd;
+    private String cateNm;
+    private int avgScore;
 }
