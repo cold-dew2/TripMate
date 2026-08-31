@@ -11,5 +11,6 @@
   left: 0;
   width: 100%;
   height: 150px;
-  background: 
+  background: var( --purple-600);
+  z-index: -1;
 }

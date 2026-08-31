@@ -12,7 +12,7 @@ interface Props {
   disabled?: boolean;
   img?: string;
   icon?: boolean;
-  size?: "icon" | "md" | "lg";
+  size?: "icon" | "sm" | "md" | "lg";
   variant?: "primary" | "secondary" | "destructive" | "ghost" | "fixed";
   onClick?: (e: React.MouseEvent<HTMLButtonElement>) => void;
   onFocus?: (e: React.FocusEvent<HTMLButtonElement>) => void;

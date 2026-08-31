@@ -26,6 +26,14 @@
   padding: 11px;
   border-radius: 50%;
 }
+.btn-sm {
+  width: auto;
+  padding: 12px 18px;
+  font-size: var(--fs-sm);
+  font-weight:var(--fw-bold);
+  line-height: var(--fs-sm);
+  border-radius: 20px;
+}
 .btn-md {
   width: 100%;
   padding: 17px 20px;
