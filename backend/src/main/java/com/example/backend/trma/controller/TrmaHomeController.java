@@ -3,6 +3,7 @@ package com.example.backend.trma.controller;
 import com.example.backend.trma.dto.request.TourCategoryRequest;
 import com.example.backend.trma.dto.request.UserInfoRequest;
 import com.example.backend.trma.dto.response.*;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import com.example.backend.trma.service.TrmaHomeService;
 
@@ -18,9 +19,25 @@ public class TrmaHomeController {
 
     //사용자 정보 조회
     @GetMapping("/userInfo")
-    public UserInfoResponse userInfo(@ModelAttribute UserInfoRequest request) {
+    public UserInfoResponse userInfo(Authentication authentication) {
 
-        return trmaHomeService.userInfo(request);
+        if (authentication == null || !authentication.isAuthenticated()
+                || "anonymousUser".equals(authentication.getName())) {
+
+            return new UserInfoResponse(
+                    false,
+                    500,
+                    "NEED_LOGIN",
+                    "로그인이 필요합니다.",
+                    "/trmaHome/userInfo",
+                    "",
+                    null
+            );
+        }
+
+        // 2. 정상 로그인된 사용자 처리
+        String userId = authentication.getName();
+        return trmaHomeService.userInfo(userId);
     }
 
 

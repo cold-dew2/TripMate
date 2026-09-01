@@ -13,7 +13,7 @@ import java.util.List;
 @Mapper
 public interface TrmaHomeMapper {
     //사용자 정보 조회
-    UserInfoData userInfo(UserInfoRequest request);
+    UserInfoData userInfo(String request);
     //공통코드(카테고리)
     List<CategoryInfoData> tourCategory(TourCategoryRequest request);
     //인기 여행지(리뷰기반)

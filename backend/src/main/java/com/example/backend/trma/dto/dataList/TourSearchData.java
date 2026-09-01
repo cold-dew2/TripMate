@@ -20,4 +20,5 @@ public class TourSearchData {
     private String cateCd;
     private String cateNm;
     private int avgScore;
+    private String firstImage;
 }

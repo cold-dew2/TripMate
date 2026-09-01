@@ -10,4 +10,6 @@ import lombok.Setter;
 public class MoimSearchRequest {
     private String keyword;
     private String cateCd;
+    private int page;
+    private int offset;
 }

@@ -66,18 +66,22 @@
             ,b.ROAD_ADDR
             ,b.DETAIL_ADDR
             ,b.ZIP_CD
-            ,GROUP_CONCAT(d.CATE_CD ORDER BY d.CATE_CD) AS CATE_CD
-            ,GROUP_CONCAT(e.CMM_CM_NM ORDER BY e.CMM_CM_NM) AS CATE_NM
+            ,CAST(GROUP_CONCAT(DISTINCT d.CATE_CD ORDER BY d.CATE_CD) AS CHAR) AS CATE_CD
+            ,CAST(GROUP_CONCAT(DISTINCT e.CMM_CM_NM ORDER BY e.CMM_CM_NM) AS CHAR) AS CATE_NM
             ,AVG(a.REVIEW_SCORE) AS AVG_SCORE
+            ,b.FIRST_IMAGE
         FROM tb_trma_moim_review a
         LEFT JOIN tb_trma_tour_list b ON a.TOUR_ID = b.TOUR_ID
-        LEFT JOIN tb_trma_cmm_cd_d c1 ON b.SIDO_CD = c1.CMM_CDV AND c1.CMM_CD_ID = 'SIDO_CD'
-        LEFT JOIN tb_trma_cmm_cd_d c2 ON b.SIDO_CD = c1.CMM_CDV AND c2.CMM_CD_ID = 'SGG_CD'
+        LEFT JOIN tb_trma_cmm_cd_d c1 ON c1.CMM_CD_ID = 'SIDO_CD'
+            AND c1.CMM_CDV LIKE CONCAT(LPAD(b.SIDO_CD, 2, '0'), '%')
+        LEFT JOIN tb_trma_cmm_cd_d c2 ON c2.CMM_CD_ID = 'SGG_CD'
+            AND c2.CMM_CDV LIKE CONCAT(LPAD(b.SIDO_CD, 2, '0'), LPAD(b.SGG_CD, 3, '0'), '%')
         LEFT JOIN tb_trma_tour_cate d ON b.TOUR_ID = d.TOUR_ID
-        LEFT JOIN tb_trma_cmm_cd_d e ON d.CATE_CD = e.CMM_CDV AND e.CMM_CD_ID = 'CATE_ID'
-        WHERE
-            b.USE_YN = 'Y'
-        GROUP BY b.TOUR_ID
+        LEFT JOIN tb_trma_cmm_cd_d e ON d.CATE_CD = e.CMM_CDV
+            AND e.CMM_CD_ID = 'TOUR_LCLS_CD'
+        WHERE b.USE_YN = 'Y'
+        GROUP BY
+            b.TOUR_ID
             ,b.TOUR_NM
             ,b.SIDO_CD
             ,c1.CMM_CM_NM
@@ -103,26 +107,40 @@
             ,b.MOIM_DSCR
             ,b.MOIM_START_DT
             ,b.MOIM_END_DT
-            ,b.CREATE_DT AS USER_ID
+            ,b.CREATE_USER AS USER_ID
             ,d.USER_NM
-            ,GROUP_CONCAT(e.CATE_CD ORDER BY e.CATE_CD) AS CATE_CD
-            ,GROUP_CONCAT(f.CMM_CM_NM ORDER BY f.CMM_CM_NM) AS CATE_CD
+            ,CAST(GROUP_CONCAT(DISTINCT e.CATE_CD ORDER BY e.CATE_CD) AS CHAR) AS CATE_CD
+            ,CAST(GROUP_CONCAT(DISTINCT f.CMM_CM_NM ORDER BY f.CMM_CM_NM) AS CHAR) AS CATE_NM -- 별칭 중복 수정
             ,(SELECT
             COUNT(1)
             FROM tb_trma_moim_member mm
             WHERE mm.MOIM_ID = b.MOIM_ID
             AND mm.ROLE_CD = 'A') AS MEMBER_CNT
-            ,a.MAX_MEMBER
-            ,COUNT(*) AS VISIT_CNT
-        FROM tb_trma_moim_visit_h a
-        LEFT JOIN tb_trma_moim_list b ON a.MOIM_ID = b.MOIM_ID
+            ,b.MAX_MEMBER
+            ,v.VISIT_CNT
+        FROM (
+            SELECT
+            MOIM_ID,
+            COUNT(1) AS VISIT_CNT
+            FROM tb_trma_moim_visit_h
+            GROUP BY MOIM_ID
+        ) v
+        INNER JOIN tb_trma_moim_list b ON v.MOIM_ID = b.MOIM_ID
         LEFT JOIN tb_trma_user_info d ON b.CREATE_USER = d.USER_ID
         LEFT JOIN tb_trma_moim_cate e ON e.MOIM_ID = b.MOIM_ID
         LEFT JOIN tb_trma_cmm_cd_d f ON e.CATE_CD = f.CMM_CDV AND f.CMM_CD_ID = 'CATE_ID'
-        WHERE
-            b.USE_YN = 'Y'
-        GROUP BY a.MOIM_ID
-        ORDER BY VISIT_CNT DESC
+        WHERE b.USE_YN = 'Y'
+        GROUP BY
+            b.MOIM_ID
+            ,b.MOIM_TITLE
+            ,b.MOIM_DSCR
+            ,b.MOIM_START_DT
+            ,b.MOIM_END_DT
+            ,b.CREATE_USER
+            ,d.USER_NM
+            ,b.MAX_MEMBER
+            ,v.VISIT_CNT
+        ORDER BY v.VISIT_CNT DESC
         LIMIT 5;
 
     </select>

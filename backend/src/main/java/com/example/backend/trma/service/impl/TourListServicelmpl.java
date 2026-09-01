@@ -25,6 +25,12 @@ public class TourListServicelmpl implements TourListService {
     public TourSearchResponse tourSearch(TourSearchRequest request) {
 
         try {
+            if(request.getPage() == 0){
+                request.setPage(1);
+            }
+            int offset = (request.getPage() - 1) * 10 ;
+            request.setOffset(offset);
+
             List<TourSearchData> tourSearch = tourListMapper.tourSearch(request);
             return new TourSearchResponse(
                     true,
@@ -36,6 +42,7 @@ public class TourListServicelmpl implements TourListService {
                     tourSearch
             );
         } catch (Exception e) {
+
             return new TourSearchResponse(
                     false,
                     500,

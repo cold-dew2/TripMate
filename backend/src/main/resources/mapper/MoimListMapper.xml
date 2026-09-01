@@ -64,7 +64,7 @@
             <if test="cateCd != null and cateCd != ''">
                 AND c.CATE_CD = #{cateCd}
             </if>
-
+        LIMIT 10 OFFSET #{offset}
     </select>
 
     <!-- ========================= -->

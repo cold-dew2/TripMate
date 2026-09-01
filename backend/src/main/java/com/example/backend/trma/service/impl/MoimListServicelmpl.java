@@ -27,6 +27,12 @@ public class MoimListServicelmpl implements MoimListService {
     public MoimSearchResponse moimSearch(MoimSearchRequest request) {
 
         try {
+            if(request.getPage() == 0){
+                request.setPage(1);
+            }
+            int offset = (request.getPage() - 1) * 10 ;
+            request.setOffset(offset);
+
             List<MoimSearchData> moimSearch = moimListMapper.moimSearch(request);
             return new MoimSearchResponse(
                     true,

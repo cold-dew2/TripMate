@@ -21,7 +21,7 @@ public class TrmaHomeServicelmpl implements TrmaHomeService {
     private final TrmaHomeMapper trmaHomeMapper;
 
     //사용자 정보 조회
-    public UserInfoResponse userInfo(UserInfoRequest request) {
+    public UserInfoResponse userInfo(String request) {
 
         try {
             UserInfoData UserInfo = trmaHomeMapper.userInfo(request);

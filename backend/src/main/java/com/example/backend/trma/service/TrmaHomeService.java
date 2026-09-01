@@ -9,7 +9,7 @@ import com.example.backend.trma.dto.response.UserInfoResponse;
 
 public interface TrmaHomeService {
     //사용자 정보 조회
-    UserInfoResponse userInfo(UserInfoRequest request);
+    UserInfoResponse userInfo(String request);
 
     //공통코드(카테고리)
     TourCategoryResponse tourCategory(TourCategoryRequest request);

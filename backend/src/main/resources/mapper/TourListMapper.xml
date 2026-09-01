@@ -23,7 +23,8 @@
             b.ZIP_CD,
             d.CATE_CD,
             d.CATE_NM,
-            IFNULL(a.AVG_SCORE,0) AS AVG_SCORE
+            IFNULL(a.AVG_SCORE,0) AS AVG_SCORE,
+            b.FIRST_IMAGE
         FROM tb_trma_tour_list b
             LEFT JOIN (
                 SELECT
@@ -55,7 +56,8 @@
         <if test="cateCd != null and cateCd != ''">
             AND d.CATE_CD = #{cateCd}
         </if>
-        ORDER BY AVG_SCORE DESC;
+        ORDER BY AVG_SCORE DESC
+        LIMIT 10 OFFSET #{offset}
 
     </select>
 
