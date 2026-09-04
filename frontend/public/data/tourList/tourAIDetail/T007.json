@@ -1,0 +1,19 @@
+{
+  "success": true,
+  "status": 0,
+  "code": "SUCCESS",
+  "message": "AI 관광지 상세 조회 성공",
+  "path": "/tourList/tourAIDetail",
+  "token": "",
+  "data": {
+    "tourId": "T007",
+    "admissionFeeDetails": "6,000원",
+    "admissionFeeIsFree": "N",
+    "closedDays": "연중무휴",
+    "lastUpdatedNote": "방문 전 운영시간 및 이용요금을 확인해주세요.",
+    "operatingHours": "09:00 ~ 18:00",
+    "parkingAvailable": "Y",
+    "parkingFeeInfo": "인근 주차장 이용 가능",
+    "websiteUrl": "https://bulguksa.or.kr/"
+  }
+}

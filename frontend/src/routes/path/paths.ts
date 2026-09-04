@@ -46,7 +46,7 @@ export const contentRoutes: (RouteObject & { handle?: RouteHandle })[] = [
   {
     path: "/place/:tourId", 
     lazy: () => import("@/features/place/pages/placeDetail/PlaceDetail").then((m) => ({ Component: m.default })),
-    handle: { showBack: true },
+    handle: { title: "place.details", showBack: true },
   },
 ];
 

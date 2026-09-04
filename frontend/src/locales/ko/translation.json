@@ -36,6 +36,7 @@
   "place": {
     "listTitle": "관광지 찾기",
     "searchLabel": "관광지 검색",
+    "details": "관광지 상세",
     "searchPlaceholder": "관광지를 검색해주세요",
     "emptyMsg": "관광지가 존재하지 않아요!",
     "errorMsg": "다시 시도해주세요!"

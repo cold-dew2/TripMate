@@ -1,0 +1,23 @@
+{
+  "success": true,
+  "status": 0,
+  "code": "SUCCESS",
+  "message": "관광지 상세 조회 성공",
+  "path": "/tourList/tourDetail",
+  "token": "",
+  "data": {
+    "avgScore": 4.8,
+    "cateCd": "VIL",
+    "cateNm": "한옥",
+    "detailAddr": "",
+    "firstImage": "https://images.example.com/tour/T009.jpg",
+    "roadAddr": "전북특별자치도 전주시 완산구 기린대로 99",
+    "sggCd": "451",
+    "sggNm": "전주시 완산구",
+    "sidoCd": "45",
+    "sidoNm": "전북특별자치도",
+    "tourId": "T009",
+    "tourNm": "전주한옥마을",
+    "zipCd": "55036"
+  }
+}

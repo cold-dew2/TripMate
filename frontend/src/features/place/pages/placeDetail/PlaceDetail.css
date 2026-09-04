@@ -1,0 +1,8 @@
+.detail-header {
+  border: 1px solid red;
+}
+.detail-header .detail-img {
+  height: 15%;
+  border-radius: 15px;
+  overflow: hidden;
+}

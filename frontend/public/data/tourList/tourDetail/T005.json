@@ -1,0 +1,23 @@
+{
+  "success": true,
+  "status": 0,
+  "code": "SUCCESS",
+  "message": "관광지 상세 조회 성공",
+  "path": "/tourList/tourDetail",
+  "token": "",
+  "data": {
+    "avgScore": 4.9,
+    "cateCd": "NAT",
+    "cateNm": "자연",
+    "detailAddr": "",
+    "firstImage": "https://images.example.com/tour/T005.jpg",
+    "roadAddr": "제주특별자치도 서귀포시 성산읍 일출로 284-12",
+    "sggCd": "501",
+    "sggNm": "서귀포시",
+    "sidoCd": "50",
+    "sidoNm": "제주특별자치도",
+    "tourId": "T005",
+    "tourNm": "성산일출봉",
+    "zipCd": "63643"
+  }
+}

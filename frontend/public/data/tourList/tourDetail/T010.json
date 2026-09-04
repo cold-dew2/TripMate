@@ -1,0 +1,23 @@
+{
+  "success": true,
+  "status": 0,
+  "code": "SUCCESS",
+  "message": "관광지 상세 조회 성공",
+  "path": "/tourList/tourDetail",
+  "token": "",
+  "data": {
+    "avgScore": 4.7,
+    "cateCd": "HIS",
+    "cateNm": "역사",
+    "detailAddr": "",
+    "firstImage": "https://images.example.com/tour/T010.jpg",
+    "roadAddr": "강원특별자치도 강릉시 율곡로3139번길 24",
+    "sggCd": "511",
+    "sggNm": "강릉시",
+    "sidoCd": "51",
+    "sidoNm": "강원특별자치도",
+    "tourId": "T010",
+    "tourNm": "오죽헌",
+    "zipCd": "25465"
+  }
+}

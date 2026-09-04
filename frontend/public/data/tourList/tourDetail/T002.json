@@ -1,0 +1,23 @@
+{
+  "success": true,
+  "status": 0,
+  "code": "SUCCESS",
+  "message": "관광지 상세 조회 성공",
+  "path": "/tourList/tourDetail",
+  "token": "",
+  "data": {
+    "avgScore": 4.8,
+    "cateCd": "OBS",
+    "cateNm": "전망",
+    "detailAddr": "",
+    "firstImage": "https://images.example.com/tour/T002.jpg",
+    "roadAddr": "서울특별시 용산구 남산공원길 105",
+    "sggCd": "140",
+    "sggNm": "용산구",
+    "sidoCd": "11",
+    "sidoNm": "서울특별시",
+    "tourId": "T002",
+    "tourNm": "남산서울타워",
+    "zipCd": "04340"
+  }
+}

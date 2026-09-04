@@ -1,7 +1,8 @@
 .my-container {
   border: 1px solid red;
   position: relative;
-  min-height: 100vh;
+  min-height: calc(100vh - 104px);
+  padding-top: 104px;
 }
 .my-container:before {
   content: "";
@@ -13,4 +14,8 @@
   height: 150px;
   background: var( --purple-600);
   z-index: -1;
+}
+
+.user-profile {
+  display: flex;
 }

@@ -9,7 +9,10 @@ const MoimDetail = () => {
   if (isError || !moim) return <div>{moimId}nodata</div>;
 
   return (
-    <div>
+    <div className="moim-detail">
+      <div className="moim-img">
+        <img src="" alt="" />
+      </div>
       {moimId}
     </div>
   );

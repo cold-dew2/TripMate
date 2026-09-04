@@ -1,0 +1,23 @@
+{
+  "success": true,
+  "status": 0,
+  "code": "SUCCESS",
+  "message": "관광지 상세 조회 성공",
+  "path": "/tourList/tourDetail",
+  "token": "",
+  "data": {
+    "avgScore": 4.9,
+    "cateCd": "SEA",
+    "cateNm": "해변",
+    "detailAddr": "",
+    "firstImage": "https://images.example.com/tour/T003.jpg",
+    "roadAddr": "부산광역시 해운대구 해운대해변로 264",
+    "sggCd": "263",
+    "sggNm": "해운대구",
+    "sidoCd": "26",
+    "sidoNm": "부산광역시",
+    "tourId": "T003",
+    "tourNm": "해운대해수욕장",
+    "zipCd": "48094"
+  }
+}

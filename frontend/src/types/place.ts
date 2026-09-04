@@ -24,3 +24,30 @@ export interface PlaceResponse {
   token: string;
   data: Place[];
 }
+
+export interface PlaceDetail {
+  avgScore: number;
+  cateCd: string;
+  cateNm: string;
+  detailAddr: string;
+  firstImage: string;
+  roadAddr: string;
+  sggCd: string;
+  sggNm: string;
+  sidoCd: string;
+  sidoNm: string;
+  tourId: string;
+  tourNm: string;
+  zipCd: string;
+}
+
+export interface PlaceAIDetail {
+  admissionFeeDetails: string;
+  admissionFeeIsFree: string;
+  closedDays: string;
+  lastUpdatedNote: string;
+  operatingHours: string;
+  parkingAvailable: string;
+  parkingFeeInfo: string;
+  websiteUrl: string;
+}

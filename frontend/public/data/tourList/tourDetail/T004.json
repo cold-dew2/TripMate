@@ -1,0 +1,23 @@
+{
+  "success": true,
+  "status": 0,
+  "code": "SUCCESS",
+  "message": "관광지 상세 조회 성공",
+  "path": "/tourList/tourDetail",
+  "token": "",
+  "data": {
+    "avgScore": 4.7,
+    "cateCd": "VIL",
+    "cateNm": "마을",
+    "detailAddr": "",
+    "firstImage": "https://images.example.com/tour/T004.jpg",
+    "roadAddr": "부산광역시 사하구 감내2로 203",
+    "sggCd": "261",
+    "sggNm": "사하구",
+    "sidoCd": "26",
+    "sidoNm": "부산광역시",
+    "tourId": "T004",
+    "tourNm": "감천문화마을",
+    "zipCd": "49368"
+  }
+}

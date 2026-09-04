@@ -1,0 +1,23 @@
+{
+  "success": true,
+  "status": 0,
+  "code": "SUCCESS",
+  "message": "관광지 상세 조회 성공",
+  "path": "/tourList/tourDetail",
+  "token": "",
+  "data": {
+    "avgScore": 4.9,
+    "cateCd": "HIS",
+    "cateNm": "역사, 문화, 전망",
+    "detailAddr": "",
+    "firstImage": "https://images.example.com/tour/T001.jpg",
+    "roadAddr": "서울특별시 종로구 사직로 161",
+    "sggCd": "110",
+    "sggNm": "종로구",
+    "sidoCd": "11",
+    "sidoNm": "서울특별시",
+    "tourId": "T001",
+    "tourNm": "경복궁",
+    "zipCd": "03045"
+  }
+}

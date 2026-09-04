@@ -1,0 +1,23 @@
+{
+  "success": true,
+  "status": 0,
+  "code": "SUCCESS",
+  "message": "관광지 상세 조회 성공",
+  "path": "/tourList/tourDetail",
+  "token": "",
+  "data": {
+    "avgScore": 4.8,
+    "cateCd": "NAT",
+    "cateNm": "자연",
+    "detailAddr": "",
+    "firstImage": "https://images.example.com/tour/T006.jpg",
+    "roadAddr": "제주특별자치도 서귀포시 성산읍 섭지코지로 107",
+    "sggCd": "501",
+    "sggNm": "서귀포시",
+    "sidoCd": "50",
+    "sidoNm": "제주특별자치도",
+    "tourId": "T006",
+    "tourNm": "섭지코지",
+    "zipCd": "63641"
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "success": true,
+  "status": 0,
+  "code": "SUCCESS",
+  "message": "관광지 상세 조회 성공",
+  "path": "/tourList/tourDetail",
+  "token": "",
+  "data": {
+    "avgScore": 4.8,
+    "cateCd": "HIS",
+    "cateNm": "역사",
+    "detailAddr": "",
+    "firstImage": "https://images.example.com/tour/T008.jpg",
+    "roadAddr": "경상북도 경주시 인왕동 839-1",
+    "sggCd": "471",
+    "sggNm": "경주시",
+    "sidoCd": "47",
+    "sidoNm": "경상북도",
+    "tourId": "T008",
+    "tourNm": "첨성대",
+    "zipCd": "38164"
+  }
+}
