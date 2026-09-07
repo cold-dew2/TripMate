@@ -112,7 +112,7 @@
             a.TOUR_CONTENT,
             b1.CMM_CDV AS SIDO_CD,
             b1.CMM_CM_NM AS SIDO_NM,
-            b2.CMM_CDV AS AS SGG_CD,
+            b2.CMM_CDV AS SGG_CD,
             b2.CMM_CM_NM AS SGG_NM,
             a.ROAD_ADDR,
             a.DETAIL_ADDR,
@@ -130,10 +130,18 @@
                 FROM tb_trma_tour_cate c
                 JOIN tb_trma_cmm_cd_d d ON c.CATE_CD = d.CMM_CDV AND d.CMM_CD_ID = 'TOUR_LCLS_CD'
                 WHERE c.TOUR_ID = a.TOUR_ID
-            ) AS CATE_NM
+            ) AS CATE_NM,
+            IFNULL(c.AVG_SCORE,0) AS AVG_SCORE
         FROM tb_trma_tour_list a
-        LEFT JOIN tb_trma_cmm_cd_d b1 ON CONCAT(a.SIDO_CD,'00000000') = b1.CMM_CDV AND b1.CMM_CD_ID = 'SIDO_CD
+        LEFT JOIN tb_trma_cmm_cd_d b1 ON CONCAT(a.SIDO_CD,'00000000') = b1.CMM_CDV AND b1.CMM_CD_ID = 'SIDO_CD'
         LEFT JOIN tb_trma_cmm_cd_d b2 ON CONCAT(a.SIDO_CD,a.SGG_CD,'00000') = b2.CMM_CDV AND b2.CMM_CD_ID = 'SGG_CD'
+        LEFT JOIN (
+            SELECT
+            TOUR_ID,
+            AVG(REVIEW_SCORE) AS AVG_SCORE
+            FROM tb_trma_moim_review
+            GROUP BY TOUR_ID
+        ) c ON a.TOUR_ID = c.TOUR_ID
         WHERE 1=1
         	AND a.TOUR_ID = #{tourId}
     </select>

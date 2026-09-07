@@ -25,6 +25,7 @@
             ,COALESCE(m.MEMBER_CNT, 0) AS MEMBER_CNT
             ,c.CATE_CD
             ,c.CATE_NM
+            ,e.AVG_SCORE
         FROM tb_trma_moim_list a
         LEFT JOIN tb_trma_user_info d ON a.CREATE_USER = d.USER_ID
         LEFT JOIN (
@@ -53,6 +54,13 @@
             AND f.USE_YN = 'Y'
             GROUP BY e.MOIM_ID
         ) c ON a.MOIM_ID = c.MOIM_ID
+        LEFT JOIN (
+            SELECT
+            MOIM_ID,
+            AVG(REVIEW_SCORE) AS AVG_SCORE
+            FROM tb_trma_moim_review
+            GROUP BY MOIM_ID
+        ) e ON a.MOIM_ID = e.MOIM_ID
         WHERE a.USE_YN = 'Y'
             AND a.MOIM_START_DT > NOW()
             <if test="keyword != null and keyword != ''">

@@ -5,12 +5,8 @@ package com.example.backend.trma.controller;
 
 // 2. import
 
-import com.example.backend.trma.dto.request.ExistsUserIdRequest;
-import com.example.backend.trma.dto.request.LoginRequest;
-import com.example.backend.trma.dto.request.SignupRequest;
-import com.example.backend.trma.dto.response.ExistsUserIdResponse;
-import com.example.backend.trma.dto.response.LoginResponse;
-import com.example.backend.trma.dto.response.SignupResponse;
+import com.example.backend.trma.dto.request.*;
+import com.example.backend.trma.dto.response.*;
 import com.example.backend.trma.service.UserService;
 import org.springframework.web.bind.annotation.*;
 
@@ -46,5 +42,19 @@ public class UserController {
     public LoginResponse login(@ModelAttribute LoginRequest request){
         //System.out.println("request : " + request);
         return userService.login(request);
+    }
+
+    //마이페이지
+    @GetMapping("/userDetail")
+    public UserDetailResponse userDetail(@ModelAttribute UserDetailRequest request){
+        //System.out.println("request : " + request);
+        return userService.userDetail(request);
+    }
+
+    //마이페이지_리뷰조회
+    @GetMapping("/reviewList")
+    public UserReviewResponse reviewList(@ModelAttribute UserReviewRequest request){
+        //System.out.println("request : " + request);
+        return userService.reviewList(request);
     }
 }

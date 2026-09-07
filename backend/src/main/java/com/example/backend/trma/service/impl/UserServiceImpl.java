@@ -1,18 +1,18 @@
 package com.example.backend.trma.service.impl;
 
 import com.example.backend.global.jwt.JwtUtil;
-import com.example.backend.trma.dto.request.ExistsUserIdRequest;
-import com.example.backend.trma.dto.request.LoginRequest;
-import com.example.backend.trma.dto.request.SignupRequest;
-import com.example.backend.trma.dto.response.ExistsUserIdResponse;
-import com.example.backend.trma.dto.response.LoginResponse;
-import com.example.backend.trma.dto.response.SignupResponse;
+import com.example.backend.trma.dto.dataList.UserDetailData;
+import com.example.backend.trma.dto.dataList.UserReviewData;
+import com.example.backend.trma.dto.request.*;
+import com.example.backend.trma.dto.response.*;
 import com.example.backend.trma.mapper.UserMapper;
 import com.example.backend.trma.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -157,6 +157,77 @@ public class UserServiceImpl implements UserService {
                     "FAIL",
                     "로그인 중 오류가 발생했습니다.",
                     "/login/signup",
+                    null
+            );
+        }
+    }
+
+    //마이페이지
+    @Override
+    public UserDetailResponse userDetail(UserDetailRequest request) {
+
+        try {
+
+            UserReviewRequest reviewRequst = new UserReviewRequest();
+            reviewRequst.setUserId(request.getUserId());
+            UserDetailData userDetail = userMapper.userDetail(request);
+            List<UserReviewData> userReview = userMapper.reviewList(reviewRequst);
+
+            return new UserDetailResponse(
+                    true,
+                    200,
+                    "SUCCESS",
+                    "마이페이지 조회 완료",
+                    "/login/userDetail",
+                    "",
+                    userDetail,
+                    userReview
+            );
+        } catch (Exception e) {
+            return new UserDetailResponse(
+                    false,
+                    500,
+                    "FAIL",
+                    "조회 중 오류가 발생했습니다.",
+                    "/login/userDetail",
+                    "",
+                    null,
+                    null
+            );
+        }
+    }
+
+    //마이페이지_리뷰
+    @Override
+    public UserReviewResponse reviewList(UserReviewRequest request) {
+
+        try {
+
+            if(request.getPage() == 0){
+                request.setPage(1);
+            }
+            int offset = (request.getPage() - 1) * 10 ;
+            request.setOffset(offset);
+
+            List<UserReviewData> userReview = userMapper.reviewList(request);
+
+            return new UserReviewResponse(
+                    true,
+                    200,
+                    "SUCCESS",
+                    "리뷰 조회 완료",
+                    "/login/b",
+                    "",
+                    userReview
+            );
+        } catch (Exception e) {
+            return new UserReviewResponse(
+                    false,
+                    500,
+                    "FAIL",
+                    "조회 중 오류가 발생했습니다.",
+                    "/login/b",
+                    "",
                     null
             );
         }

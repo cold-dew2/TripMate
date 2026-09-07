@@ -1,11 +1,7 @@
 package com.example.backend.trma.service;
 
-import com.example.backend.trma.dto.request.ExistsUserIdRequest;
-import com.example.backend.trma.dto.request.LoginRequest;
-import com.example.backend.trma.dto.request.SignupRequest;
-import com.example.backend.trma.dto.response.ExistsUserIdResponse;
-import com.example.backend.trma.dto.response.LoginResponse;
-import com.example.backend.trma.dto.response.SignupResponse;
+import com.example.backend.trma.dto.request.*;
+import com.example.backend.trma.dto.response.*;
 
 public interface UserService {
 
@@ -17,5 +13,11 @@ public interface UserService {
 
     //로그인
     LoginResponse login(LoginRequest request);
+
+    //마이페이지
+    UserDetailResponse userDetail(UserDetailRequest request);
+
+    //마이페이지
+    UserReviewResponse reviewList(UserReviewRequest request);
 
 }
