@@ -6,7 +6,6 @@
 .buttons.flex-2 .btn:last-child {
   flex: 2;
 }
-
 /* button */
 .btn {
   flex: 1;
@@ -118,6 +117,14 @@
 }
 
 /* button fixed */
+.buttons.fixed {
+  position: fixed;
+  bottom: 0;
+  right: 0;
+  width: 100%;
+  padding: 17px 28px;
+  border-top: 1px solid var(--gray-200);
+}
 .btn-fixed {
   position: fixed;
   bottom: 100px;

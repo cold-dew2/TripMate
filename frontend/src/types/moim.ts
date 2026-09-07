@@ -24,3 +24,20 @@ export interface MoimResponse {
   token: string,
   data: Moim[]
 }
+
+export interface MoimCreateForm {
+  moimTitle: string;
+  moimDscr: string;
+  moimStartDt: string;
+  moimEndDt: string;
+  maxMember: number;
+  moimCateData: {
+    cateCd: string;
+    cateNm?: string;
+  }[];
+  moimPlanData: {
+    startDt: string;
+    rmks: string;
+    tourId: string;
+  }[];
+}

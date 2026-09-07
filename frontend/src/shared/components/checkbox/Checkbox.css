@@ -1,0 +1,26 @@
+.checkbox {
+}
+.checkbox input:checked + label {
+  border-color: var(--purple-500);
+}
+.checkbox label {
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  gap: var(--space-md);
+  padding: var(--space-4xl);
+  border: 1px solid var(--gray-100);
+  border-radius: var(--radius-xl);
+}
+.checkbox label .icon {
+  width: 26px;
+  height: 26px;
+}
+
+.checkbox label .label-text {
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-bold);
+  line-height: var(--lh-md);
+  text-align: center;
+  word-break: break-word;
+}

@@ -20,7 +20,7 @@ const Input = ({
 }: InputProps) => {
   return (
     <div className={`form ${className ? `${className}` : ""}`}>
-      <label htmlFor={id} className={blind ? "blind" : ""}>{label}</label>
+      <label htmlFor={id} className={blind ? "blind" : "label"}>{label}</label>
       <input type={type} id={id} placeholder={placeholder} name={name} disabled={disabled} readOnly={readonly} onChange={onChange} value={value}/>
         {error && <p className="error-msg">{error}</p>}
     </div>
