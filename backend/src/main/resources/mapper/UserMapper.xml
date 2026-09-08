@@ -94,4 +94,73 @@
 
     </insert>
 
+    <!-- ========================= -->
+    <!-- 마이페이지 -->
+    <!-- ========================= -->
+    <select id="userDetail"
+            parameterType="com.example.backend.trma.dto.request.UserDetailRequest"
+            resultType="com.example.backend.trma.dto.dataList.UserDetailData">
+
+        SELECT
+            a.USER_NM
+            ,COALESCE(b.MOIM_CNT, 0) AS MOIM_CNT
+            ,COALESCE(c.MEMBER_CNT, 0) AS MOIM_MEMBER_CNT
+            ,COALESCE(d.REVIRE_CNT, 0) AS MOIM_REVIRE_CNT
+            ,e.CMM_CM_NM AS LANG_NM
+        FROM tb_trma_user_info a
+        LEFT JOIN (
+            SELECT
+            CREATE_USER,
+            COUNT(1) AS MOIM_CNT
+            FROM tb_trma_moim_list
+            GROUP BY CREATE_USER
+        ) b ON a.USER_ID = b.CREATE_USER
+        LEFT JOIN (
+            SELECT
+            c2.CREATE_USER
+            ,COUNT(1) AS MEMBER_CNT
+            FROM tb_trma_moim_member c1
+            LEFT JOIN tb_trma_moim_list c2 ON c1.MOIM_ID = c2.MOIM_ID
+            GROUP BY c2.MOIM_ID
+        ) c ON a.USER_ID = b.CREATE_USER
+        LEFT JOIN (
+            SELECT
+            d2.CREATE_USER
+            ,COUNT(1) AS REVIRE_CNT
+            FROM tb_trma_moim_review d1
+            LEFT JOIN tb_trma_moim_list d2 ON d1.MOIM_ID = d2.MOIM_ID
+            GROUP BY d2.MOIM_ID
+        ) d ON a.USER_ID = b.CREATE_USER
+        LEFT JOIN tb_trma_cmm_cd_d e ON a.LANG_CD = e.CMM_CDV AND e.CMM_CD_ID = 'LANG_CD'
+        WHERE 1=1
+            AND a.USER_ID =  #{userId}
+    </select>
+
+    <!-- ========================= -->
+    <!-- 마이페이지_리뷰 -->
+    <!-- ========================= -->
+    <select id="reviewList"
+            parameterType="com.example.backend.trma.dto.request.UserReviewRequest"
+            resultType="com.example.backend.trma.dto.dataList.UserReviewData">
+
+        SELECT
+            b.REVIEW_TITLE
+            ,b.REVIEW_CONTENT
+            ,b.REVIEW_SCORE
+            ,c.USER_NM
+        FROM tb_trma_moim_list a
+        LEFT JOIN tb_trma_moim_review b ON a.MOIM_ID = b.MOIM_ID
+        LEFT JOIN tb_trma_user_info c ON b.CREATE_USER = c.USER_ID
+        WHERE 1=1
+        AND b.USE_YN = 'Y'
+        <if test="userId != null and userId != ''">
+            AND a.CREATE_USER = #{userId}
+        </if>
+        ORDER BY b.CREATE_DT DESC
+        LIMIT 3
+        <if test="offset != null and offset != ''">
+            OFFSET #{offset}
+        </if>
+    </select>
+
 </mapper>

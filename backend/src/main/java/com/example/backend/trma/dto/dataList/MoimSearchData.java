@@ -21,4 +21,5 @@ public class MoimSearchData {
     private Integer memberCnt;
     private String cateCd;
     private String cateNm;
+    private int avgScore;
 }

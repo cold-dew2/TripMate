@@ -21,6 +21,8 @@ public class TourListController {
     @GetMapping("/tourSearch")
     public TourSearchResponse tourSearch(@ModelAttribute TourSearchRequest request) {
 
+        System.out.println(request);
+
         return tourListService.tourSearch(request);
     }
 

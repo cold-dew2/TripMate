@@ -1,0 +1,8 @@
+.themeList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-lg);
+}
+.themeList li {
+  flex: 1 1 calc(33.33% - var(--space-lg));
+}

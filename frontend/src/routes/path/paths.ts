@@ -55,4 +55,8 @@ export const noLayoutRoutes: (RouteObject & { handle?: RouteHandle })[] = [
     path: "/my",
     lazy: () => import("@/features/my/pages/myPage/Mypage").then((m) => ({Component: m.default,})),
   },
+  {
+    path: "/createMoim",
+    lazy: () => import("@/features/moim/pages/moimCreate/MoimCreate").then((m) => ({ Component: m.default })),
+  },
 ];

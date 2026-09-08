@@ -29,12 +29,17 @@ public class MoimListController {
         return moimListService.moimAiSearch(request);
     }
 
-    //모임 상세조회(기본)
+    // 모임 상세조회(기본)
     @GetMapping("/moimDetail")
     public MoimDetailResponse moimDetail(@ModelAttribute MoimDetailRequest request,
                                          Authentication authentication) {
 
-        String userId = authentication.getName();
+        // authentication 객체가 null이 아니고 인증된 상태인지 확인
+        String userId = null;
+        if (authentication != null && authentication.isAuthenticated()) {
+            userId = authentication.getName();
+        }
+
         return moimListService.moimDetail(request, userId);
     }
 
