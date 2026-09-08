@@ -3,14 +3,26 @@
   align-items: center;
   justify-content: space-between;
   height: 61px;
-  padding: 24px 28px 14px;
+  padding: 20px 28px;
+  border-bottom: 1px solid var(--gray-100);
 }
 
 .page-title .title {
   font-size: var(--space-3xl);
   font-weight: var(--fw-ebold);
 }
-
+.page-title .title-left {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2xs);
+  font-size: var(--fs-lg);
+  font-weight: var(--fw-bold);
+}
+.page-title .btn-back {
+  width: 20px;
+  height: 20px;
+  background: url('/icons/icon_arrow_black.svg');
+}
 .page-title .link {
   color: var(--purple-600);
   font-size: var(--fs-sm);

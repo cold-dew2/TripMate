@@ -18,12 +18,12 @@ const PageHeader = ({ pageTitle, contentTitle, href, linkText, current, total }:
       <div className="title-left">
         {contentTitle && (
           <>
-            <button onClick={() => navigate(-1)}>
-              <span className="bilnd">뒤로가기</span>
+            <button onClick={() => navigate(-1)} className="btn-back">
+              <span className="blind">뒤로가기</span>
             </button>
             <p className="coontent-title">{contentTitle}</p>
           </>
-        )}
+        )} 
         {pageTitle && (
           <p className="title">{pageTitle}</p>
         )}

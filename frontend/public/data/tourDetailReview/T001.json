@@ -1,0 +1,60 @@
+{
+  "success": true,
+  "status": 200,
+  "code": "SUCCESS",
+  "message": "관광지 리뷰 조회가 완료되었습니다.",
+  "path": "/tourDetailReview",
+  "token": null,
+  "data": [
+    {
+      "moimTitle": "서울 궁궐 투어",
+      "moimStartDt": "2026-08-15",
+      "moimEndDt": "2026-08-15",
+      "reviewTitle": "정말 즐거운 시간이었어요!",
+      "reviewContent": "친구들과 함께 경복궁을 둘러봤는데 생각보다 볼거리가 많아서 재미있었습니다. 모임 분위기도 좋았고 다음에도 참여하고 싶어요.",
+      "reviewScore": 5,
+      "creatDt": "2026-08-16",
+      "userNm": "김민지"
+    },
+    {
+      "moimTitle": "서울 역사 여행",
+      "moimStartDt": "2026-07-20",
+      "moimEndDt": "2026-07-21",
+      "reviewTitle": "역사 공부도 하고 여행도 하고",
+      "reviewContent": "혼자 방문했으면 그냥 지나쳤을 만한 곳들도 모임을 통해 자세히 알 수 있어서 좋았습니다. 설명도 이해하기 쉬웠어요.",
+      "reviewScore": 4,
+      "creatDt": "2026-07-22",
+      "userNm": "이준호"
+    },
+    {
+      "moimTitle": "주말 서울 나들이",
+      "moimStartDt": "2026-06-28",
+      "moimEndDt": "2026-06-28",
+      "reviewTitle": "주말에 가기 좋아요",
+      "reviewContent": "날씨가 좋아서 산책하면서 둘러보기 좋았습니다. 사람이 조금 많았지만 전체적으로 만족스러운 여행이었습니다.",
+      "reviewScore": 4,
+      "creatDt": "2026-06-29",
+      "userNm": "박서연"
+    },
+    {
+      "moimTitle": "서울 문화유산 탐방",
+      "moimStartDt": "2026-05-10",
+      "moimEndDt": "2026-05-10",
+      "reviewTitle": "다음에 또 방문하고 싶어요",
+      "reviewContent": "처음 방문했는데 생각보다 규모가 크고 아름다웠습니다. 사진 찍을 장소도 많아서 좋았어요.",
+      "reviewScore": 5,
+      "creatDt": "2026-05-11",
+      "userNm": "최현우"
+    },
+    {
+      "moimTitle": "가족과 함께하는 서울 여행",
+      "moimStartDt": "2026-04-18",
+      "moimEndDt": "2026-04-18",
+      "reviewTitle": "가족 여행으로 추천합니다",
+      "reviewContent": "부모님과 함께 방문했는데 천천히 둘러보기 좋았습니다. 주변에 함께 방문할 만한 장소도 많아서 하루 일정으로 잡기 좋았어요.",
+      "reviewScore": 5,
+      "creatDt": "2026-04-19",
+      "userNm": "정수빈"
+    }
+  ]
+}

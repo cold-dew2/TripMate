@@ -28,7 +28,7 @@ const ContentLayout = () => {
         total={totalPage}
       />
       
-      <main className="container">
+      <main className="content-container">
         <Outlet/>
       </main>
 
