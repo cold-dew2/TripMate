@@ -50,7 +50,7 @@
   background-color: var(--purple-500);
 }
 .btn-primary:hover:not(:disabled),
-.btn-fixed:hover:not(:disabled), {
+.btn-fixed:hover:not(:disabled) {
   border-color: var(--purple-600);
   background-color: var(--purple-600);
 }
@@ -131,4 +131,14 @@
   right: 28px;
   width: auto;
   border-radius: 28px;
+}
+
+/* my-logout */
+.btn-logout {
+  display: inline-block;
+  width: 100%;
+  padding: var(--space-2xl) var(--space-3xl);
+  color: var(--gray-400);
+  font-size: var(--fs-md);
+  text-align: center;
 }

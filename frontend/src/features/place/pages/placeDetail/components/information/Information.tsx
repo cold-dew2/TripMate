@@ -20,7 +20,7 @@ const Information = ({ place }: InformationProps) => {
 
   return (
     <div className="info-content">
-      <div className="tab-title">
+      <div className="title-wrap">
         <p>{t("place.info")}</p>
       </div>
 

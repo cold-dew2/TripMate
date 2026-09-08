@@ -57,6 +57,22 @@
     "reviewsBtn": "후기 작성",
     "lastUpdatedNote": "방문 전 운영시간 및 이용요금을 확인해주세요."
   },
+  "my": {
+    "moiming": "진행 중 소모임",
+    "member": "참여 멤버",
+    "getReview": "받은 후기",
+    "useLang": "사용 언어",
+    "recentlyReviews": "최근 리뷰",
+    "myPlan": "내 일정",
+    "myMoim": "내 소모임 관리",
+    "declaration": "안심신고",
+    "logout": "로그아웃"
+  },
+  "lang": {
+    "ko": "한국어",
+    "en": "영어",
+    "jp": "일본어"
+  },
   "people": "{{count}} 명",
   "경복궁": "경복궁",
   "남산서울타워": "남산서울타워",

@@ -13,6 +13,25 @@
   padding: 30px 28px 100px;
   /* overflow: auto; */
 }
+.my-container {
+  border: 1px solid red;
+  position: relative;
+  min-height: calc(100vh - 80px);
+  padding: 104px 28px 100px;
+}
+.my-container:before {
+  content: "";
+  display: block;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 150px;
+  background: var( --purple-600);
+  z-index: -1;
+}
+
+
 main section:first-child {
   padding-top: 0;
 }
@@ -276,4 +295,14 @@ img {
   display: flex;
   flex-direction: column;
   gap: 20px;
+}
+
+/* title */
+.title-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-5xl);
+  font-size: var(--fs-base);
+  font-weight: var(--fw-bold);
 }

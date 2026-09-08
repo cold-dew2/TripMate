@@ -10,7 +10,7 @@ const Reviews = ({ reviews }: ReviewsProps) => {
   const { t } = useTranslation();
   return (
     <>
-      <div className="tab-title">
+      <div className="title-wrap">
         <p>{t("place.review")}</p>
         <span><button type="button">{t("place.reviewsBtn")}</button></span>
       </div>
