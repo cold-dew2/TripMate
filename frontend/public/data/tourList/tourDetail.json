@@ -1,0 +1,23 @@
+{
+  "success": true,
+  "status": 0,
+  "code": "SUCCESS",
+  "message": "관광지 상세조회가 완료되었습니다.",
+  "path": "/tourList/tourDetail",
+  "token": null,
+  "data": {
+    "avgScore": 4.7,
+    "cateCd": "C001",
+    "cateNm": "관광지",
+    "detailAddr": "서울특별시 종로구 세종대로 175",
+    "firstImage": "/images/places/T001.jpeg",
+    "roadAddr": "서울특별시 종로구 세종대로 175",
+    "sggCd": "11110",
+    "sggNm": "종로구",
+    "sidoCd": "11",
+    "sidoNm": "서울특별시",
+    "tourId": "T001",
+    "tourNm": "경복궁",
+    "zipCd": "03045"
+  }
+}

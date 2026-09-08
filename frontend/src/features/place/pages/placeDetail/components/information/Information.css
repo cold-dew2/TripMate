@@ -1,33 +1,3 @@
-.detail-header .detail-img {
-  height: 15%;
-  border-radius: 15px;
-  overflow: hidden;
-}
-.place-detail .detail-info {
-  margin-top: var(--space-3xl);
-}
-.place-detail .detail-info .place-name {
-  font-size: var(--fs-3xl);
-  font-weight: var(--fw-bold);
-}
-.place-detail .detail-info .place-addr {
-  margin-top: var(--space-xs);
-  color: var(--gray-500);
-}
-.place-detail .detail-info .place-avgScore {
-  margin-top: var(--space-xs);
-}
-.place-detail .detail-info .place-avgScore img{
-  display: inline-block;
-  width: 14px;
-  height: 14px;
-  margin-right: var(--space-2xs);
-}
-.place-detail .detail-info .place-avgScore span{
-  font-weight: var(--fw-sbold); 
-  line-height: 14px;
-  vertical-align: text-top;
-}
 
 .place-infoList li {
   display: flex;

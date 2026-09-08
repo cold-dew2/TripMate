@@ -44,6 +44,19 @@
   "image": {
     "alt": "{{title}} 이미지"
   },
+  "place": {
+    "details": "관광지 상세",
+    "introduce": "소개",
+    "info": "이용 정보",
+    "review": "후기",
+    "opentime": "운영시간",
+    "dayOff": "휴무일",
+    "fee": "입장료",
+    "parking": "주차",
+    "url": "홈페이지",
+    "reviewsBtn": "후기 작성",
+    "lastUpdatedNote": "방문 전 운영시간 및 이용요금을 확인해주세요."
+  },
   "people": "{{count}} 명",
   "경복궁": "경복궁",
   "남산서울타워": "남산서울타워",

@@ -23,13 +23,16 @@
 } 
 .tab-contents .tab-content {
   scroll-margin-top: 50px;
-  padding: var(--space-2xl);
+  padding: var(--space-2xl) 0;
 }
 .tab-contents .tab-content + .tab-content{
   margin-top: var(--space-3xl);
   border-top: 1px solid var(--gray-100);
 }
 .tab-content .tab-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   margin-bottom: var(--space-5xl);
   font-size: var(--fs-base);
   font-weight: var(--fw-bold);

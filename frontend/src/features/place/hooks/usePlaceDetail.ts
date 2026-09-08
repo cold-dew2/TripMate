@@ -6,6 +6,7 @@ const usePlaceDetail = (tourId: string) => {
   const detailQuery = useQuery({
     queryKey: ["placeDetail", tourId],
     queryFn: async () => {
+      // const result = await apiClient.get<{ data: PlaceDetail }>(`/tourList/tourDetail.json?tourId=${tourId}`);
       const result = await apiClient.get<{ data: PlaceDetail }>(`/tourList/tourDetail/${tourId}.json`);
 
       if (!result.success) {
@@ -14,12 +15,14 @@ const usePlaceDetail = (tourId: string) => {
 
       return result.data.data;
     },
+
     enabled: !!tourId,
   });
 
   const aiDetailQuery = useQuery({
     queryKey: ["placeAiDetail", tourId],
     queryFn: async () => {
+      // const result = await apiClient.get<{ data: PlaceAIDetail }>(`/tourList/tourAIDetail.json?tourId=${tourId}`);
       const result = await apiClient.get<{ data: PlaceAIDetail }>(`/tourList/tourAIDetail/${tourId}.json`);
 
       if (!result.success) {
@@ -28,14 +31,18 @@ const usePlaceDetail = (tourId: string) => {
 
       return result.data.data;
     },
+
     enabled: !!tourId,
   });
 
   return {
-    data: detailQuery.data && aiDetailQuery.data ? {...detailQuery.data, ...aiDetailQuery.data} : undefined,
+    data:
+      detailQuery.data && aiDetailQuery.data
+        ? {...detailQuery.data, ...aiDetailQuery.data}
+        : undefined,
     isLoading: detailQuery.isLoading || aiDetailQuery.isLoading,
-    isError: detailQuery.isError || aiDetailQuery.isError
-  }
+    isError: detailQuery.isError || aiDetailQuery.isError,
+  };
 };
 
 export default usePlaceDetail;

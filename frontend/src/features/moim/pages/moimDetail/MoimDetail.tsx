@@ -1,5 +1,6 @@
 import { useParams } from 'react-router-dom'
 import useMoimDetail from '../../hooks/useMoimDetail'
+import Header from '../components/header/Header';
 
 const MoimDetail = () => {
   const { moimId } = useParams<{ moimId: string }>();
@@ -10,9 +11,7 @@ const MoimDetail = () => {
 
   return (
     <div className="moim-detail">
-      <div className="moim-img">
-        <img src="" alt="" />
-      </div>
+      <Header moim={moim.data} cate={moim.cate} />
       {moimId}
     </div>
   );

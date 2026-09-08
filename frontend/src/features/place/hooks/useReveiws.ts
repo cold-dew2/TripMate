@@ -6,7 +6,7 @@ const useReview = (tourId: string) => {
   const reviewQuery = useQuery({
     queryKey: ["tourReview", tourId],
     queryFn: async () => {
-      const result = await apiClient.get<{ data: TourReview[] }>(`/tourDetailReview.json?tourId=${tourId}`);
+      const result = await apiClient.get<{ data: TourReview[] }>(`/tourDetailReview/${tourId}.json`);
 
       if (!result.success) {
         throw result;

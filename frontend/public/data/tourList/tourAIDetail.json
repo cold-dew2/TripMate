@@ -1,0 +1,18 @@
+{
+  "success": true,
+  "status": 0,
+  "code": "SUCCESS",
+  "message": "AI 관광지 상세조회가 완료되었습니다.",
+  "path": "/tourList/tourAIDetail",
+  "token": null,
+  "data": {
+    "admissionFeeDetails": "성인 3,000원 / 청소년 1,500원",
+    "admissionFeeIsFree": "N",
+    "closedDays": "화요일",
+    "lastUpdatedNote": "기상 및 운영 상황에 따라 관람 시간이 변경될 수 있습니다.",
+    "operatingHours": "09:00 ~ 18:00",
+    "parkingAvailable": "Y",
+    "parkingFeeInfo": "기본 2시간 3,000원",
+    "websiteUrl": "https://www.royalpalace.go.kr"
+  }
+}

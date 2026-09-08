@@ -1,0 +1,57 @@
+{
+  "success": true,
+  "status": 0,
+  "code": "SUCCESS",
+  "message": "소모임 상세조회가 완료되었습니다.",
+  "path": "/moimList/moimDetail",
+  "token": null,
+  "data": {
+    "moimId": "M001",
+    "moimTitle": "서울 맛집 같이 가요",
+    "moimDscr": "서울 곳곳의 맛집을 함께 찾아다니며 맛있는 음식을 즐기는 소모임입니다.",
+    "moimStartDt": "2026-09-15",
+    "moimEndDt": "2026-10-15",
+    "maxMember": 8,
+    "memberCnt": 5,
+    "reviewScore": 4.7
+  },
+  "cate": [
+    {
+      "cateCd": "C001",
+      "cateNm": "맛집"
+    },
+    {
+      "cateCd": "C003",
+      "cateNm": "친목"
+    }
+  ],
+  "plan": [
+    {
+      "startDt": "2026-09-15",
+      "rmks": "1",
+      "cateCd": "C001",
+      "cateNm": "맛집",
+      "tourNm": "광장시장"
+    },
+    {
+      "startDt": "2026-09-22",
+      "rmks": "2",
+      "cateCd": "C001",
+      "cateNm": "맛집",
+      "tourNm": "망원시장"
+    },
+    {
+      "startDt": "2026-10-01",
+      "rmks": "3",
+      "cateCd": "C003",
+      "cateNm": "친목",
+      "tourNm": "한강공원"
+    }
+  ],
+  "joinStatus": [
+    {
+      "roleCd": "C",
+      "stateCd": "A"
+    }
+  ]
+}
