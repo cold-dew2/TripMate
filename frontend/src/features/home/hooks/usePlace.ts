@@ -6,7 +6,7 @@ const usePlace = () => {
   return useQuery({
     queryKey: ["places"],
     queryFn: async() => {
-      const result = await apiClient.get<PlaceResponse>("/trmaHome/bestTourList.json");
+      const result = await apiClient.get<PlaceResponse>("/trmaHome/bestTourList");
 
       if (!result.success) {
         throw result;

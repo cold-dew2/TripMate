@@ -53,7 +53,7 @@ const HomePage = () => {
             spots.slice(0, 4)?.map(spot => (
               <li key={spot.tourId}>
                 <Link to={`/place/${spot.tourId}`}>
-                  <SpotCard imageUrl={`/images/places/${spot.tourId}.jpeg`} title={t(spot.tourNm)} place={`${t(spot.roadAddr)}`} rating={spot.avgScore} badge={t(spot.cateNm)} />
+                  <SpotCard imageUrl={spot.firstImage} title={t(spot.tourNm)} place={`${t(spot.roadAddr)}`} rating={spot.avgScore} badge={t(spot.cateNm)} />
                 </Link>
               </li>
             ))
@@ -77,7 +77,7 @@ const HomePage = () => {
             moims.slice(0, 4)?.map(moim => (
               <li key={moim.moimId}>
                 <Link to={`/moim/${moim.moimId}`}>
-                  <MoimCard badge={t(moim.cateNm)} imageUrl={`/images/places/${moim.moimId}.jpeg`} title={t(moim.moimTitle)} date={t(moim.moimStartDt)} member={t(moim.memberCnt)} views={moim.visitCnt}/>
+                  <MoimCard badge={t(moim.cateNm)} imageUrl={`/images/places/M001.jpeg`} title={t(moim.moimTitle)} date={t(moim.moimStartDt)} member={t(moim.memberCnt)} views={moim.visitCnt}/>
                 </Link>
               </li>
             ))

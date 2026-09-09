@@ -18,7 +18,7 @@
       "userRating": 4.8,
       "cateCd": "C01",
       "cateNm": "서울",
-      "imageUrl": "/images/moim/M001.jpeg"
+      "imageUrl": "/images/places/M001.jpeg"
     },
     {
       "moimId": "M002",
@@ -37,7 +37,7 @@
       "userRating": 4.6,
       "cateCd": "C15",
       "cateNm": "바다",
-      "imageUrl": "/images/moim/M002.jpeg"
+      "imageUrl": "/images/places/M002.jpeg"
     },
     {
       "moimId": "M003",
@@ -56,7 +56,7 @@
       "userRating": 4.9,
       "cateCd": "C03",
       "cateNm": "등산",
-      "imageUrl": "/images/moim/M003.jpeg"
+      "imageUrl": "/images/places/M003.jpeg"
     },
     {
       "moimId": "M004",

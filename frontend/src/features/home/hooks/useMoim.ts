@@ -6,7 +6,7 @@ const useMoim = () => {
   return useQuery({
     queryKey: ["moims"],
     queryFn: async() => {
-      const result = await apiClient.get<MoimResponse>("/trmaHome/bestMoimList.json");
+      const result = await apiClient.get<MoimResponse>("/trmaHome/bestMoimList");
 
       if(!result.success) {
         throw result;

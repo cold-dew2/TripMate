@@ -1,4 +1,3 @@
-import React from 'react'
 import Card from '../card/Card'
 import Skeleton from '../skeleton/Skeleton'
 import { useTranslation } from 'react-i18next';
@@ -13,12 +12,13 @@ interface Props {
   place?: string;
   date?: string;
   member?: string;
+  maxMember?: string;
   views?: number;
   userNm?: string;
   userRating?: string;
 }
 
-const MoimCard = ({ loading = false, badge, imageUrl, title, date, member, views, desc, place, userNm, userRating }: Props) => {
+const MoimCard = ({ loading = false, badge, imageUrl, title, date, member, maxMember, views, desc, place, userNm, userRating }: Props) => {
   const { t } = useTranslation();
   return (
     <Card className="moim-card">
@@ -58,15 +58,16 @@ const MoimCard = ({ loading = false, badge, imageUrl, title, date, member, views
           <div className={`info ${views ? "views" : ""}`}>
             <div className="info-left">
               {(date || place) && (
-                <div className="date-place">
+                  <div className="date-place">
                     <span className="date">{date ? `🗓️ ${date} ` : undefined}</span>
-                    <span className="place">{place ? `📍${place}` : undefined}
-                  </span>
-                </div>
-                
+                    <span className="place">{place ? `📍${place}` : undefined}</span>
+                  </div>
               )}
-              {member && (
-                  <span className="member">👥 {t("people", { count: member })}</span>
+              {member !== undefined && (
+                  <span className="member">
+                    👥 {t("people", { count: member })}
+                                {maxMember ? ` / ${maxMember}` : ""}
+                  </span>
               )}
             </div>
             {views !== undefined && (
