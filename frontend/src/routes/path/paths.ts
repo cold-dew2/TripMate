@@ -44,6 +44,11 @@ export const contentRoutes: (RouteObject & { handle?: RouteHandle })[] = [
     handle: { showBack: true },
   },
   {
+    path: "/moimManage", 
+    lazy: () => import("@/features/moim/pages/moimManage/MoimManage").then((m) => ({ Component: m.default })),
+    handle: { title: "moim.manageTitle", showBack: true },
+  },
+  {
     path: "/place/:tourId", 
     lazy: () => import("@/features/place/pages/placeDetail/PlaceDetail").then((m) => ({ Component: m.default })),
     handle: { title: "place.details", showBack: true },

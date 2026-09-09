@@ -83,3 +83,4 @@ export interface MoimDetailResponse {
   plan: MoimPlan[];
   joinStatus: MoimJoinStatus[];
 }
+

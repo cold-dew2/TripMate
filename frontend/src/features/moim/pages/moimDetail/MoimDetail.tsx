@@ -1,6 +1,6 @@
 import { useParams } from 'react-router-dom'
 import useMoimDetail from '../../hooks/useMoimDetail'
-import Header from '../components/header/Header';
+import Header from './components/header/Header';
 
 const MoimDetail = () => {
   const { moimId } = useParams<{ moimId: string }>();

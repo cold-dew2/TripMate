@@ -31,7 +31,8 @@
     "myPlan": "내 일정",
     "emptyMsg": "소모임이 존재하지 않아요!",
     "errorMsg": "다시 시도해주세요!",
-    "button": "+ 새모임 만들기"
+    "button": "+ 새모임 만들기",
+    "manageTitle": "내 소모임 관리"
   },
   "place": {
     "listTitle": "관광지 찾기",

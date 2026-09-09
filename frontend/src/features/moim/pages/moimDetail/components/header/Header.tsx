@@ -28,6 +28,10 @@ const Header = ({ moim }: moimDetailProps) => {
         <div className="tags">
         </div>
       </div>
+
+      <ul className="plan-list">
+        
+      </ul>
     </div>
   )
 }
