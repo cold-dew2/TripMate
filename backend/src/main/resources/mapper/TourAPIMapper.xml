@@ -14,7 +14,7 @@
 
         SELECT
             a.CMM_CDV AS SGG_CD
-        FROM tb_trma_cmm_cd_d a
+        FROM TB_TRMA_CMM_CD_D a
         WHERE a.CMM_CD_ID = 'SGG_CD'
 
     </select>
@@ -401,8 +401,8 @@
         CURRENT_TIMESTAMP                               AS CREATE_DT,
         'batch'                                         AS UPDATE_USER,
         CURRENT_TIMESTAMP                               AS UPDATE_DT
-        FROM tb_trma_area_base_api a
-        LEFT JOIN tb_trma_tour_cmm_api c ON a.CONTENTID = c.CONTENT_ID
+        FROM TB_TRMA_AREA_BASE_API a
+        LEFT JOIN TB_TRMA_TOUR_CMM_API c ON a.CONTENTID = c.CONTENT_ID
         WHERE a.MODIFIEDTIME >= DATE_FORMAT(DATE_SUB(CURRENT_DATE(), INTERVAL 1 MONTH),'%Y%m01000000')
         ) AS new
         ON DUPLICATE KEY UPDATE
@@ -447,7 +447,7 @@
                 CURRENT_TIMESTAMP                               AS CREATE_DT,
                 'batch'                                         AS UPDATE_USER,
                 CURRENT_TIMESTAMP                               AS UPDATE_DT
-            FROM tb_trma_area_base_api a
+            FROM TB_TRMA_AREA_BASE_API a
             WHERE a.MODIFIEDTIME >= DATE_FORMAT(DATE_SUB(CURRENT_DATE(), INTERVAL 1 MONTH),'%Y%m01000000')
         ) AS new
         ON DUPLICATE KEY UPDATE

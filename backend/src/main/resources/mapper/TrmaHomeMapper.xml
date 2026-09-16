@@ -25,11 +25,11 @@
             ,a.GENDER_CD
             ,b4.CMM_CM_NM AS GENDER_NM
             ,a.PHONE_NUM
-        FROM tb_trma_user_info a
-        LEFT JOIN tb_trma_cmm_cd_d b1 ON a.LANG_CD = b1.CMM_CDV AND b1.CMM_CD_ID = 'LANG_CD'
-        LEFT JOIN tb_trma_cmm_cd_d b2 ON a.STATE_CD = b2.CMM_CDV AND b2.CMM_CD_ID = 'STATE_CD'
-        LEFT JOIN tb_trma_cmm_cd_d b3 ON a.ROLE_CD = b3.CMM_CDV AND b3.CMM_CD_ID = 'ROLE_CD'
-        LEFT JOIN tb_trma_cmm_cd_d b4 ON a.GENDER_CD = b4.CMM_CDV AND b4.CMM_CD_ID = 'GENDER_CD'
+        FROM TB_TRMA_USER_INFO a
+        LEFT JOIN TB_TRMA_CMM_CD_D b1 ON a.LANG_CD = b1.CMM_CDV AND b1.CMM_CD_ID = 'LANG_CD'
+        LEFT JOIN TB_TRMA_CMM_CD_D b2 ON a.STATE_CD = b2.CMM_CDV AND b2.CMM_CD_ID = 'STATE_CD'
+        LEFT JOIN TB_TRMA_CMM_CD_D b3 ON a.ROLE_CD = b3.CMM_CDV AND b3.CMM_CD_ID = 'ROLE_CD'
+        LEFT JOIN TB_TRMA_CMM_CD_D b4 ON a.GENDER_CD = b4.CMM_CDV AND b4.CMM_CD_ID = 'GENDER_CD'
         WHERE
             a.USER_ID = #{userId}
 
@@ -45,7 +45,7 @@
         SELECT
             a.CMM_CDV
             ,a.CMM_CM_NM
-        FROM tb_trma_cmm_cd_d a
+        FROM TB_TRMA_CMM_CD_D a
         WHERE a.CMM_CD_ID = #{cmmCdId}
 
     </select>
@@ -70,14 +70,14 @@
             ,CAST(GROUP_CONCAT(DISTINCT e.CMM_CM_NM ORDER BY e.CMM_CM_NM) AS CHAR) AS CATE_NM
             ,AVG(a.REVIEW_SCORE) AS AVG_SCORE
             ,b.FIRST_IMAGE
-        FROM tb_trma_moim_review a
-        LEFT JOIN tb_trma_tour_list b ON a.TOUR_ID = b.TOUR_ID
-        LEFT JOIN tb_trma_cmm_cd_d c1 ON c1.CMM_CD_ID = 'SIDO_CD'
+        FROM TB_TRMA_MOIM_REVIEW a
+        LEFT JOIN TB_TRMA_TOUR_LIST b ON a.TOUR_ID = b.TOUR_ID
+        LEFT JOIN TB_TRMA_CMM_CD_D c1 ON c1.CMM_CD_ID = 'SIDO_CD'
             AND c1.CMM_CDV LIKE CONCAT(LPAD(b.SIDO_CD, 2, '0'), '%')
-        LEFT JOIN tb_trma_cmm_cd_d c2 ON c2.CMM_CD_ID = 'SGG_CD'
+        LEFT JOIN TB_TRMA_CMM_CD_D c2 ON c2.CMM_CD_ID = 'SGG_CD'
             AND c2.CMM_CDV LIKE CONCAT(LPAD(b.SIDO_CD, 2, '0'), LPAD(b.SGG_CD, 3, '0'), '%')
-        LEFT JOIN tb_trma_tour_cate d ON b.TOUR_ID = d.TOUR_ID
-        LEFT JOIN tb_trma_cmm_cd_d e ON d.CATE_CD = e.CMM_CDV
+        LEFT JOIN TB_TRMA_TOUR_CATE d ON b.TOUR_ID = d.TOUR_ID
+        LEFT JOIN TB_TRMA_CMM_CD_D e ON d.CATE_CD = e.CMM_CDV
             AND e.CMM_CD_ID = 'TOUR_LCLS_CD'
         WHERE b.USE_YN = 'Y'
         GROUP BY
@@ -113,7 +113,7 @@
             ,CAST(GROUP_CONCAT(DISTINCT f.CMM_CM_NM ORDER BY f.CMM_CM_NM) AS CHAR) AS CATE_NM -- 별칭 중복 수정
             ,(SELECT
             COUNT(1)
-            FROM tb_trma_moim_member mm
+            FROM TB_TRMA_MOIM_MEMBER mm
             WHERE mm.MOIM_ID = b.MOIM_ID
             AND mm.ROLE_CD = 'A') AS MEMBER_CNT
             ,b.MAX_MEMBER
@@ -122,13 +122,13 @@
             SELECT
             MOIM_ID,
             COUNT(1) AS VISIT_CNT
-            FROM tb_trma_moim_visit_h
+            FROM TB_TRMA_MOIM_VISIT_H
             GROUP BY MOIM_ID
         ) v
-        INNER JOIN tb_trma_moim_list b ON v.MOIM_ID = b.MOIM_ID
-        LEFT JOIN tb_trma_user_info d ON b.CREATE_USER = d.USER_ID
-        LEFT JOIN tb_trma_moim_cate e ON e.MOIM_ID = b.MOIM_ID
-        LEFT JOIN tb_trma_cmm_cd_d f ON e.CATE_CD = f.CMM_CDV AND f.CMM_CD_ID = 'CATE_ID'
+        INNER JOIN TB_TRMA_MOIM_LIST b ON v.MOIM_ID = b.MOIM_ID
+        LEFT JOIN TB_TRMA_USER_INFO d ON b.CREATE_USER = d.USER_ID
+        LEFT JOIN TB_TRMA_MOIM_CATE e ON e.MOIM_ID = b.MOIM_ID
+        LEFT JOIN TB_TRMA_CMM_CD_D f ON e.CATE_CD = f.CMM_CDV AND f.CMM_CD_ID = 'CATE_ID'
         WHERE b.USE_YN = 'Y'
         GROUP BY
             b.MOIM_ID

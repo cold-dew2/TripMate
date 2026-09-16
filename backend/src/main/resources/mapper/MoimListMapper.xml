@@ -26,20 +26,20 @@
             ,c.CATE_CD
             ,c.CATE_NM
             ,e.AVG_SCORE
-        FROM tb_trma_moim_list a
-        LEFT JOIN tb_trma_user_info d ON a.CREATE_USER = d.USER_ID
+        FROM TB_TRMA_MOIM_LIST a
+        LEFT JOIN TB_TRMA_USER_INFO d ON a.CREATE_USER = d.USER_ID
         LEFT JOIN (
             SELECT
             MOIM_ID,
             COUNT(USER_ID) AS MEMBER_CNT
-            FROM tb_trma_moim_member
+            FROM TB_TRMA_MOIM_MEMBER
             GROUP BY MOIM_ID
         ) m ON a.MOIM_ID = m.MOIM_ID
         LEFT JOIN (
             SELECT
             MOIM_ID,
             COUNT(VISIT_ID) AS VISIT_CNT
-            FROM tb_trma_moim_visit_h
+            FROM TB_TRMA_MOIM_VISIT_H
             GROUP BY MOIM_ID
         ) v ON a.MOIM_ID = v.MOIM_ID
         LEFT JOIN (
@@ -47,8 +47,8 @@
             e.MOIM_ID,
             GROUP_CONCAT(e.CATE_CD ORDER BY e.CATE_CD) AS CATE_CD,
             GROUP_CONCAT(f.CMM_CM_NM ORDER BY f.CMM_CM_NM) AS CATE_NM
-            FROM tb_trma_moim_cate e
-            LEFT JOIN tb_trma_cmm_cd_d f
+            FROM TB_TRMA_MOIM_CATE e
+            LEFT JOIN TB_TRMA_CMM_CD_D f
             ON e.CATE_CD = f.CMM_CDV
             AND f.CMM_CD_ID = 'CATE_ID'
             AND f.USE_YN = 'Y'
@@ -58,7 +58,7 @@
             SELECT
             MOIM_ID,
             AVG(REVIEW_SCORE) AS AVG_SCORE
-            FROM tb_trma_moim_review
+            FROM TB_TRMA_MOIM_REVIEW
             GROUP BY MOIM_ID
         ) e ON a.MOIM_ID = e.MOIM_ID
         WHERE a.USE_YN = 'Y'
@@ -94,20 +94,20 @@
             ,COALESCE(m.MEMBER_CNT, 0) AS MEMBER_CNT
             ,c.CATE_CD
             ,c.CATE_NM
-        FROM tb_trma_moim_list a
-        LEFT JOIN tb_trma_user_info d ON a.CREATE_USER = d.USER_ID
+        FROM TB_TRMA_MOIM_LIST a
+        LEFT JOIN TB_TRMA_USER_INFO d ON a.CREATE_USER = d.USER_ID
         LEFT JOIN (
             SELECT
                 MOIM_ID
                 ,COUNT(USER_ID) AS MEMBER_CNT
-            FROM tb_trma_moim_member
+            FROM TB_TRMA_MOIM_MEMER
             GROUP BY MOIM_ID
         ) m ON a.MOIM_ID = m.MOIM_ID
         LEFT JOIN (
             SELECT
                 MOIM_ID
                 ,COUNT(VISIT_ID) AS VISIT_CNT
-            FROM tb_trma_moim_visit_h
+            FROM TB_TRMA_MOIM_VISIT_H
             GROUP BY MOIM_ID
         ) v ON a.MOIM_ID = v.MOIM_ID
         LEFT JOIN (
@@ -115,8 +115,8 @@
                 e.MOIM_ID
                 ,GROUP_CONCAT(e.CATE_CD ORDER BY e.CATE_CD) AS CATE_CD
                 ,GROUP_CONCAT(f.CMM_CM_NM ORDER BY f.CMM_CM_NM) AS CATE_NM
-            FROM tb_trma_moim_cate e
-            LEFT JOIN tb_trma_cmm_cd_d f ON e.CATE_CD = f.CMM_CDV AND f.CMM_CD_ID = 'CATE_ID' AND f.USE_YN = 'Y'
+            FROM TB_TRMA_MOIM_CATE e
+            LEFT JOIN TB_TRMA_CMM_CD_D f ON e.CATE_CD = f.CMM_CDV AND f.CMM_CD_ID = 'CATE_ID' AND f.USE_YN = 'Y'
             GROUP BY e.MOIM_ID
         ) c ON a.MOIM_ID = c.MOIM_ID
         WHERE
@@ -141,10 +141,10 @@
             ,COUNT(c.USER_ID) AS memberCnt
             ,b.USER_NM
             ,AVG(d.REVIEW_SCORE) AS REVIEW_SCORE
-        FROM tb_trma_moim_list a
-        LEFT JOIN tb_trma_user_info b ON a.CREATE_USER = b.USER_ID
-        LEFT JOIN tb_trma_moim_member c ON a.MOIM_ID = c.MOIM_ID AND c.ROLE_CD = 'A'
-        LEFT JOIN tb_trma_moim_review d ON a.MOIM_ID = d.MOIM_ID AND d.REVIEW_TYPE_CD = 'O'
+        FROM TB_TRMA_MOIM_LIST a
+        LEFT JOIN TB_TRMA_USER_INFO b ON a.CREATE_USER = b.USER_ID
+        LEFT JOIN TB_TRMA_MOIM_MEMBER c ON a.MOIM_ID = c.MOIM_ID AND c.ROLE_CD = 'A'
+        LEFT JOIN TB_TRMA_MOIM_REVIEW d ON a.MOIM_ID = d.MOIM_ID AND d.REVIEW_TYPE_CD = 'O'
         WHERE a.MOIM_ID = #{moimId}
         GROUP BY
             a.MOIM_ID
@@ -167,8 +167,8 @@
         SELECT
             b.CMM_CDV AS CATE_CD
             ,b.CMM_CM_NM AS CATE_NM
-        FROM tb_trma_moim_cate a
-        LEFT JOIN tb_trma_cmm_cd_d b ON a.CATE_CD = b.CMM_CDV
+        FROM TB_TRMA_MOIM_CATE a
+        LEFT JOIN TB_TRMA_CMM_CD_D b ON a.CATE_CD = b.CMM_CDV
             AND b.CMM_CD_ID = 'CATE_ID'
             AND b.USE_YN = 'Y'
         WHERE a.MOIM_ID = #{moimId}
@@ -188,10 +188,10 @@
             ,b.TOUR_NM
             ,d.CMM_CDV AS CATE_CD
             ,d.CMM_CM_NM AS CATE_NM
-        FROM tb_trma_moim_calendar a
-        LEFT JOIN tb_trma_tour_list b ON a.TOUR_ID = b.TOUR_ID
-        LEFT JOIN tb_trma_tour_cate c ON b.TOUR_ID = c.TOUR_ID AND c.USE_YN = 'Y'
-        LEFT JOIN tb_trma_cmm_cd_d d ON c.CATE_CD = d.CMM_CDV AND d.CMM_CD_ID = 'TOUR_LCLS_CD'
+        FROM TB_TRMA_MOIM_CALENDAR a
+        LEFT JOIN TB_TRMA_TOUR_LIST b ON a.TOUR_ID = b.TOUR_ID
+        LEFT JOIN TB_TRMA_TOUR_CATE c ON b.TOUR_ID = c.TOUR_ID AND c.USE_YN = 'Y'
+        LEFT JOIN TB_TRMA_CMM_CD_D d ON c.CATE_CD = d.CMM_CDV AND d.CMM_CD_ID = 'TOUR_LCLS_CD'
         WHERE a.MOIM_ID = #{moimId}
         ORDER BY a.RMKS
 
@@ -206,7 +206,7 @@
         SELECT
             a.ROLE_CD
             ,a.STATE_CD
-        FROM tb_trma_moim_member a
+        FROM TB_TRMA_MOIM_MEMBER a
         WHERE 1=1
             AND a.MOIM_ID = #{moimId}
             AND a.USER_ID = #{userId}
@@ -231,12 +231,12 @@
             ,my_m.STATE_CD
             ,c.CATE_CD
             ,c.CATE_NM
-        FROM tb_trma_moim_list a
+        FROM TB_TRMA_MOIM_LIST a
         LEFT JOIN (
                 SELECT
                     MOIM_ID,
                     COUNT(USER_ID) AS MEMBER_CNT
-                FROM tb_trma_moim_member
+                FROM TB_TRMA_MOIM_MEMBER
                 GROUP BY MOIM_ID
             ) m ON a.MOIM_ID = m.MOIM_ID
         LEFT JOIN (
@@ -244,14 +244,14 @@
                     e.MOIM_ID,
                     GROUP_CONCAT(e.CATE_CD ORDER BY e.CATE_CD) AS CATE_CD,
                     GROUP_CONCAT(f.CMM_CM_NM ORDER BY f.CMM_CM_NM) AS CATE_NM
-                FROM tb_trma_moim_cate e
-                LEFT JOIN tb_trma_cmm_cd_d f
+                FROM TB_TRMA_MOIM_CATE e
+                LEFT JOIN TB_TRMA_CMM_CD_D f
                     ON e.CATE_CD = f.CMM_CDV
                     AND f.CMM_CD_ID = 'CATE_ID'
                     AND f.USE_YN = 'Y'
                 GROUP BY e.MOIM_ID
             ) c ON a.MOIM_ID = c.MOIM_ID
-        LEFT JOIN tb_trma_moim_member my_m ON my_m.MOIM_ID = a.MOIM_ID
+        LEFT JOIN TB_TRMA_MOIM_MEMBER my_m ON my_m.MOIM_ID = a.MOIM_ID
         WHERE a.USE_YN = 'Y'
         AND my_m.USER_ID = #{userId}
 
@@ -266,7 +266,7 @@
         SELECT
             a.CMM_CDV AS CATE_CD
             ,a.CMM_CM_NM AS CATE_NM
-        FROM tb_trma_cmm_cd_d a
+        FROM TB_TRMA_CMM_CD_D a
         WHERE a.CMM_CD_ID = 'CATE_ID'
             AND a.USE_YN = 'Y'
 
@@ -287,7 +287,7 @@
     <!-- ========================= -->
     <insert id="createMoimList">
 
-        INSERT INTO tb_trma_moim_list
+        INSERT INTO TB_TRMA_MOIM_LIST
         (
             MOIM_ID
             ,MOIM_TITLE
@@ -323,7 +323,7 @@
     <!-- ========================= -->
     <insert id="insertMoimCate">
 
-        INSERT INTO tb_trma_moim_cate
+        INSERT INTO TB_TRMA_MOIM_CATE
         (
             MOIM_ID
             ,CATE_CD
@@ -351,7 +351,7 @@
     <!-- ========================= -->
     <insert id="insertMoimPlan">
 
-        INSERT INTO tb_trma_moim_calendar
+        INSERT INTO TB_TRMA_MOIM_CALENDAR
         (
         MOIM_ID
         ,RMKS
