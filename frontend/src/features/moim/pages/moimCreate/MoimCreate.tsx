@@ -6,6 +6,7 @@ import type { MoimCreateForm } from "@/types/moim";
 
 import Step1 from "./components/step1/Step1";
 import Step2 from "./components/step2/Step2";
+import Step3 from "./components/step3/Step3";
 
 const MoimCreate = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -41,6 +42,14 @@ const MoimCreate = () => {
 
       {currentStep === 2 && (
         <Step2
+          setValue={setValue}
+          onNext={handleNext}
+          onPrev={handlePrev}
+        />
+      )}
+
+      {currentStep === 3 && (
+        <Step3
           setValue={setValue}
           onNext={handleNext}
           onPrev={handlePrev}

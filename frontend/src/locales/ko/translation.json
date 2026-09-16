@@ -1,4 +1,10 @@
 {
+  "common": {
+    "travelPeriod": "여행 기간",
+    "previous": "이전",
+    "next": "다음",
+    "declaration": "신고하기"
+  },
   "home": {
     "greeting": "안녕하세요!",
     "userName": "{{name}}님",
@@ -24,7 +30,7 @@
     "beach": "해변",
     "night": "야경"
   },
-  "moim": {
+  "moim": {  
     "listTitle": "소모임 찾기",
     "searchLabel": "소모임 검색",
     "searchPlaceholder": "소모임을 검색해주세요",
@@ -32,15 +38,10 @@
     "emptyMsg": "소모임이 존재하지 않아요!",
     "errorMsg": "다시 시도해주세요!",
     "button": "+ 새모임 만들기",
-    "manageTitle": "내 소모임 관리"
-  },
-  "place": {
-    "listTitle": "관광지 찾기",
-    "searchLabel": "관광지 검색",
-    "details": "관광지 상세",
-    "searchPlaceholder": "관광지를 검색해주세요",
-    "emptyMsg": "관광지가 존재하지 않아요!",
-    "errorMsg": "다시 시도해주세요!"
+    "manageTitle": "내 소모임 관리",
+    "step3": {
+      "title": "여행 일정을 구성할 일수를 선택하세요"
+    }
   },
   "image": {
     "alt": "{{title}} 이미지"
@@ -56,7 +57,13 @@
     "parking": "주차",
     "url": "홈페이지",
     "reviewsBtn": "후기 작성",
-    "lastUpdatedNote": "방문 전 운영시간 및 이용요금을 확인해주세요."
+    "lastUpdatedNote": "방문 전 운영시간 및 이용요금을 확인해주세요.",
+    "listTitle": "관광지 찾기",
+    "searchLabel": "관광지 검색",
+    "details": "관광지 상세",
+    "searchPlaceholder": "관광지를 검색해주세요",
+    "emptyMsg": "관광지가 존재하지 않아요!",
+    "errorMsg": "다시 시도해주세요!"
   },
   "my": {
     "moiming": "진행 중 소모임",
@@ -68,6 +75,10 @@
     "myMoim": "내 소모임 관리",
     "declaration": "안심신고",
     "logout": "로그아웃"
+  },
+  "safetyReport": {
+    "title": "안심신고",
+    "notice": "위급 상황 시 즉시 신고하면 관리자와 관계 기관에 실시간으로 접수됩니다."
   },
   "lang": {
     "ko": "한국어",

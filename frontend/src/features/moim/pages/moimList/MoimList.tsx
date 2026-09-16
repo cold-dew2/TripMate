@@ -128,7 +128,7 @@ const MoimList = () => {
           )}
         </section>
 
-        <Button text={t("moim.button")} variant="fixed" as="a" href="/" />
+      <Button text={t("moim.button")} variant="fixed" as="a" href="/createMoim" />
       </>
   );
 };

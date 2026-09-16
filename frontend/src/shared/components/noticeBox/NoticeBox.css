@@ -1,0 +1,15 @@
+.notice-box {
+  padding: var(--space-lg);
+  color: var(--yellow-600);
+  font-size: var(--fs-sm);
+  line-height: var(--lh-lg);
+  border: 1px solid var(--yellow-400);
+  border-radius: var(--radius-xl);
+  background: var(--yellow-300);
+}
+.notice-box.red-box {
+  color: var(--red-600);
+  text-align: center;
+  border: 1px solid var(--red-400);
+  background-color: var(--red-300);
+}

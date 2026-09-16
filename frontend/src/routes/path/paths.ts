@@ -39,6 +39,11 @@ export const contentRoutes: (RouteObject & { handle?: RouteHandle })[] = [
     handle: { title: "place.listTitle", showBack: false},
   },
   {
+    path: "/place/:tourId",
+    lazy: () => import("@/features/place/pages/placeDetail/PlaceDetail").then((m) => ({ Component: m.default })),
+    handle: { title: "place.details", showBack: true },
+  },
+  {
     path: "/moim/:moimId",  
     lazy: () => import("@/features/moim/pages/moimDetail/MoimDetail").then((m) => ({ Component: m.default })),
     handle: { showBack: true },
@@ -49,15 +54,15 @@ export const contentRoutes: (RouteObject & { handle?: RouteHandle })[] = [
     handle: { title: "moim.manageTitle", showBack: true },
   },
   {
-    path: "/place/:tourId", 
-    lazy: () => import("@/features/place/pages/placeDetail/PlaceDetail").then((m) => ({ Component: m.default })),
-    handle: { title: "place.details", showBack: true },
+    path: "/safetyReport",
+    lazy: () => import("@/features/my/pages/safetyReport/SafetyReport").then((m) => ({ Component: m.default })),
+    handle: { title: "safetyReport.title", showBack: true },
   },
 ];
 
 export const noLayoutRoutes: (RouteObject & { handle?: RouteHandle })[] = [
   {
-    path: "/my",
+  path: "/my",
     lazy: () => import("@/features/my/pages/myPage/Mypage").then((m) => ({Component: m.default,})),
   },
   {

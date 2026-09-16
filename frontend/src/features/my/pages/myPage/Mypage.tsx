@@ -90,7 +90,7 @@ const Mypage = () => {
         <ul className="myPage-list">
           <li><Link to="/">{t("my.myPlan")}</Link></li>
           <li><Link to="/">{t("my.myMoim")}</Link></li>
-          <li><Link to="/">{t("my.declaration")}</Link></li>
+          <li><Link to="/safetyReport">{t("my.declaration")}</Link></li>
         </ul>
 
         <button type="button" className="btn-logout">{t("my.logout")}</button>

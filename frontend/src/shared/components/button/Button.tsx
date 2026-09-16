@@ -13,7 +13,7 @@ interface Props {
   img?: string;
   icon?: boolean;
   size?: "icon" | "sm" | "md" | "lg";
-  variant?: "primary" | "secondary" | "destructive" | "ghost" | "fixed";
+  variant?: "primary" | "secondary" | "destructive" | "negative" | "ghost" | "fixed";
   onClick?: (e: React.MouseEvent<HTMLButtonElement>) => void;
   onFocus?: (e: React.FocusEvent<HTMLButtonElement>) => void;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

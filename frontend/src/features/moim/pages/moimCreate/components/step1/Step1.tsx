@@ -117,7 +117,7 @@ const Step1 = ({ setValue, onNext }: Step1Props) => {
       </ul>
 
       <div className="buttons fixed">
-        <Button text={t("다음")} variant="fixed" onClick={onNext}/>
+        <Button text={t("다음")} size="lg" onClick={onNext}/>
       </div>
     </div>
   )

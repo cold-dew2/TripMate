@@ -74,7 +74,20 @@
   border-color: var(--white-300);
   background-color: var(--white-100);
 }
-
+.btn-negative {
+  color: var(--white);
+  border: 1px solid var(--red-700);
+  background-color: var(--red-700);
+}
+.btn-negative:hover:not(:disabled) {
+  border-color: var(--red-100);
+  background-color: var(--red-100);
+}
+.btn-negative:disabled {
+  color: var(--white);
+  border-color: var(--red-700);
+  background-color: var(--red-700);
+}
 .btn-ghost {
   color: var(--gray-900);
   background-color: rgba(255, 255, 255, 0.2);
@@ -86,7 +99,6 @@
   color: var(--gray-400);
   background-color: rgba(255, 255, 255, 0.1);
 }
-
 .btn-destructive {
   color: var(--red-700);
   border: 1px solid var(--red-400);
@@ -131,6 +143,14 @@
   right: 28px;
   width: auto;
   border-radius: 28px;
+}
+.btn-lg {
+  width: 100%;
+  padding: var(--space-2xl);
+  font-size: var( --fs-lg);
+  font-weight: var(--fw-bold);
+  line-height: normal;
+  border-radius: var(--radius-lg);
 }
 
 /* my-logout */

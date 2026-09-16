@@ -1,3 +1,6 @@
+.form:not(:first-child) {
+  margin-top: var(--space-3xl);
+}
 .form + .form {
   margin-top: var(--space-2xl);
 }
@@ -24,4 +27,7 @@
 .form input[readonly] {
   border: 1px solid var(--gray-100);
   background: var(--gray-100);
+}
+.form .btn {
+  margin-top: var(--space-2xl);
 }

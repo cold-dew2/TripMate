@@ -1,5 +1,6 @@
 import type { PlaceDetail } from '@/types/place';
 import { useTranslation } from 'react-i18next';
+import './Header.css'
 
 interface InformationProps { 
   place: PlaceDetail; 

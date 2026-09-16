@@ -6,8 +6,8 @@ const useMoimDetail = (moimId: string) => {
   return useQuery({
     queryKey: ["moimDetail", moimId],
     queryFn: async () => {
-      const result = await apiClient.get<{ data: MoimDetailResponse }>(`/moimList/moimDetail.json?moimId=${moimId}`);
-      // const result = await apiClient.get<{ data: Moim }>(`/moimList/moimDetail/${moimId}.json`);
+      // const result = await apiClient.get<{ data: MoimDetailResponse }>(`/moimList/moimDetail.json?moimId=${moimId}`);
+      const result = await apiClient.get<{ data: Moim }>(`/moimList/moimDetail/${moimId}.json`);
 
       if (!result.success) {
         throw result;
