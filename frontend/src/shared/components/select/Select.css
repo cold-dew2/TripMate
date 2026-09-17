@@ -1,0 +1,41 @@
+.form:not(:first-child) {
+  margin-top: var(--space-3xl);
+}
+.form + .form {
+  margin-top: var(--space-2xl);
+}
+
+.form.select {
+  position: relative
+}
+.form.select:after {
+  content: "";
+  position: absolute;
+  right: 10px;
+  bottom: 12px;
+  display: block;
+  width: 20px;
+  height: 20px;
+  background: url('/icons/icon_arrow_black.svg') no-repeat center;
+  transform: rotate(270deg);
+}
+.form label {
+  display: block;
+  margin-bottom: var(--space-xl);
+  color: var(--gray-600);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-bold);
+}
+.form select {
+  position: relative;
+  width: 100%;
+  padding: var(--space-lg) var(--space-7xl) var(--space-lg) var(--space-2xl);
+  color: var(--gray-900);
+  border: 1px solid var(--gray-200);
+  border-radius: 12px;
+  background: var(--white);
+  box-sizing: border-box;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+}

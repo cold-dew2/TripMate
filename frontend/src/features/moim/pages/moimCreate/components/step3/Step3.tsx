@@ -1,5 +1,6 @@
 import Button from "@/shared/components/button/Button";
 import ContentTitle from "@/shared/components/contentTitle/ContentTitle"
+import DaySchedule from "@/shared/components/daySchedule/DaySchedule";
 import type { MoimCreateForm } from "@/types/moim";
 import type { UseFormSetValue } from "react-hook-form";
 import { useTranslation } from "react-i18next";
@@ -16,6 +17,8 @@ const Step3 = ({ setValue, onNext, onPrev }: Step3Props) => {
 
     <div className="create-content">
       <ContentTitle title={t("moim.step3.title")} />
+
+      <DaySchedule day="1" date="dd"></DaySchedule>
 
       <div className="buttons fixed">
         <Button text={t("common.previous")} variant="secondary" onClick={onPrev} />

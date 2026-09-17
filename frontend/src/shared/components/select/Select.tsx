@@ -1,4 +1,5 @@
 import React from 'react'
+import "./Select.css"
 
 interface SelectProps {
   id?: string;

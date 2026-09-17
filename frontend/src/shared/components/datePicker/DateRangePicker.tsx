@@ -1,17 +1,16 @@
-import { useRef, useState } from "react";
+import { useRef, useState, useTransition } from "react";
 import { DayPicker, type DateRange } from "react-day-picker";
 import { format } from "date-fns";
 import "react-day-picker/style.css";
+import "./DateRangePicker.css"
 
 interface DateRangePickerProps {
   label: string;
   onChange: (startDate: string, endDate: string) => void;
 }
 
-const DateRangePicker = ({
-  label,
-  onChange,
-}: DateRangePickerProps) => {
+const DateRangePicker = ({ label, onChange }: DateRangePickerProps) => {
+  const [t] = useTransition();
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
   const [isOpen, setIsOpen] = useState(false);
   const [activeField, setActiveField] = useState<"start" | "end">();
@@ -78,14 +77,14 @@ const DateRangePicker = ({
   };
 
   return (
-    <div className="date-picker">
+    <div className="form date-picker">
       <label>{label}</label>
 
-      <div className="date-picker-inputs">
+      <div className="date-inputs">
         <button
           ref={startButtonRef}
           type="button"
-          className={activeField === "start" ? "active" : ""}
+          className={`btn-datePicker date-start ${activeField === "start" ? "active" : ""}`}
           onClick={handleStartClick}
         >
           {dateRange?.from
@@ -96,7 +95,7 @@ const DateRangePicker = ({
         <button
           ref={endButtonRef}
           type="button"
-          className={activeField === "end" ? "active" : ""}
+          className={`btn-datePicker date-start ${activeField === "end" ? "active" : ""}`}
           onClick={handleEndClick}
         >
           {dateRange?.to
@@ -111,6 +110,9 @@ const DateRangePicker = ({
           selected={dateRange}
           onSelect={handleSelect}
           disabled={{ before: new Date() }}
+          formatters={{
+            formatCaption: (date) => format(date, "yyyy. MM"),
+          }}
         />
       )}
     </div>

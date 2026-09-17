@@ -7,7 +7,7 @@ const useUser = () => {
         queryKey: ["user"],
         queryFn: async() => {
           
-          const result = await apiClient.get<UserResponse>("/trmaHome/userInfo.json");
+          const result = await apiClient.get<UserResponse>("/trmaHome/userInfo");
 
           if (!result.success) {
             throw result;

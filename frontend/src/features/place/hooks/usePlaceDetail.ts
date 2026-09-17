@@ -7,7 +7,7 @@ const usePlaceDetail = (tourId: string) => {
     queryKey: ["placeDetail", tourId],
     queryFn: async () => {
       // const result = await apiClient.get<{ data: PlaceDetail }>(`/tourList/tourDetail.json?tourId=${tourId}`);
-      const result = await apiClient.get<{ data: PlaceDetail }>(`/tourList/tourDetail/${tourId}.json`);
+      const result = await apiClient.get<{ data: PlaceDetail }>(`/tourList/tourDetail/${tourId}`);
 
       if (!result.success) {
         throw result;
@@ -23,7 +23,7 @@ const usePlaceDetail = (tourId: string) => {
     queryKey: ["placeAiDetail", tourId],
     queryFn: async () => {
       // const result = await apiClient.get<{ data: PlaceAIDetail }>(`/tourList/tourAIDetail.json?tourId=${tourId}`);
-      const result = await apiClient.get<{ data: PlaceAIDetail }>(`/tourList/tourAIDetail/${tourId}.json`);
+      const result = await apiClient.get<{ data: PlaceAIDetail }>(`/tourList/tourAIDetail/${tourId}`);
 
       if (!result.success) {
         throw result;
