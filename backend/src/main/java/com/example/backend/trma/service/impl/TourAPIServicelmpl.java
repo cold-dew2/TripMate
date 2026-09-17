@@ -169,19 +169,16 @@ public class TourAPIServicelmpl implements TourAPIService {
     private String SearchFestivalPath;
 
     @Override
-    public TourAPIResponse tourInfoList() {
+    public TourAPIResponse areaBased_batch() {
         try {
             areaBasedList2();
-            detailCommon2();
-            searchFestival2();
-            tourMaster();
 
             return new TourAPIResponse(
                     true,
                     200,
                     "SUCCESS",
                     "한국관광공사 API를 정상적으로 호출했습니다.",
-                    "/tourAPI/tourInfoList",
+                    "/tourAPI/areaBasedList2",
                     null
             );
         } catch (Exception e) {
@@ -191,7 +188,85 @@ public class TourAPIServicelmpl implements TourAPIService {
                     500,
                     "FAIL",
                     "한국관광공사 API 호출 오류: " + e,
-                    "/tourAPI/tourInfoList",
+                    "/tourAPI/areaBasedList2",
+                    null
+            );
+        }
+    }
+
+    @Override
+    public TourAPIResponse detailCommon_batch() {
+        try {
+            detailCommon2();
+
+            return new TourAPIResponse(
+                    true,
+                    200,
+                    "SUCCESS",
+                    "한국관광공사 API를 정상적으로 호출했습니다.",
+                    "/tourAPI/detailCommon2",
+                    null
+            );
+        } catch (Exception e) {
+
+            return new TourAPIResponse(
+                    false,
+                    500,
+                    "FAIL",
+                    "한국관광공사 API 호출 오류: " + e,
+                    "/tourAPI/detailCommon2",
+                    null
+            );
+        }
+    }
+
+    @Override
+    public TourAPIResponse searchFestival_batch() {
+        try {
+            searchFestival2();
+
+            return new TourAPIResponse(
+                    true,
+                    200,
+                    "SUCCESS",
+                    "한국관광공사 API를 정상적으로 호출했습니다.",
+                    "/tourAPI/searchFestival2",
+                    null
+            );
+        } catch (Exception e) {
+
+            return new TourAPIResponse(
+                    false,
+                    500,
+                    "FAIL",
+                    "한국관광공사 API 호출 오류: " + e,
+                    "/tourAPI/searchFestival2",
+                    null
+            );
+        }
+    }
+
+    @Override
+    public TourAPIResponse tourMaster_batch() {
+        try {
+            tourMaster();
+
+            return new TourAPIResponse(
+                    true,
+                    200,
+                    "SUCCESS",
+                    "한국관광공사 API를 정상적으로 호출했습니다.",
+                    "/tourAPI/tourMaster",
+                    null
+            );
+        } catch (Exception e) {
+
+            return new TourAPIResponse(
+                    false,
+                    500,
+                    "FAIL",
+                    "한국관광공사 API 호출 오류: " + e,
+                    "/tourAPI/tourMaster",
                     null
             );
         }

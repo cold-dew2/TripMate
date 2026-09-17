@@ -25,9 +25,30 @@ public class TourAPIController {
 //    }
 
     //한국관광공사_국문 관광정보 서비스_GW
-    @GetMapping("/tourInfoList")
-    public TourAPIResponse tourInfoList() {
+    @GetMapping("/areaBased_batch")
+    public TourAPIResponse areaBased_batch() {
 
-        return tourAPIService.tourInfoList();
+        return tourAPIService.areaBased_batch();
+    }
+
+    //한국관광공사_국문 관광정보 서비스_GW
+    @GetMapping("/detailCommon_batch")
+    public TourAPIResponse detailCommon_batch() {
+
+        return tourAPIService.detailCommon_batch();
+    }
+
+    //한국관광공사_국문 관광정보 서비스_GW
+    @GetMapping("/searchFestival_batch")
+    public TourAPIResponse searchFestival_batch() {
+
+        return tourAPIService.searchFestival_batch();
+    }
+
+    //한국관광공사_국문 관광정보 서비스_GW
+    @GetMapping("/tourMaster_batch")
+    public TourAPIResponse tourMaster_batch() {
+
+        return tourAPIService.tourMaster_batch();
     }
 }
