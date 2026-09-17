@@ -12,7 +12,7 @@ const ContentTitle = ({ title, desc, href, linkText }: Props) => {
   return (
     <div className="content-title">
       <div className="title-info">
-        <p className="title">{title}</p>
+        <h2 className="title">{title}</h2>
         <span className="desc">{desc}</span>
       </div>
       {href && (

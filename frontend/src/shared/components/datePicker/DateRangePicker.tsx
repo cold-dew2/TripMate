@@ -1,8 +1,12 @@
-import { useRef, useState, useTransition } from "react";
+import { useRef, useState } from "react";
 import { DayPicker, type DateRange } from "react-day-picker";
 import { format } from "date-fns";
+import { ko, ja } from "date-fns/locale";
+import { getApiLang } from "@/shared/utils/lang";
 import "react-day-picker/style.css";
 import "./DateRangePicker.css"
+
+const DATE_LOCALES = { ko, ja } as const;
 
 interface DateRangePickerProps {
   label: string;
@@ -10,7 +14,6 @@ interface DateRangePickerProps {
 }
 
 const DateRangePicker = ({ label, onChange }: DateRangePickerProps) => {
-  const [t] = useTransition();
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
   const [isOpen, setIsOpen] = useState(false);
   const [activeField, setActiveField] = useState<"start" | "end">();
@@ -107,9 +110,11 @@ const DateRangePicker = ({ label, onChange }: DateRangePickerProps) => {
       {isOpen && (
         <DayPicker
           mode="range"
+          navLayout="around"
           selected={dateRange}
           onSelect={handleSelect}
           disabled={{ before: new Date() }}
+          locale={DATE_LOCALES[getApiLang() as keyof typeof DATE_LOCALES]}
           formatters={{
             formatCaption: (date) => format(date, "yyyy. MM"),
           }}

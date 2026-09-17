@@ -1,6 +1,7 @@
 import AsyncList from "@/shared/components/asyncList/AsyncList";
 import Input from "@/shared/components/input/Input";
 import FilterTabs, { type FilterOption } from "@/shared/components/filterTabs/FilterTabs";
+import RegionBanner from "@/shared/components/regionBanner/RegionBanner";
 import SpotCard from "@/shared/components/spotCard/SpotCard";
 import usePlaceList from "../../hooks/usePlaceList";
 import { useMemo, useState, useEffect, useRef, useCallback } from "react";
@@ -9,11 +10,15 @@ import { Link, useNavigate } from "react-router-dom";
 
 const PlaceFilter: FilterOption[] = [
   { id: "all", label: "전체" },
+  { id: "세종", label: "세종" },
   { id: "서울", label: "서울" },
   { id: "부산", label: "부산" },
   { id: "제주", label: "제주" },
-  { id: "foreignWelcome", label: "외국인환영" },
 ];
+
+// 지역 탭은 카테고리 코드(cateCd)가 아니라 주소 키워드 검색으로 처리해야
+// 실제로 해당 지역 관광지가 필터링된다(cateCd로 보내면 항상 결과가 0건이 되는 버그였음).
+const REGION_IDS = ["세종", "서울", "부산", "제주"];
 
 const PlaceList = () => {
   const { t } = useTranslation();
@@ -27,10 +32,11 @@ const PlaceList = () => {
     e.preventDefault();
     const trimmed = query.trim();
     if (!trimmed) return;
-    navigate(`/moimSearch?q=${encodeURIComponent(trimmed)}`);
+    navigate(`/search?q=${encodeURIComponent(trimmed)}&tab=place`);
   };
 
   // 1. activeFilter 변경에 따라 새로운 무한 스크롤 query 실행
+  const isRegionFilter = REGION_IDS.includes(activeFilter);
   const {
     data,
     isLoading,
@@ -38,7 +44,7 @@ const PlaceList = () => {
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
-  } = usePlaceList(activeFilter);
+  } = usePlaceList(isRegionFilter ? "all" : activeFilter, isRegionFilter ? activeFilter : undefined);
 
   // 2. 다차원 배열로 오는 pages 데이터를 1차원 배열로 평탄화 (flat)
   const places = useMemo(() => {
@@ -74,6 +80,12 @@ const PlaceList = () => {
 
   return (
       <>
+        <RegionBanner
+          compact
+          eyebrow={t("home.sejongEyebrow")}
+          title={t("home.sejongTitle")}
+          href="/search?q=세종&tab=place"
+        />
         <section>
           <form onSubmit={handleSearchSubmit}>
             <Input

@@ -20,7 +20,7 @@
   background: var(--white);
   box-sizing: border-box;
 }
-.form input:placeholder {
+.form input::placeholder {
   color: var(--gray-600);
 }
 .form input:disabled,
@@ -30,4 +30,7 @@
 }
 .form .btn {
   margin-top: var(--space-2xl);
+}
+.error, .error-msg {
+  color: var(--red-700);
 }

@@ -1,11 +1,11 @@
 import Router from './routes/Router'
-import './App.css'
-function App() {
+import AppFrame from './layouts/components/appFrame/AppFrame'
 
+function App() {
   return (
-    <>
+    <AppFrame>
       <Router />
-    </>
+    </AppFrame>
   )
 }
 

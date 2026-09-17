@@ -9,4 +9,6 @@ import lombok.Setter;
 @Setter
 public class TourDetailReviewRequest {
     private String tourId;
+    private int page;
+    private int offset;
 }

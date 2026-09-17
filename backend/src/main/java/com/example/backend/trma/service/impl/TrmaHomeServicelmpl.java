@@ -10,12 +10,14 @@ import com.example.backend.trma.dto.response.*;
 import com.example.backend.trma.mapper.TrmaHomeMapper;
 import com.example.backend.trma.service.TrmaHomeService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class TrmaHomeServicelmpl implements TrmaHomeService {
 
     private final TrmaHomeMapper trmaHomeMapper;
@@ -36,6 +38,7 @@ public class TrmaHomeServicelmpl implements TrmaHomeService {
                     UserInfo
             );
         } catch (Exception e) {
+            log.error("처리 중 오류가 발생했습니다.", e);
             return new UserInfoResponse(
                     false,
                     500,
@@ -64,6 +67,7 @@ public class TrmaHomeServicelmpl implements TrmaHomeService {
                     CategoryInfo
             );
         } catch (Exception e) {
+            log.error("처리 중 오류가 발생했습니다.", e);
             return new TourCategoryResponse(
                     false,
                     500,
@@ -92,6 +96,7 @@ public class TrmaHomeServicelmpl implements TrmaHomeService {
                     BestTourList
             );
         } catch (Exception e) {
+            log.error("처리 중 오류가 발생했습니다.", e);
             return new BestTourListResponse(
                     false,
                     500,
@@ -120,6 +125,7 @@ public class TrmaHomeServicelmpl implements TrmaHomeService {
                     bestMoimList
             );
         } catch (Exception e) {
+            log.error("처리 중 오류가 발생했습니다.", e);
             return new BestMoimListResponse(
                     false,
                     500,

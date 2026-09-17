@@ -24,7 +24,9 @@
             d.CATE_CD,
             d.CATE_NM,
             IFNULL(a.AVG_SCORE,0) AS AVG_SCORE,
-            b.FIRST_IMAGE
+            b.FIRST_IMAGE,
+            b.TOUR_NM_EN,
+            b.TOUR_NM_JA
         FROM TB_TRMA_TOUR_LIST b
             LEFT JOIN (
                 SELECT
@@ -51,6 +53,9 @@
             AND (
             b.TOUR_NM LIKE CONCAT('%', #{keyword}, '%')
             OR b.TOUR_CONTENT LIKE CONCAT('%', #{keyword}, '%')
+            OR b.ROAD_ADDR LIKE CONCAT('%', #{keyword}, '%')
+            OR c1.CMM_CM_NM LIKE CONCAT('%', #{keyword}, '%')
+            OR c2.CMM_CM_NM LIKE CONCAT('%', #{keyword}, '%')
             )
         </if>
         <if test="cateCd != null and cateCd != ''">
@@ -110,6 +115,13 @@
             a.FIRST_IMAGE,
             a.TOUR_NM,
             a.TOUR_CONTENT,
+            a.TOUR_CONTENT AS OVERVIEW,
+            a.MAP_Y AS LATITUDE,
+            a.MAP_X AS LONGITUDE,
+            a.TOUR_NM_EN,
+            a.TOUR_NM_JA,
+            a.TOUR_CONTENT_EN AS OVERVIEW_EN,
+            a.TOUR_CONTENT_JA AS OVERVIEW_JA,
             b1.CMM_CDV AS SIDO_CD,
             b1.CMM_CM_NM AS SIDO_NM,
             b2.CMM_CDV AS SGG_CD,
@@ -150,7 +162,6 @@
     <!-- 관광지 상세조회(리뷰) -->
     <!-- ========================= -->
     <select id="tourDetailReview"
-            parameterType="String"
             resultType="com.example.backend.trma.dto.dataList.TourDetailReviewData">
         SELECT
             b.MOIM_TITLE
@@ -159,6 +170,7 @@
             , a.REVIEW_TITLE
             , a.REVIEW_CONTENT
             , a.REVIEW_SCORE
+            , a.IMG_URLS
             , a.CREATE_DT
             , CASE
                 WHEN CHAR_LENGTH(c.USER_NM) = 1 THEN '*'
@@ -167,8 +179,92 @@
              END AS USER_NM
         FROM TB_TRMA_MOIM_REVIEW a
         LEFT JOIN TB_TRMA_MOIM_LIST b ON a.MOIM_ID = b.MOIM_ID
-        LEFT JOIN TB_TRMA_USER_INFO c ON b.CREATE_USER = c.USER_ID
+        LEFT JOIN TB_TRMA_USER_INFO c ON a.CREATE_USER = c.USER_ID
         WHERE a.REVIEW_TYPE_CD = 'T'
             AND a.TOUR_ID = #{tourId}
+        ORDER BY a.CREATE_DT DESC
+        LIMIT 10 OFFSET #{offset}
     </select>
+
+    <!-- ========================= -->
+    <!-- 관광지 후기 등록 -->
+    <!-- ========================= -->
+    <insert id="insertTourReview">
+
+        INSERT INTO TB_TRMA_MOIM_REVIEW
+        (
+            TOUR_ID
+            ,REVIEW_TYPE_CD
+            ,REVIEW_TITLE
+            ,REVIEW_CONTENT
+            ,REVIEW_SCORE
+            ,IMG_URLS
+
+            ,USE_YN
+            ,CREATE_USER
+            ,CREATE_DT
+            ,UPDATE_USER
+            ,UPDATE_DT
+        )VALUES(
+            #{request.tourId}
+            ,'T'
+            ,#{request.reviewTitle}
+            ,#{request.reviewContent}
+            ,#{request.reviewScore}
+            ,#{imgUrls}
+
+            ,'Y'
+            ,#{userId}
+            ,CURRENT_TIMESTAMP
+            ,#{userId}
+            ,CURRENT_TIMESTAMP
+        )
+
+    </insert>
+
+    <!-- ========================= -->
+    <!-- 관광지명/개요 번역 캐시 저장 -->
+    <!-- ========================= -->
+    <update id="updateTourTranslation">
+
+        UPDATE TB_TRMA_TOUR_LIST
+        <set>
+            <if test="tourNmEn != null">TOUR_NM_EN = #{tourNmEn},</if>
+            <if test="tourNmJa != null">TOUR_NM_JA = #{tourNmJa},</if>
+            <if test="overviewEn != null">TOUR_CONTENT_EN = #{overviewEn},</if>
+            <if test="overviewJa != null">TOUR_CONTENT_JA = #{overviewJa},</if>
+        </set>
+        WHERE TOUR_ID = #{tourId}
+
+    </update>
+
+    <!-- ========================= -->
+    <!-- 사용자 관광지 등록(소모임 생성 시 직접 입력) -->
+    <!-- ========================= -->
+    <insert id="insertCustomTour">
+
+        INSERT INTO TB_TRMA_TOUR_LIST
+        (
+            TOUR_ID
+            ,TOUR_NM
+            ,ROAD_ADDR
+
+            ,USE_YN
+            ,CREATE_USER
+            ,CREATE_DT
+            ,UPDATE_USER
+            ,UPDATE_DT
+        )VALUES(
+            #{tourId}
+            ,#{request.tourNm}
+            ,#{request.roadAddr}
+
+            ,'Y'
+            ,#{userId}
+            ,CURRENT_TIMESTAMP
+            ,#{userId}
+            ,CURRENT_TIMESTAMP
+        )
+
+    </insert>
 </mapper>

@@ -1,0 +1,26 @@
+{
+  "success": true,
+  "status": 0,
+  "code": "SUCCESS",
+  "message": "관광지 상세 조회 성공",
+  "path": "/tourList/tourDetail",
+  "token": "",
+  "data": {
+    "avgScore": 4.6,
+    "cateCd": "PAR",
+    "cateNm": "공원",
+    "detailAddr": "",
+    "firstImage": "/images/places/T012.jpeg",
+    "roadAddr": "세종특별자치시 한누리대로 2500",
+    "sggCd": "360",
+    "sggNm": "세종특별자치시",
+    "sidoCd": "36",
+    "sidoNm": "세종특별자치시",
+    "tourId": "T012",
+    "tourNm": "세종호수공원",
+    "zipCd": "30151",
+    "overview": "국내 최대 규모의 인공호수 공원으로, 산책로와 자전거길, 수상레저 체험까지 즐길 수 있는 세종시 시민들의 대표 휴식 공간입니다.",
+    "latitude": 36.48,
+    "longitude": 127.2825
+  }
+}

@@ -6,16 +6,21 @@ import com.example.backend.trma.dto.response.*;
 import com.example.backend.trma.mapper.TourListMapper;
 import com.example.backend.trma.service.TourListService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 import tools.jackson.databind.ObjectMapper;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class TourListServicelmpl implements TourListService {
 
     private final TourListMapper tourListMapper;
@@ -32,6 +37,7 @@ public class TourListServicelmpl implements TourListService {
             request.setOffset(offset);
 
             List<TourSearchData> tourSearch = tourListMapper.tourSearch(request);
+            applySearchTranslations(tourSearch, request.getLang());
             return new TourSearchResponse(
                     true,
                     200,
@@ -42,6 +48,7 @@ public class TourListServicelmpl implements TourListService {
                     tourSearch
             );
         } catch (Exception e) {
+            log.error("처리 중 오류가 발생했습니다.", e);
 
             return new TourSearchResponse(
                     false,
@@ -278,6 +285,7 @@ public class TourListServicelmpl implements TourListService {
             );
 
         } catch (Exception e) {
+            log.error("처리 중 오류가 발생했습니다.", e);
 
             e.printStackTrace();
 
@@ -298,6 +306,7 @@ public class TourListServicelmpl implements TourListService {
 
         try {
             TourDetailData tourDetail = tourListMapper.tourDetail(request.getTourId());
+            applyDetailTranslation(tourDetail, request.getLang());
 
             return new TourDetailResponse(
                     true,
@@ -309,6 +318,7 @@ public class TourListServicelmpl implements TourListService {
                     tourDetail
             );
         } catch (Exception e) {
+            log.error("처리 중 오류가 발생했습니다.", e);
             return new TourDetailResponse(
                     false,
                     500,
@@ -413,6 +423,7 @@ public class TourListServicelmpl implements TourListService {
                     tourAiDetail
             );
         } catch (Exception e) {
+            log.error("처리 중 오류가 발생했습니다.", e);
             return new TourAiDetailResponse(
                     false,
                     500,
@@ -429,7 +440,11 @@ public class TourListServicelmpl implements TourListService {
     public TourDetailReviewResponse tourDetailReview(TourDetailReviewRequest request) {
 
         try {
-            List<TourDetailReviewData> tourDetailReview = tourListMapper.tourDetailReview(request.getTourId());
+            if (request.getPage() == 0) {
+                request.setPage(1);
+            }
+            int offset = (request.getPage() - 1) * 10;
+            List<TourDetailReviewData> tourDetailReview = tourListMapper.tourDetailReview(request.getTourId(), offset);
 
             return new TourDetailReviewResponse(
                     true,
@@ -441,6 +456,7 @@ public class TourListServicelmpl implements TourListService {
                     tourDetailReview
             );
         } catch (Exception e) {
+            log.error("처리 중 오류가 발생했습니다.", e);
             return new TourDetailReviewResponse(
                     false,
                     500,
@@ -450,6 +466,289 @@ public class TourListServicelmpl implements TourListService {
                     "",
                     null
             );
+        }
+    }
+
+    //관광지 후기 등록
+    public CreateTourReviewResponse createTourReview(CreateTourReviewRequest request, String userId) {
+
+        try {
+            String imgUrls = request.getImageUrls() == null ? null : String.join(",", request.getImageUrls());
+            tourListMapper.insertTourReview(request, imgUrls, userId);
+
+            return new CreateTourReviewResponse(
+                    true,
+                    200,
+                    "SUCCESS",
+                    "후기 등록이 완료되었습니다.",
+                    "/tourList/tourDetailReview",
+                    ""
+            );
+        } catch (Exception e) {
+            log.error("처리 중 오류가 발생했습니다.", e);
+            return new CreateTourReviewResponse(
+                    false,
+                    500,
+                    "FAIL",
+                    "후기 등록 중 오류가 발생했습니다.",
+                    "/tourList/tourDetailReview",
+                    ""
+            );
+        }
+    }
+
+    //AI 일정 추천
+    public AiScheduleResponse aiSchedule(AiScheduleRequest request) {
+
+        try {
+            int dayCount = Math.max(1, request.getDayCount());
+
+            TourSearchRequest searchRequest = new TourSearchRequest();
+            searchRequest.setCateCd(request.getCateCd());
+            searchRequest.setKeyword(request.getKeyword());
+
+            List<TourSearchData> tourList = tourListMapper.tourSearch(searchRequest);
+            if (tourList == null || tourList.isEmpty()) {
+                searchRequest.setKeyword("여행");
+                tourList = tourListMapper.tourSearch(searchRequest);
+            }
+
+            StringBuilder tourListPrompt = new StringBuilder();
+            int no = 1;
+            for (TourSearchData tour : tourList) {
+                tourListPrompt.append("""
+                        [관광지 번호 %03d]
+                        관광지ID : %s
+                        관광지명 : %s
+                        카테고리 : %s
+                        """.formatted(no++, tour.getTourId(), tour.getTourNm(), tour.getCateNm()));
+            }
+
+            String prompt = "당신은 대한민국 여행 일정 플래너입니다.\n"
+                    + "다음 관광지 목록 중에서만 골라 " + dayCount + "일 여행 일정을 만들어주세요.\n"
+                    + "[규칙]\n"
+                    + "1. 반드시 제공된 목록에 있는 관광지ID만 사용하세요.\n"
+                    + "2. 하루에 2~3개의 관광지를 배정하세요.\n"
+                    + "3. 시간은 09:00~18:00 사이로, 이동 시간을 고려해 배정하세요.\n"
+                    + "4. 하루 안에서는 시간 순서대로 정렬하세요.\n"
+                    + "5. 반드시 JSON 형식으로만 응답하세요. 다른 설명은 절대 포함하지 마세요.\n"
+                    + "[응답 형식]\n"
+                    + "{\"recommendations4\":[{\"day\":1,\"time\":\"10:00\",\"tourId\":\"T0001\"}]}\n"
+                    + "[관광지 목록]\n" + tourListPrompt;
+
+            GeminiRequest geminiRequest = new GeminiRequest(List.of(new GeminiRequest.Content(List.of(new GeminiRequest.Part(prompt)))));
+
+            GeminiResponse response = restClient.post()
+                    .uri(url)
+                    .header("X-goog-api-key", apiKey)
+                    .body(geminiRequest)
+                    .retrieve()
+                    .body(GeminiResponse.class);
+
+            String aiResult = "";
+            if (response != null && response.candidates() != null && !response.candidates().isEmpty()) {
+                aiResult = response.candidates().get(0).content().parts().get(0).text();
+            }
+
+            ObjectMapper objectMapper = new ObjectMapper();
+            GeminiData recommend = objectMapper.readValue(aiResult, GeminiData.class);
+
+            List<AiScheduleItemData> schedule = new ArrayList<>();
+            if (recommend.getRecommendations4() != null) {
+                for (GeminiData.Recommendation4 item : recommend.getRecommendations4()) {
+                    TourSearchData tourInfo = tourListMapper.tourInfo(item.getTourId());
+                    if (tourInfo == null) continue;
+
+                    AiScheduleItemData data = new AiScheduleItemData();
+                    data.setDay(item.getDay());
+                    data.setTime(item.getTime());
+                    data.setTourId(item.getTourId());
+                    data.setTourNm(tourInfo.getTourNm());
+                    data.setFirstImage(tourInfo.getFirstImage());
+                    schedule.add(data);
+                }
+            }
+
+            return new AiScheduleResponse(
+                    true,
+                    200,
+                    "SUCCESS",
+                    "AI 일정 추천을 정상적으로 생성했습니다.",
+                    "/tourList/aiSchedule",
+                    "",
+                    schedule
+            );
+        } catch (Exception e) {
+            log.error("처리 중 오류가 발생했습니다.", e);
+            e.printStackTrace();
+            return new AiScheduleResponse(
+                    false,
+                    500,
+                    "FAIL",
+                    "AI 일정 추천 중 오류가 발생했습니다.",
+                    "/tourList/aiSchedule",
+                    "",
+                    null
+            );
+        }
+    }
+
+    //사용자 관광지 등록(소모임 생성 시 직접 입력)
+    @Override
+    public CustomTourResponse registerCustomTour(CustomTourRequest request, String userId) {
+
+        try {
+            String tourId = "UGC" + UUID.randomUUID().toString().replace("-", "").substring(0, 10).toUpperCase();
+            tourListMapper.insertCustomTour(tourId, request, userId);
+
+            CustomTourData data = new CustomTourData();
+            data.setTourId(tourId);
+            data.setTourNm(request.getTourNm());
+            data.setRoadAddr(request.getRoadAddr());
+
+            return new CustomTourResponse(
+                    true,
+                    200,
+                    "SUCCESS",
+                    "관광지가 등록되었습니다.",
+                    "/tourList/customTour",
+                    "",
+                    data
+            );
+        } catch (Exception e) {
+            log.error("처리 중 오류가 발생했습니다.", e);
+            return new CustomTourResponse(
+                    false,
+                    500,
+                    "FAIL",
+                    "관광지 등록 중 오류가 발생했습니다.",
+                    "/tourList/customTour",
+                    "",
+                    null
+            );
+        }
+    }
+
+    // ========================= 관광지명/개요 번역 =========================
+    // 한국관광공사 데이터는 한국어만 제공하므로, 최초 조회 시 Gemini로 번역해
+    // TB_TRMA_TOUR_LIST에 캐시해두고 이후에는 캐시된 값을 재사용한다.
+
+    private GeminiData callGeminiForTranslation(String prompt) {
+        GeminiRequest geminiRequest = new GeminiRequest(List.of(new GeminiRequest.Content(List.of(new GeminiRequest.Part(prompt)))));
+
+        GeminiResponse response = restClient.post()
+                .uri(url)
+                .header("X-goog-api-key", apiKey)
+                .body(geminiRequest)
+                .retrieve()
+                .body(GeminiResponse.class);
+
+        String aiResult = "";
+        if (response != null && response.candidates() != null && !response.candidates().isEmpty()) {
+            aiResult = response.candidates().get(0).content().parts().get(0).text();
+        }
+        if (aiResult == null || aiResult.isBlank()) return null;
+
+        ObjectMapper objectMapper = new ObjectMapper();
+        return objectMapper.readValue(aiResult, GeminiData.class);
+    }
+
+    private void applySearchTranslations(List<TourSearchData> tours, String lang) {
+        if (!"en".equals(lang) && !"ja".equals(lang)) return;
+        if (tours == null || tours.isEmpty()) return;
+
+        List<TourSearchData> uncached = new ArrayList<>();
+        for (TourSearchData tour : tours) {
+            String cached = "en".equals(lang) ? tour.getTourNmEn() : tour.getTourNmJa();
+            if (cached != null && !cached.isBlank()) {
+                tour.setTourNm(cached);
+            } else {
+                uncached.add(tour);
+            }
+        }
+        if (uncached.isEmpty()) return;
+
+        try {
+            StringBuilder listPrompt = new StringBuilder();
+            for (TourSearchData tour : uncached) {
+                listPrompt.append("관광지ID: %s / 이름: %s\n".formatted(tour.getTourId(), tour.getTourNm()));
+            }
+            String langLabel = "en".equals(lang) ? "영어" : "일본어";
+            String prompt = "다음 한국 관광지 이름들을 " + langLabel + "로 자연스럽게 번역해주세요.\n"
+                    + "고유명사(궁궐, 지명 등)는 관용적으로 통용되는 표기를 사용하세요.\n"
+                    + "반드시 JSON 형식으로만 응답하세요. 다른 설명은 절대 포함하지 마세요.\n"
+                    + "[응답 형식]\n"
+                    + "{\"translations\":[{\"tourId\":\"T0001\",\"tourNm\":\"번역된 이름\"}]}\n"
+                    + "[관광지 목록]\n" + listPrompt;
+
+            GeminiData result = callGeminiForTranslation(prompt);
+            if (result == null || result.getTranslations() == null) return;
+
+            Map<String, String> translatedNames = new HashMap<>();
+            for (GeminiData.TranslationItem item : result.getTranslations()) {
+                if (item.getTourId() != null && item.getTourNm() != null) {
+                    translatedNames.put(item.getTourId(), item.getTourNm());
+                }
+            }
+
+            for (TourSearchData tour : uncached) {
+                String translatedNm = translatedNames.get(tour.getTourId());
+                if (translatedNm == null || translatedNm.isBlank()) continue;
+
+                tourListMapper.updateTourTranslation(
+                        tour.getTourId(),
+                        "en".equals(lang) ? translatedNm : null,
+                        "ja".equals(lang) ? translatedNm : null,
+                        null,
+                        null
+                );
+                tour.setTourNm(translatedNm);
+            }
+        } catch (Exception e) {
+            log.warn("관광지명 번역에 실패해 한국어로 표시합니다. lang={}", lang, e);
+        }
+    }
+
+    private void applyDetailTranslation(TourDetailData tour, String lang) {
+        if (tour == null) return;
+        if (!"en".equals(lang) && !"ja".equals(lang)) return;
+
+        String cachedNm = "en".equals(lang) ? tour.getTourNmEn() : tour.getTourNmJa();
+        String cachedOverview = "en".equals(lang) ? tour.getOverviewEn() : tour.getOverviewJa();
+        if (cachedNm != null && !cachedNm.isBlank()) {
+            tour.setTourNm(cachedNm);
+            if (cachedOverview != null && !cachedOverview.isBlank()) tour.setOverview(cachedOverview);
+            return;
+        }
+
+        try {
+            String langLabel = "en".equals(lang) ? "영어" : "일본어";
+            String prompt = "다음 한국 관광지의 이름과 설명을 " + langLabel + "로 자연스럽게 번역해주세요.\n"
+                    + "반드시 JSON 형식으로만 응답하세요. 다른 설명은 절대 포함하지 마세요.\n"
+                    + "[응답 형식]\n"
+                    + "{\"translations\":[{\"tourId\":\"" + tour.getTourId() + "\",\"tourNm\":\"번역된 이름\",\"overview\":\"번역된 설명\"}]}\n"
+                    + "[관광지 정보]\n"
+                    + "이름: " + tour.getTourNm() + "\n"
+                    + "설명: " + (tour.getOverview() == null ? "" : tour.getOverview());
+
+            GeminiData result = callGeminiForTranslation(prompt);
+            if (result == null || result.getTranslations() == null || result.getTranslations().isEmpty()) return;
+
+            GeminiData.TranslationItem item = result.getTranslations().get(0);
+            String tourNm = item.getTourNm();
+            String overview = item.getOverview();
+
+            tourListMapper.updateTourTranslation(
+                    tour.getTourId(),
+                    "en".equals(lang) ? tourNm : null,
+                    "ja".equals(lang) ? tourNm : null,
+                    "en".equals(lang) ? overview : null,
+                    "ja".equals(lang) ? overview : null
+            );
+            if (tourNm != null && !tourNm.isBlank()) tour.setTourNm(tourNm);
+            if (overview != null && !overview.isBlank()) tour.setOverview(overview);
+        } catch (Exception e) {
+            log.warn("관광지 상세 번역에 실패해 한국어로 표시합니다. tourId={}, lang={}", tour.getTourId(), lang, e);
         }
     }
 }

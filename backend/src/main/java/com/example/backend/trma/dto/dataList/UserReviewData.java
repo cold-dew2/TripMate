@@ -12,4 +12,6 @@ public class UserReviewData {
     private String reviewContent;
     private int reviewScore;
     private String userNm;
+    private String imgUrls;
+    private String createDt;
 }

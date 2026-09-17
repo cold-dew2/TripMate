@@ -1,0 +1,16 @@
+{
+  "success": true, "status": 200, "code": "SUCCESS",
+  "message": "모임 상세조회(기본)을 정상적으로 조회했습니다.",
+  "path": "/moimList/moimDetail", "token": null,
+  "data": {
+    "moimId": "M005", "moimTitle": "한강 피크닉 모임",
+    "moimDscr": "돗자리 들고 함께 즐기는 여름 피크닉",
+    "moimStartDt": "2026-08-05", "moimEndDt": "2026-08-05",
+    "maxMember": 20, "memberCnt": 9, "userId": "U005", "userNm": "정다은", "reviewScore": 4.7
+  },
+  "cate": [{ "cateCd": "C05", "cateNm": "피크닉" }],
+  "plan": [
+    { "startDt": "2026-08-05", "rmks": "17:00", "cateCd": "NAT", "cateNm": "자연", "tourNm": "한강공원" }
+  ],
+  "joinStatus": null
+}

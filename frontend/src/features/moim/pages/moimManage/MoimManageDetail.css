@@ -1,0 +1,110 @@
+.manage-detail-title {
+  color: var(--gray-900);
+  font-size: var(--fs-lg);
+  font-weight: var(--fw-ebold);
+}
+.manage-detail-section {
+  margin-top: var(--space-xl);
+}
+.manage-action-error {
+  margin-bottom: var(--space-md);
+  padding: 8px 14px;
+  border-radius: var(--radius-sm);
+  color: var(--red-700);
+  background: var(--red-300);
+  font-size: var(--fs-sm);
+}
+.applicant-list-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-md);
+  color: var(--gray-500);
+  font-size: var(--fs-xs);
+}
+.applicant-list-head button {
+  color: var(--purple-600);
+  font-weight: var(--fw-bold);
+}
+.applicant-approve-selected {
+  display: block;
+  width: 100%;
+  margin-bottom: var(--space-md);
+  padding: var(--space-md) 0;
+  border-radius: var(--radius-md);
+  color: var(--white);
+  background: var(--purple-600);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-bold);
+  text-align: center;
+}
+.applicant-list {
+  display: grid;
+  gap: var(--space-sm);
+}
+.applicant-list li {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-lg);
+  border: 1px solid var(--gray-100);
+  border-radius: var(--radius-md);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-md);
+}
+.applicant-checkbox input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--purple-600);
+}
+.applicant-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-full);
+  background: var(--purple-100);
+  font-size: 18px;
+}
+.applicant-name {
+  flex: 1;
+  min-width: 0;
+}
+.applicant-actions {
+  display: flex;
+  gap: var(--space-sm);
+}
+.applicant-approve,
+.applicant-reject {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: var(--radius-full);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-bold);
+}
+.applicant-approve {
+  color: var(--purple-600);
+  background: var(--purple-100);
+}
+.applicant-reject {
+  color: var(--gray-500);
+  background: var(--white-300);
+}
+.manage-detail-chat-wrap {
+  margin-top: var(--space-xl);
+  height: 460px;
+  border: 1px solid var(--gray-100);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+.manage-coming-soon {
+  margin-top: var(--space-lg);
+  padding: var(--space-lg) 0;
+  color: var(--gray-400);
+  font-size: var(--fs-xs);
+  text-align: center;
+}

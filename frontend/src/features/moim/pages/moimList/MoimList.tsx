@@ -7,14 +7,19 @@ import { useTranslation } from "react-i18next";
 import { Link, useNavigate } from "react-router-dom";
 import FilterTabs, { type FilterOption } from "@/shared/components/filterTabs/FilterTabs";
 import Button from "@/shared/components/button/Button";
+import RegionBanner from "@/shared/components/regionBanner/RegionBanner";
 
 const MoimFilter: FilterOption[] = [
   { id: "all", label: "전체" },
+  { id: "세종", label: "세종" },
   { id: "서울", label: "서울" },
   { id: "부산", label: "부산" },
   { id: "제주", label: "제주" },
-  { id: "foreignWelcome", label: "외국인환영" },
 ];
+
+// 소모임은 지역 컬럼이 따로 없어 제목/소개 텍스트로 지역 탭을 매칭한다.
+// (cateCd로 보내면 실제 카테고리 코드와 일치하지 않아 항상 결과가 0건이 되는 버그였음)
+const REGION_IDS = ["세종", "서울", "부산", "제주"];
 
 const MoimList = () => {
   const { t } = useTranslation();
@@ -28,10 +33,11 @@ const MoimList = () => {
     e.preventDefault();
     const trimmed = query.trim();
     if (!trimmed) return;
-    navigate(`/moimSearch?q=${encodeURIComponent(trimmed)}`);
+    navigate(`/search?q=${encodeURIComponent(trimmed)}&tab=moim`);
   };
 
   // 1. useInfiniteQuery 지원 Hook 호출
+  const isRegionFilter = REGION_IDS.includes(activeFilter);
   const {
     data,
     isLoading,
@@ -39,7 +45,7 @@ const MoimList = () => {
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
-  } = useMoimList(activeFilter);
+  } = useMoimList(isRegionFilter ? "all" : activeFilter, isRegionFilter ? activeFilter : undefined);
 
   // 2. data.pages flat() 처리 (filter.isNotAFunction 에러 방지)
   const moims = useMemo(() => {
@@ -70,6 +76,12 @@ const MoimList = () => {
 
   return (
       <>
+        <RegionBanner
+          compact
+          eyebrow={t("home.sejongEyebrow")}
+          title={t("home.sejongMoimTitle")}
+          href="/moimList/sejong"
+        />
         <section>
           <form onSubmit={handleSearchSubmit}>
             <Input
@@ -103,14 +115,14 @@ const MoimList = () => {
                         <MoimCard
                             badge={moim.cateNm}
                             imageUrl={`/images/places/no-image.png`}
-                            title={t(moim.moimTitle)}
-                            desc={t(moim.moimDscr)}
+                            title={moim.moimTitle}
+                            desc={moim.moimDscr}
                             date={moim.moimStartDt}
-                            place={t(moim.region)}
+                            place={moim.region}
                             member={moim.memberCnt}
-                            maxMember={moim.maxMember}
+                            maxMember={String(moim.maxMember ?? '')}
                             userNm={moim.userNm}
-                            userRating={moim.avgScore}
+                            userRating={String(moim.avgScore ?? '')}
                         />
                       </Link>
                     </li>

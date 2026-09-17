@@ -13,6 +13,7 @@ export interface Place {
   cateCd: string;
   cateNm: string;
   avgScore: number;
+  firstImage?: string;
 }
 
 export interface PlaceResponse {
@@ -39,6 +40,9 @@ export interface PlaceDetail {
   tourId: string;
   tourNm: string;
   zipCd: string;
+  overview?: string;
+  latitude?: number;
+  longitude?: number;
 }
 
 export interface PlaceAIDetail {

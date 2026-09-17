@@ -43,7 +43,11 @@ const SpotCard = ({ loading = false, badge, imageUrl, title, place, rating }: Pr
             </div>
           )}
           <div className="img">
-            <img src={imageUrl} alt={t("image.alt", { title })} />
+            <img
+              src={imageUrl || "/images/places/no-image.png"}
+              alt={t("image.alt", { title })}
+              onError={(event) => { event.currentTarget.src = "/images/places/no-image.png"; }}
+            />
           </div>
           <div className="info">
             <div className="info-top">

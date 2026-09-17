@@ -8,6 +8,7 @@ import lombok.Setter;
 @NoArgsConstructor
 @Setter
 public class UserInfoData {
+    private String userId;
     private String userNm;
     private String langCd;
     private String langNm;

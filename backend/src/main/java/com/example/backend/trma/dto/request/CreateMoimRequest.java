@@ -19,6 +19,7 @@ public class CreateMoimRequest {
     private String moimStartDt;
     private String moimEndDt;
     private int maxMember;
+    private String moimImgUrl;
 
     private List<MoimCateData> moimCateData;
     private List<MoimPlanInsertData> moimPlanData;

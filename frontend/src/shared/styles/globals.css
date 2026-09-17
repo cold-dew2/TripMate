@@ -1,13 +1,16 @@
 body {
   font-family: "Pretendard", sans-serif;
   font-size: var(--fs-md);
-  font-weight: var(--fw-regular);
+  font-weight: var(--fw-rg);
   color: var(--gray-900);
   background: var(--white);
 }
 
 #root {
   min-height: 100vh;
+  width: 100%;
+  background: var(--white);
+  box-shadow: none;
 }
 
 button,

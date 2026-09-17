@@ -1,0 +1,185 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.example.backend.trma.mapper.ChatMapper">
+
+    <!-- ========================= -->
+    <!-- 채팅방 생성(없을 때만) -->
+    <!-- ========================= -->
+    <insert id="insertRoomIfNotExists">
+
+        INSERT IGNORE INTO TB_TRMA_CHAT_ROOM
+        (
+            ROOM_ID
+            ,TITLE
+
+            ,USE_YN
+            ,CREATE_USER
+            ,CREATE_DT
+            ,UPDATE_USER
+            ,UPDATE_DT
+        )VALUES(
+            #{roomId}
+            ,#{title}
+
+            ,'Y'
+            ,#{userId}
+            ,CURRENT_TIMESTAMP
+            ,#{userId}
+            ,CURRENT_TIMESTAMP
+        )
+
+    </insert>
+
+    <!-- ========================= -->
+    <!-- 채팅방 멤버 등록(없을 때만) -->
+    <!-- ========================= -->
+    <insert id="insertMemberIfNotExists">
+
+        INSERT IGNORE INTO TB_TRMA_CHAT_MEMBER
+        (
+            ROOM_ID
+            ,USER_ID
+            ,JOIN_DT
+        )VALUES(
+            #{roomId}
+            ,#{userId}
+            ,CURRENT_TIMESTAMP
+        )
+
+    </insert>
+
+    <!-- ========================= -->
+    <!-- 내 채팅방 목록 조회 -->
+    <!-- ========================= -->
+    <select id="chatRooms"
+            resultType="com.example.backend.trma.dto.dataList.ChatRoomData">
+
+        SELECT
+            a.ROOM_ID
+            ,a.TITLE
+            ,m.CONTENT AS LAST_MESSAGE
+            ,COALESCE(u.UNREAD_COUNT, 0) AS UNREAD_COUNT
+        FROM TB_TRMA_CHAT_ROOM a
+        INNER JOIN TB_TRMA_CHAT_MEMBER b ON a.ROOM_ID = b.ROOM_ID
+        LEFT JOIN (
+            SELECT
+                m1.ROOM_ID
+                ,m1.CONTENT
+            FROM TB_TRMA_CHAT_MESSAGE m1
+            INNER JOIN (
+                SELECT ROOM_ID, MAX(MESSAGE_ID) AS MESSAGE_ID
+                FROM TB_TRMA_CHAT_MESSAGE
+                GROUP BY ROOM_ID
+            ) m2 ON m1.ROOM_ID = m2.ROOM_ID AND m1.MESSAGE_ID = m2.MESSAGE_ID
+        ) m ON a.ROOM_ID = m.ROOM_ID
+        LEFT JOIN (
+            SELECT
+                cm.ROOM_ID
+                ,COUNT(1) AS UNREAD_COUNT
+            FROM TB_TRMA_CHAT_MESSAGE cm
+            INNER JOIN TB_TRMA_CHAT_MEMBER mem2
+                ON cm.ROOM_ID = mem2.ROOM_ID AND mem2.USER_ID = #{userId}
+            WHERE cm.SENDER_ID != #{userId}
+            AND cm.CREATE_DT > COALESCE(mem2.LAST_READ_DT, '1970-01-01')
+            GROUP BY cm.ROOM_ID
+        ) u ON a.ROOM_ID = u.ROOM_ID
+        WHERE b.USER_ID = #{userId}
+        ORDER BY a.UPDATE_DT DESC
+
+    </select>
+
+    <!-- ========================= -->
+    <!-- 전체 안읽은 메시지 수 -->
+    <!-- ========================= -->
+    <select id="unreadTotal"
+            resultType="int">
+
+        SELECT
+            COUNT(1)
+        FROM TB_TRMA_CHAT_MESSAGE msg
+        INNER JOIN TB_TRMA_CHAT_MEMBER mem
+            ON msg.ROOM_ID = mem.ROOM_ID
+            AND mem.USER_ID = #{userId}
+        WHERE msg.SENDER_ID != #{userId}
+        AND msg.CREATE_DT > COALESCE(mem.LAST_READ_DT, '1970-01-01')
+
+    </select>
+
+    <!-- ========================= -->
+    <!-- 채팅방 읽음 처리 -->
+    <!-- ========================= -->
+    <update id="updateLastRead">
+
+        UPDATE TB_TRMA_CHAT_MEMBER
+        SET LAST_READ_DT = CURRENT_TIMESTAMP
+        WHERE ROOM_ID = #{roomId}
+        AND USER_ID = #{userId}
+
+    </update>
+
+    <!-- ========================= -->
+    <!-- 채팅 메시지 목록 조회 -->
+    <!-- ========================= -->
+    <select id="chatMessages"
+            resultType="com.example.backend.trma.dto.dataList.ChatMessageData">
+
+        SELECT
+            a.MESSAGE_ID
+            ,a.ROOM_ID
+            ,a.SENDER_ID
+            ,b.USER_NM AS SENDER_NAME
+            ,a.CONTENT
+            ,a.CREATE_DT AS CREATED_AT
+        FROM TB_TRMA_CHAT_MESSAGE a
+        LEFT JOIN TB_TRMA_USER_INFO b ON a.SENDER_ID = b.USER_ID
+        WHERE a.ROOM_ID = #{roomId}
+        ORDER BY a.MESSAGE_ID ASC
+
+    </select>
+
+    <!-- ========================= -->
+    <!-- 채팅 메시지 등록 -->
+    <!-- ========================= -->
+    <insert id="insertMessage"
+            parameterType="com.example.backend.trma.dto.dataList.NewChatMessage"
+            useGeneratedKeys="true"
+            keyProperty="messageId">
+
+        INSERT INTO TB_TRMA_CHAT_MESSAGE
+        (
+            ROOM_ID
+            ,SENDER_ID
+            ,CONTENT
+            ,CREATE_DT
+        )VALUES(
+            #{roomId}
+            ,#{senderId}
+            ,#{content}
+            ,CURRENT_TIMESTAMP
+        )
+
+    </insert>
+
+    <!-- ========================= -->
+    <!-- 메시지 상세 조회(발신자명 포함) -->
+    <!-- ========================= -->
+    <select id="messageDetail"
+            resultType="com.example.backend.trma.dto.dataList.ChatMessageData">
+
+        SELECT
+            a.MESSAGE_ID
+            ,a.ROOM_ID
+            ,a.SENDER_ID
+            ,b.USER_NM AS SENDER_NAME
+            ,a.CONTENT
+            ,a.CREATE_DT AS CREATED_AT
+        FROM TB_TRMA_CHAT_MESSAGE a
+        LEFT JOIN TB_TRMA_USER_INFO b ON a.SENDER_ID = b.USER_ID
+        WHERE a.MESSAGE_ID = #{messageId}
+
+    </select>
+</mapper>

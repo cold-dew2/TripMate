@@ -21,4 +21,11 @@ public class TourDetailData {
     private String cateCd;
     private String cateNm;
     private int avgScore;
+    private String overview;
+    private Double latitude;
+    private Double longitude;
+    private String tourNmEn;
+    private String tourNmJa;
+    private String overviewEn;
+    private String overviewJa;
 }

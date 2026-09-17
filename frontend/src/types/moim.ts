@@ -13,6 +13,8 @@ export interface Moim {
   imageUrl: string;
   region: string;
   userRating: string;
+  maxMember?: number;
+  avgScore?: number;
 }
 
 export interface MoimResponse {
@@ -25,12 +27,20 @@ export interface MoimResponse {
   data: Moim[]
 }
 
+export interface MoimCreatePrefill {
+  title?: string;
+  dscr?: string;
+  themeId?: string;
+  courseStops?: { name: string; address: string; sidoNm?: string; sggNm?: string }[];
+}
+
 export interface MoimCreateForm {
   moimTitle: string;
   moimDscr: string;
   moimStartDt: string;
   moimEndDt: string;
   maxMember: number;
+  moimImgUrl?: string;
   moimCateData: {
     cateCd: string;
     cateNm?: string;
@@ -50,7 +60,10 @@ export interface MoimDetail {
   moimEndDt: string;
   maxMember: number;
   memberCnt: number;
+  userId: string;
+  userNm: string;
   reviewScore: number;
+  imageUrl?: string;
 }
 
 export interface MoimCategory {
@@ -71,6 +84,27 @@ export interface MoimJoinStatus {
   stateCd: string;
 }
 
+export interface MyMoim {
+  moimId: string;
+  moimTitle: string;
+  moimDscr: string;
+  moimStartDt: string;
+  moimEndDt: string;
+  maxMember: number;
+  memberCnt: number;
+  roleCd: string;
+  stateCd: string;
+  cateCd: string;
+  cateNm: string;
+}
+
+export interface MoimMember {
+  userId: string;
+  userNm: string;
+  roleCd: string;
+  stateCd: string;
+}
+
 export interface MoimDetailResponse {
   success: boolean;
   status: number;
@@ -81,6 +115,6 @@ export interface MoimDetailResponse {
   data: MoimDetail;
   cate: MoimCategory[];
   plan: MoimPlan[];
-  joinStatus: MoimJoinStatus[];
+  joinStatus: MoimJoinStatus | null;
 }
 

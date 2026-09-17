@@ -1,4 +1,5 @@
 export interface User {
+  userId: string;
   userNm: string;
   langCd: string;
   langNm: string;

@@ -14,7 +14,8 @@
             resultType="com.example.backend.trma.dto.dataList.UserInfoData">
 
         SELECT
-            a.USER_NM
+            a.USER_ID
+            ,a.USER_NM
             ,a.LANG_CD
             ,b1.CMM_CM_NM AS LANG_NM
             ,a.STATE_CD

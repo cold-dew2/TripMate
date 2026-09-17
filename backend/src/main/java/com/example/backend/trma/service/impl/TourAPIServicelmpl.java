@@ -6,6 +6,7 @@ import com.example.backend.trma.dto.response.TourAPIResponse;
 import com.example.backend.trma.mapper.TourAPIMapper;
 import com.example.backend.trma.service.TourAPIService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
@@ -18,6 +19,7 @@ import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class TourAPIServicelmpl implements TourAPIService {
 
     private final TourAPIMapper tourAPIMapper;
@@ -182,6 +184,7 @@ public class TourAPIServicelmpl implements TourAPIService {
                     null
             );
         } catch (Exception e) {
+            log.error("한국관광공사 areaBasedList2 호출 중 오류가 발생했습니다.", e);
 
             return new TourAPIResponse(
                     false,
@@ -208,6 +211,7 @@ public class TourAPIServicelmpl implements TourAPIService {
                     null
             );
         } catch (Exception e) {
+            log.error("한국관광공사 detailCommon2 호출 중 오류가 발생했습니다.", e);
 
             return new TourAPIResponse(
                     false,
@@ -234,6 +238,7 @@ public class TourAPIServicelmpl implements TourAPIService {
                     null
             );
         } catch (Exception e) {
+            log.error("한국관광공사 searchFestival2 호출 중 오류가 발생했습니다.", e);
 
             return new TourAPIResponse(
                     false,
@@ -260,6 +265,7 @@ public class TourAPIServicelmpl implements TourAPIService {
                     null
             );
         } catch (Exception e) {
+            log.error("한국관광공사 tourMaster 배치 처리 중 오류가 발생했습니다.", e);
 
             return new TourAPIResponse(
                     false,

@@ -1,0 +1,17 @@
+{
+  "success": true, "status": 200, "code": "SUCCESS",
+  "message": "모임 상세조회(기본)을 정상적으로 조회했습니다.",
+  "path": "/moimList/moimDetail", "token": null,
+  "data": {
+    "moimId": "M001", "moimTitle": "서울 근교 당일치기 여행 같이가요!",
+    "moimDscr": "남산타워에서 한강공원까지 서울의 밤을 함께 걷는 소모임",
+    "moimStartDt": "2026-07-20", "moimEndDt": "2026-07-20",
+    "maxMember": 10, "memberCnt": 2, "userId": "U000", "userNm": "김지수", "reviewScore": 4.8
+  },
+  "cate": [{ "cateCd": "C13", "cateNm": "자연/힐링" }],
+  "plan": [
+    { "startDt": "2026-07-20", "rmks": "10:00", "cateCd": "HIS", "cateNm": "역사", "tourNm": "경복궁" },
+    { "startDt": "2026-07-20", "rmks": "13:00", "cateCd": "VIL", "cateNm": "한옥", "tourNm": "북촌 한옥마을" }
+  ],
+  "joinStatus": { "roleCd": "A", "stateCd": "Y" }
+}

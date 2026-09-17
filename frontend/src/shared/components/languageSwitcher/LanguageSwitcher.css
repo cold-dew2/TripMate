@@ -1,0 +1,54 @@
+.language-switcher {
+  position: relative;
+}
+.language-switcher-trigger {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 40px;
+  padding: 0 14px;
+  border-radius: 20px;
+  color: var(--white);
+  background: rgba(255, 255, 255, 0.2);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-bold);
+}
+.language-switcher-caret {
+  width: 6px;
+  height: 6px;
+  border-right: 1.5px solid var(--white);
+  border-bottom: 1.5px solid var(--white);
+  transform: rotate(45deg);
+  transition: transform 0.15s ease;
+}
+.language-switcher-trigger[aria-expanded="true"] .language-switcher-caret {
+  transform: rotate(225deg);
+}
+.language-switcher-list {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  z-index: 20;
+  width: 140px;
+  padding: 6px;
+  border-radius: var(--radius-md);
+  background: var(--white);
+  box-shadow: var(--shadow-card-lg);
+}
+.language-switcher-list button {
+  display: block;
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  color: var(--gray-700);
+  font-size: var(--fs-sm);
+  text-align: left;
+}
+.language-switcher-list button:hover {
+  background: var(--gray-100);
+}
+.language-switcher-list button.is-active {
+  color: var(--purple-600);
+  background: var(--purple-100);
+  font-weight: var(--fw-bold);
+}

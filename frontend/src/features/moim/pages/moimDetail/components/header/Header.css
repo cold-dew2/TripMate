@@ -1,30 +1,47 @@
 .detail-header .detail-img {
-  height: 15%;
-  border-radius: 15px;
+  position: relative;
+  height: 180px;
+  border-radius: var(--radius-xl);
   overflow: hidden;
 }
-.place-detail .detail-info {
+.detail-share-btn {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: var(--shadow-button);
+  font-size: 16px;
+}
+.detail-header .detail-info {
   margin-top: var(--space-3xl);
 }
-.place-detail .detail-info .place-name {
+.detail-header .detail-info .place-name {
+  color: var(--gray-900);
   font-size: var(--fs-3xl);
+  font-weight: var(--fw-ebold);
+}
+.detail-header .tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+  margin-top: var(--space-lg);
+}
+.tag-badge {
+  padding: 5px 10px 6px;
+  border-radius: var(--radius-sm);
+  color: var(--purple-600);
+  background: var(--purple-100);
+  font-size: var(--fs-xs);
   font-weight: var(--fw-bold);
 }
-.place-detail .detail-info .place-addr {
-  margin-top: var(--space-xs);
-  color: var(--gray-500);
-}
-.place-detail .detail-info .place-avgScore {
-  margin-top: var(--space-xs);
-}
-.place-detail .detail-info .place-avgScore img{
-  display: inline-block;
-  width: 14px;
-  height: 14px;
-  margin-right: var(--space-2xs);
-}
-.place-detail .detail-info .place-avgScore span{
-  font-weight: var(--fw-sbold); 
-  line-height: 14px;
-  vertical-align: text-top;
+.tag-badge-muted {
+  color: var(--gray-600);
+  background: var(--white-300);
+  font-weight: var(--fw-rg);
 }

@@ -60,7 +60,7 @@ const GuidePage = () => {
 
         <Input label={t("home.searchLabel")} placeholder={t("home.searchPlaceholder")} name="search" id="home-search" blind />
         <Input label={t("home.searchLabel")} placeholder={t("home.searchPlaceholder")} name="search" id="home-search" blind disabled />
-        <Input label={t("home.searchLabel")} placeholder={t("home.searchPlaceholder")} name="search" id="home-search" blind readonly />
+        <Input label={t("home.searchLabel")} placeholder={t("home.searchPlaceholder")} name="search" id="home-search" blind readOnly />
       </div>
 
       <div>title</div>

@@ -1,21 +1,12 @@
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
-import Card from '@/shared/components/card/Card';
 import ContentTitle from '@/shared/components/contentTitle/ContentTitle';
+import RegionBanner from '@/shared/components/regionBanner/RegionBanner';
 import "./HomePage.css";
 import SpotCard from '@/shared/components/spotCard/SpotCard';
 import usePlace from '@/features/home/hooks/usePlace';
 import MoimCard from '@/shared/components/moimCard/MoimCard';
 import useMoim from '@/features/home/hooks/useMoim';
-
-const categories = [
-  { id: "culture", icon: "🏛️", title: "category.culture" },
-  { id: "nature", icon: "⛺", title: "category.nature" },
-  { id: "food", icon: "🍜", title: "category.food" },
-  { id: "beach", icon: "🌊", title: "category.beach" },
-  { id: "night", icon: "🌙", title: "category.night" },
-];
-
 
 const HomePage = () => {
   const { t } = useTranslation();
@@ -25,20 +16,17 @@ const HomePage = () => {
 
   return (
     <>
-      <section className="mt-20">
-        <Card className="icon-card">
-          {categories.map((category) => (
-            // 링크는 임시값
-            <Link to={`/meetings?category=${category.id}`} key={category.id} className="icon-item">
-              <span className="icon">{category.icon}</span>
-                <p className="title">{t(category.title)}</p>
-            </Link>
-          ))}
-        </Card>
+      <section className="home-banner-section">
+        <RegionBanner
+          eyebrow={t("home.sejongEyebrow")}
+          title={t("home.sejongTitle")}
+          desc={t("home.sejongDesc")}
+          href="/moimList/sejong"
+        />
       </section>
 
       <section>
-        <ContentTitle title="인기 여행지" href="/place?filter=popular" linkText="전체"/>
+        <ContentTitle title={t("home.popularPlaces")} href="/placeList" linkText={t("home.viewAll")} />
 
         <ul className="spot-list">
           {isPlaceLoading ? (
@@ -62,7 +50,7 @@ const HomePage = () => {
       </section>
 
       <section>
-        <ContentTitle title="인기 소모임" href="/meeting?filter=popular" linkText="전체" />
+        <ContentTitle title={t("home.popularMoims")} href="/moimList" linkText={t("home.viewAll")} />
 
         <ul className="moim-list">
           {isMoimLoading ? (
@@ -77,7 +65,7 @@ const HomePage = () => {
             moims.slice(0, 4)?.map(moim => (
               <li key={moim.moimId}>
                 <Link to={`/moim/${moim.moimId}`}>
-                  <MoimCard badge={t(moim.cateNm)} imageUrl={`/images/places/M001.jpeg`} title={t(moim.moimTitle)} date={t(moim.moimStartDt)} member={t(moim.memberCnt)} views={moim.visitCnt}/>
+                  <MoimCard badge={t(moim.cateNm)} imageUrl={`/images/places/M001.jpeg`} title={moim.moimTitle} date={moim.moimStartDt} member={moim.memberCnt} views={moim.visitCnt}/>
                 </Link>
               </li>
             ))

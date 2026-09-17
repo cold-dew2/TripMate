@@ -8,9 +8,10 @@ interface PageHeaderProps {
   linkText?: string;
   current?: number | undefined;
   total?: number | undefined;
+  onBack?: () => void;
 }
 
-const PageHeader = ({ pageTitle, contentTitle, href, linkText, current, total }: PageHeaderProps) => {
+const PageHeader = ({ pageTitle, contentTitle, href, linkText, current, total, onBack }: PageHeaderProps) => {
   const navigate = useNavigate();
 
   return (
@@ -18,14 +19,14 @@ const PageHeader = ({ pageTitle, contentTitle, href, linkText, current, total }:
       <div className="title-left">
         {contentTitle && (
           <>
-            <button onClick={() => navigate(-1)} className="btn-back">
+            <button onClick={onBack ?? (() => navigate(-1))} className="btn-back">
               <span className="blind">뒤로가기</span>
             </button>
-            <p className="coontent-title">{contentTitle}</p>
+            <h1 className="coontent-title">{contentTitle}</h1>
           </>
-        )} 
+        )}
         {pageTitle && (
-          <p className="title">{pageTitle}</p>
+          <h1 className="title">{pageTitle}</h1>
         )}
       </div>
       <div className="title-right">

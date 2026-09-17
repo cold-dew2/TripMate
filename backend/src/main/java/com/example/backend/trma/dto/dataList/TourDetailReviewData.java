@@ -14,6 +14,7 @@ public class TourDetailReviewData {
     private String reviewTitle;
     private String reviewContent;
     private int reviewScore;
+    private String imgUrls;
     private String creatDt;
     private String userNm;
 }

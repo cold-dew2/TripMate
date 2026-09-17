@@ -17,5 +17,8 @@ public class MoimDetailData {
     private LocalDate moimEndDt;
     private Integer maxMember;
     private Integer memberCnt;
+    private String userId;
+    private String userNm;
     private int reviewScore;
+    private String imageUrl;
 }

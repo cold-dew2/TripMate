@@ -5,11 +5,12 @@ import Checkbox from '@/shared/components/checkbox/Checkbox';
 import './Step1.css'
 import type { UseFormSetValue } from 'react-hook-form';
 import type { MoimCreateForm } from '@/types/moim';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 interface Step1Props {
   setValue: UseFormSetValue<MoimCreateForm>;
   onNext: () => void;
+  defaultThemeId?: string;
 }
 const themeList = [
   { 
@@ -85,15 +86,22 @@ const themeList = [
     ],
   },
 ]
-const Step1 = ({ setValue, onNext }: Step1Props) => {
+const Step1 = ({ setValue, onNext, defaultThemeId }: Step1Props) => {
   const { t } = useTranslation();
-  const [selectedThemes, setSelectedThemes] = useState<string[]>([]);
+  const [selectedThemes, setSelectedThemes] = useState<string[]>(defaultThemeId ? [defaultThemeId] : []);
+
+  useEffect(() => {
+    if (!defaultThemeId) return;
+    const categories = themeList.filter((theme) => theme.id === defaultThemeId).flatMap((theme) => theme.categories);
+    setValue("moimCateData", categories);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [defaultThemeId]);
 
   const handleThemeChange = (themeId: string) => {
     const isSelected = selectedThemes.includes(themeId);
     const newSelected = isSelected ? selectedThemes.filter((id) => id !== themeId) : [...selectedThemes, themeId];
     setSelectedThemes(newSelected);
-    
+
     const categories = themeList.filter((theme) => newSelected.includes(theme.id)).flatMap((theme) => theme.categories);
 
     setValue("moimCateData", categories);
@@ -117,7 +125,7 @@ const Step1 = ({ setValue, onNext }: Step1Props) => {
       </ul>
 
       <div className="buttons fixed">
-        <Button text={t("다음")} size="lg" onClick={onNext}/>
+        <Button text={t("common.next")} size="lg" onClick={onNext} disabled={selectedThemes.length === 0} />
       </div>
     </div>
   )

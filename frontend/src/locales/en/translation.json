@@ -1,10 +1,157 @@
 {
+  "sejongMate": {
+    "title": "Sejong Travel Mates",
+    "eyebrow": "Sejong",
+    "courseEyebrow": "Recommended Sejong course",
+    "courseTitle": "Sejong Green Walk Course",
+    "courseDuration": "About 5 hours",
+    "courseCta": "Find mates for this course",
+    "recruitingTitle": "Recruiting now",
+    "emptyMsg": "No Sejong groups are recruiting yet. Start the first one!"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "empty": "No notifications yet."
+  },
+  "userProfile": {
+    "title": "User Profile",
+    "tabInfo": "Info",
+    "tabMoims": "Groups Joined",
+    "tabReviews": "Reviews",
+    "joinDt": "Joined"
+  },
+  "chat": {
+    "title": "Chat",
+    "me": "Me",
+    "subtitle": "Talk with your travel mates",
+    "loadingRooms": "Loading chat rooms…",
+    "emptyRooms": "No chat rooms yet.",
+    "filterAll": "All",
+    "filterUnread": "Unread",
+    "emptyUnread": "No unread chats.",
+    "emptyRoomsCta": "Start a new chat!",
+    "roomTitle": "Chat Room",
+    "roomSubtitle": "Live conversation",
+    "backToList": "Back to chat list",
+    "placeholder": "Type a message",
+    "send": "Send",
+    "loadFailed": "Couldn't load messages.",
+    "sendFailed": "Couldn't send message. Please try again."
+  },
+  "account": {
+    "loading": "Loading…", "edit": "Edit profile", "activity": "My activity", "settings": "Settings", "profileSettings": "Profile settings",
+    "loginTitle": "TripMate",
+    "loginSubtitle": "Travel moments, together",
+    "email": "Email",
+    "emailPlaceholder": "Email",
+    "password": "Password",
+    "passwordPlaceholder": "Password",
+    "rememberMe": "Keep me signed in",
+    "login": "Log In",
+    "findId": "Find ID",
+    "findPw": "Find Password",
+    "signup": "Sign Up",
+    "signupTitle": "Sign Up",
+    "name": "Name",
+    "namePlaceholder": "Enter your name",
+    "nationality": "Select nationality",
+    "language": "Select language",
+    "next": "Next",
+    "back": "Previous",
+    "emailRequired": "Please enter your email.",
+    "emailInvalid": "Please enter a valid email address.",
+    "passwordRequired": "Please enter your password.",
+    "passwordMin": "Password must be at least 8 characters.",
+    "nameRequired": "Please enter your name.",
+    "loginFailed": "Incorrect ID or password.",
+    "signupFailed": "Sign up failed. Please try again.",
+    "signupSuccess": "Sign up complete. Please log in.",
+    "backToLogin": "Back to login"
+  },
   "common": {
+    "loading": "Loading…",
+    "loadError": "We could not load this information.",
+    "submit": "Submit",
+    "saving": "Saving…",
     "travelPeriod": "Travel Period",
     "previous": "Previous",
-    "next": "Next"
+    "next": "Next",
+    "declaration": "Report",
+    "remove": "Remove",
+    "selectAll": "Select all",
+    "deselectAll": "Deselect all",
+    "close": "Close"
+  },
+  "moimCreate": {
+    "title": "Create a Group",
+    "step1": {
+      "title": "What theme are you planning your trip around?",
+      "theme1": "Nature/Healing",
+      "theme2": "Culture/History",
+      "theme3": "Food",
+      "theme4": "Activities",
+      "theme5": "Shopping",
+      "theme6": "Other"
+    },
+    "step2": {
+      "name": "Group title",
+      "namePlaceholder": "e.g. Healing trip near Seoul",
+      "info": "Group description",
+      "infoPlaceholder": "Join people who want to travel together!",
+      "maxMember": "Max members",
+      "travelType": "Trip dates"
+    },
+    "step3": {
+      "daysLabel": "Trip length",
+      "daysOption": "{{count}} day(s)",
+      "daysOptionOne": "1 day (day trip)",
+      "daysOptionMulti": "{{count}} days ({{nights}} night(s))",
+      "empty": "Please add a schedule.",
+      "emptyView": "No schedule has been registered.",
+      "addSchedule": "Add schedule",
+      "aiRecommend": "Get AI schedule suggestion",
+      "timeHourLabel": "Visit hour for {{place}}",
+      "timeMinuteLabel": "Visit minute for {{place}}"
+    },
+    "step4": {
+      "dayLabel": "DAY {{day}}",
+      "searchPlaceholder": "Search destinations or addresses",
+      "tabAll": "All",
+      "tabRecommend": "Recommended",
+      "tabCustom": "My custom spots",
+      "customCateNm": "Custom",
+      "empty": "No results found.",
+      "emptyCustom": "You haven't added any custom spots yet.",
+      "directInput": "Add manually",
+      "nameInputPlaceholder": "Place name",
+      "addressInputPlaceholder": "Address",
+      "save": "Save"
+    },
+    "step5": {
+      "mapPreview": "Map · Route preview",
+      "flowTitle": "{{count}}-day itinerary ({{range}})",
+      "dayLabel": "DAY {{day}} ({{date}})",
+      "editPlan": "Edit plan"
+    },
+    "step6": {
+      "photoLabel": "Group cover photo",
+      "tagRecruit": "Recruiting members",
+      "scheduleLabel": "Schedule",
+      "regionLabel": "Destination",
+      "nightsLabel": "{{nights}}N {{count}}D",
+      "memberLabel": "Members",
+      "register": "Create group"
+    },
+    "step7": {
+      "title": "Your group has been created!",
+      "subtitle": "Start inviting members.",
+      "viewDetail": "View group",
+      "share": "Share",
+      "shareCopied": "Link copied to clipboard."
+    }
   },
   "home": {
+    "language": "Language",
     "greeting": "Hello!",
     "userName": "{{name}}",
     "notice": "Notifications",
@@ -13,7 +160,14 @@
     "searchPlaceholder": "Search for a destination or group",
     "userError": "Failed to load",
     "guest": "Guest",
-    "errorMsg": "Unable to load data"
+    "errorMsg": "Unable to load data",
+    "sejongEyebrow": "TRAVEL DESTINATION",
+    "sejongTitle": "Travel to Sejong City",
+    "sejongDesc": "Discover Sejong's Lake Park, National Arboretum, and more",
+    "sejongMoimTitle": "Find groups traveling to Sejong",
+    "popularPlaces": "Popular Destinations",
+    "popularMoims": "Groups Near Me",
+    "viewAll": "See all"
   },
   "nav": {
     "home": "Home",
@@ -38,11 +192,41 @@
     "errorMsg": "Please try again!",
     "button": "+ Create a Group",
     "manageTitle": "Manage My Groups",
+    "detailsTitle": "Group Details",
+    "manageDesc": "Manage the trip groups you're part of.",
+    "hostedList": "Groups I Host",
+    "emptyManageMsg": "You haven't created any groups yet.",
+    "emptyManageCta": "Create your first group",
+    "applicantList": "Applicants",
+    "moimChat": "Group Chat",
+    "scheduleEdit": "Edit Schedule",
+    "noApplicants": "No applicants yet.",
+    "approve": "Approve",
+    "reject": "Reject",
+    "scheduleEditComingSoon": "Schedule editing is coming soon.",
+    "waitingCount": "{{count}} waiting",
+    "approveSelected": "Approve {{count}} selected",
+    "approveFailed": "Some approvals failed. Please try again.",
+    "selectApplicant": "Select {{name}}",
+    "scheduleTitle": "Trip Itinerary",
+    "applyBtn": "Apply",
+    "applying": "Pending",
+    "applied": "Approved",
+    "chatWithMembers": "Chat with Members",
+    "share": "Share",
+    "shareCopied": "Link copied to clipboard.",
     "step3": {
-      "title": "여행 일정을 구성할 일수를 선택하세요"
+      "title": "Choose how many days your trip will be",
+      "emptyView": "No itinerary has been added yet."
     }
   },
   "place": {
+    "location": "Location",
+    "overviewFallback": "Tourism information for {{name}}.",
+    "free": "Free",
+    "paid": "Paid",
+    "available": "Available",
+    "unavailable": "Unavailable",
     "listTitle": "Find a Destination",
     "searchLabel": "Search Destinations",
     "details": "Destination Details",
@@ -61,18 +245,65 @@
     "lastUpdatedNote": "Please check the opening hours and admission fees before your visit."
   },
   "image": {
-    "alt": "{{title}} image"
+    "alt": "{{title}} image",
+    "reviewPhoto": "Review photo {{index}}",
+    "profilePhoto": "{{name}}'s profile photo"
+  },
+  "review": {
+    "score": "Rating", "title": "Title", "content": "Review", "images": "Photos (up to 5)",
+    "scoreLabel1": "Not great", "scoreLabel2": "Meh", "scoreLabel3": "OK", "scoreLabel4": "Good", "scoreLabel5": "Excellent!",
+    "registerTitle": "Write a Review", "moimPrompt": "How was your trip? Tell us about it!", "moimContentPlaceholder": "Say a word to others! We all had so much fun, let's do it again!",
+    "titleRequired": "Please enter a title.", "contentRequired": "Please enter a review.", "imageCount": "{{count}} image(s) selected"
   },
   "my": {
     "moiming": "Ongoing Groups",
     "member": "Members",
     "getReview": "Reviews Received",
     "useLang": "Language",
+    "langMaxHint": "up to {{max}}",
     "recentlyReviews": "Recent Reviews",
+    "noReviewsYet": "You haven't written any reviews yet.",
     "myPlan": "My Schedule",
+    "myPlanTitle": "My Schedule",
     "myMoim": "Manage My Groups",
     "declaration": "Report",
-    "logout": "Log Out"
+    "logout": "Log Out",
+    "statusDone": "Completed",
+    "statusPending": "Awaiting approval",
+    "introduce": "About",
+    "registerReviewBtn": "Register a post-trip review",
+    "applicantCount": "{{count}} applicants",
+    "uploadPhoto": "Upload photo",
+    "uploadFailed": "Couldn't upload the photo. Please try again.",
+    "saveFailed": "Something went wrong while saving. Please try again.",
+    "guestDesc": "Log in to meet your travel mates."
+  },
+  "search": {
+    "title": "Search Results",
+    "placeholder": "Search destinations or groups",
+    "tabPlace": "Destinations",
+    "tabMoim": "Groups",
+    "emptyMsg": "No results found for \"{{keyword}}\"."
+  },
+  "safetyReport": {
+    "title": "Safety Report",
+    "notice": "In an emergency, reporting immediately sends a real-time alert to the administrator and relevant authorities.",
+    "moimName": "Group being reported",
+    "safetydesc": "Details",
+    "placeholder": "Please describe the situation in detail",
+    "personName": "Person to report",
+    "selectMoim": "Select the group to report",
+    "selectPerson": "Select the person to report",
+    "selectMoimFirst": "Select a group first",
+    "moimRequired": "Please select the group being reported.",
+    "personRequired": "Please select the person to report.",
+    "contentRequired": "Please describe the situation.",
+    "typeLabel": "Report type",
+    "typeSafety": "Safety threat",
+    "typeRude": "Offensive behavior",
+    "typeNoshow": "No-show",
+    "typeEtc": "Other",
+    "success": "Your report has been received. We'll review it right away."
   },
   "lang": {
     "ko": "Korean",
@@ -168,5 +399,6 @@
   "바다": "Sea",
   "조회수": "Views",
   "명": "people",
-  "사진, 야경": "Photography, Night View"
+  "사진, 야경": "Photography, Night View",
+  "원어민": "Native"
 }

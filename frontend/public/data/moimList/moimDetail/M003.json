@@ -1,0 +1,16 @@
+{
+  "success": true, "status": 200, "code": "SUCCESS",
+  "message": "모임 상세조회(기본)을 정상적으로 조회했습니다.",
+  "path": "/moimList/moimDetail", "token": null,
+  "data": {
+    "moimId": "M003", "moimTitle": "제주 오름 트레킹",
+    "moimDscr": "초보자도 가능한 오름 코스, 함께 걸어요",
+    "moimStartDt": "2026-07-28", "moimEndDt": "2026-07-28",
+    "maxMember": 15, "memberCnt": 7, "userId": "U003", "userNm": "박소영", "reviewScore": 4.9
+  },
+  "cate": [{ "cateCd": "C03", "cateNm": "등산" }],
+  "plan": [
+    { "startDt": "2026-07-28", "rmks": "09:00", "cateCd": "NAT", "cateNm": "자연", "tourNm": "성산일출봉" }
+  ],
+  "joinStatus": null
+}

@@ -1,0 +1,21 @@
+{
+  "success": true, 
+  "status": 0, 
+  "code": "string", 
+  "message": "string", 
+  "path": "string",
+  "token": "string",
+  "data": {
+    "userNm": "찬이슬",
+    "langCd": "en",
+    "langNm": "english",
+    "stateCd": "A", 
+    "stateNm": "사용중", 
+    "roleCd": "C",
+    "roleNm": "일반", 
+    "birthDt": "1994-06-21",
+    "genderCd": "M", 
+    "genderNm": "남자", 
+    "phoneNum": "010-0000-0000" 
+  }
+}

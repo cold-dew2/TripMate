@@ -8,16 +8,21 @@
 .form.select {
   position: relative
 }
-.form.select:after {
+.select-control {
+  position: relative;
+}
+.select-control:after {
   content: "";
   position: absolute;
   right: 10px;
-  bottom: 12px;
+  top: 50%;
   display: block;
   width: 20px;
   height: 20px;
   background: url('/icons/icon_arrow_black.svg') no-repeat center;
-  transform: rotate(270deg);
+  background-size: 14px;
+  transform: translateY(-50%) rotate(270deg);
+  pointer-events: none;
 }
 .form label {
   display: block;

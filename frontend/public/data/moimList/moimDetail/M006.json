@@ -1,0 +1,16 @@
+{
+  "success": true, "status": 200, "code": "SUCCESS",
+  "message": "모임 상세조회(기본)을 정상적으로 조회했습니다.",
+  "path": "/moimList/moimDetail", "token": null,
+  "data": {
+    "moimId": "M006", "moimTitle": "외국인 환영! 전주 한옥마을 투어",
+    "moimDscr": "K-culture를 함께 느껴봐요, 외국인 참가 환영",
+    "moimStartDt": "2026-08-09", "moimEndDt": "2026-08-09",
+    "maxMember": 10, "memberCnt": 4, "userId": "U006", "userNm": "김하늘", "reviewScore": 4.9
+  },
+  "cate": [{ "cateCd": "C06", "cateNm": "문화" }],
+  "plan": [
+    { "startDt": "2026-08-09", "rmks": "13:00", "cateCd": "VIL", "cateNm": "한옥", "tourNm": "전주한옥마을" }
+  ],
+  "joinStatus": null
+}

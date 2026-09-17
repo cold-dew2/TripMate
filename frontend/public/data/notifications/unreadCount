@@ -1,0 +1,9 @@
+{
+  "success": true,
+  "status": 200,
+  "code": "SUCCESS",
+  "message": "안읽은 알림 수를 정상적으로 조회했습니다.",
+  "path": "/notifications/unreadCount",
+  "token": "",
+  "data": 2
+}

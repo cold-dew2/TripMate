@@ -1,0 +1,14 @@
+{
+  "success": true,
+  "status": 200,
+  "code": "SUCCESS",
+  "message": "모임 멤버 목록을 정상적으로 조회했습니다.",
+  "path": "/moimList/M002/members",
+  "token": "",
+  "data": [
+    { "userId": "U002", "userNm": "Brian", "roleCd": "A", "stateCd": "Y" },
+    { "userId": "U000", "userNm": "김지수", "roleCd": "M", "stateCd": "Y" },
+    { "userId": "U013", "userNm": "田中さくら", "roleCd": "M", "stateCd": "Y" },
+    { "userId": "U014", "userNm": "이준호", "roleCd": "M", "stateCd": "Y" }
+  ]
+}

@@ -1,0 +1,26 @@
+{
+  "success": true,
+  "status": 0,
+  "code": "SUCCESS",
+  "message": "관광지 상세 조회 성공",
+  "path": "/tourList/tourDetail",
+  "token": "",
+  "data": {
+    "avgScore": 4.7,
+    "cateCd": "NAT",
+    "cateNm": "자연",
+    "detailAddr": "",
+    "firstImage": "/images/places/T011.jpeg",
+    "roadAddr": "세종특별자치시 수목원길 136",
+    "sggCd": "360",
+    "sggNm": "세종특별자치시",
+    "sidoCd": "36",
+    "sidoNm": "세종특별자치시",
+    "tourId": "T011",
+    "tourNm": "국립세종수목원",
+    "zipCd": "30129",
+    "overview": "국내 최초의 도심형 수목원으로, 사계절 내내 다양한 테마정원과 대형 온실을 즐길 수 있는 세종시 대표 관광지입니다.",
+    "latitude": 36.503,
+    "longitude": 127.263
+  }
+}

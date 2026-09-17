@@ -27,7 +27,7 @@ const Information = ({ place }: InformationProps) => {
       <ul className="place-infoList">
         {infos.map((info, index) => (
           <li key={index}>
-            <span className="icon"><img src={`/icons/${info.icons}`} /></span>
+            <span className="icon"><img src={`/icons/${info.icons}`} alt="" /></span>
             <div className="info-wrap">
               <span className="info-title">{info.title}</span>
               <p className="info-desc">{info.value}</p>
