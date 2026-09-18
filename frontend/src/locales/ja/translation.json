@@ -103,7 +103,9 @@
       "info": "グループ紹介",
       "infoPlaceholder": "一緒に旅行したい人と繋がりましょう！",
       "maxMember": "最大人数",
-      "travelType": "旅行日程"
+      "travelType": "旅行日程",
+      "region": "旅行地域",
+      "regionPlaceholder": "地域を選択してください"
     },
     "step3": {
       "daysLabel": "旅行日数",
@@ -114,6 +116,8 @@
       "emptyView": "登録されたスケジュールがありません。",
       "addSchedule": "スケジュール追加",
       "aiRecommend": "AI日程提案を受ける",
+      "aiRecommendError": "日程提案の取得に失敗しました。しばらくしてからもう一度お試しください。",
+      "aiRecommendEmpty": "選択した地域・テーマに合う観光地が見つかりませんでした。別の地域やテーマでお試しください。",
       "timeHourLabel": "{{place}}の訪問時間（時）",
       "timeMinuteLabel": "{{place}}の訪問時間（分）"
     },
@@ -135,7 +139,12 @@
       "mapPreview": "地図・ルートプレビュー",
       "flowTitle": "{{count}}日間の旅程（{{range}}）",
       "dayLabel": "DAY {{day}} ({{date}})",
-      "editPlan": "プラン修正"
+      "editPlan": "プラン修正",
+      "transportRecommend": "交通手段を提案してもらう",
+      "transportRecommendError": "交通手段の提案取得に失敗しました。しばらくしてからもう一度お試しください。",
+      "transportDuration": "{{count}}分",
+      "transportCost": "{{cost}}ウォン",
+      "transportTransfer": "乗り換え{{count}}回"
     },
     "step6": {
       "photoLabel": "グループ代表写真",
@@ -144,7 +153,8 @@
       "regionLabel": "行き先",
       "nightsLabel": "{{nights}}泊{{count}}日",
       "memberLabel": "参加人数",
-      "register": "登録する"
+      "register": "登録する",
+      "registerError": "グループの登録に失敗しました。しばらくしてからもう一度お試しください。"
     },
     "step7": {
       "title": "グループが登録されました！",
@@ -214,6 +224,7 @@
     "selectApplicant": "{{name}}さんを選択",
     "scheduleTitle": "旅行日程",
     "applyBtn": "申し込む",
+    "applyError": "申し込みに失敗しました。しばらくしてからもう一度お試しください。",
     "applying": "申込中",
     "applied": "申込完了",
     "chatWithMembers": "メンバーとチャットする",
@@ -252,7 +263,9 @@
     "searchPlaceholder": "観光地を検索してください",
     "emptyMsg": "観光地が存在しません！",
     "errorMsg": "もう一度お試しください！",
-    "mapUnavailable": "地図を読み込めませんでした。"
+    "mapUnavailable": "地図を読み込めませんでした。",
+    "infoLoading": "利用案内を読み込んでいます...",
+    "infoError": "利用案内を読み込めませんでした。"
   },
   "review": {
     "score": "評価",

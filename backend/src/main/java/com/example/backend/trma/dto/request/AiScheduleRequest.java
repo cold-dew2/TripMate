@@ -11,4 +11,8 @@ public class AiScheduleRequest {
     private String cateCd;
     private String keyword;
     private int dayCount;
+    private String cateNms;
+    private Integer maxMember;
+    private String moimStartDt;
+    private String moimEndDt;
 }

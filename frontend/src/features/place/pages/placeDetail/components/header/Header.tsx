@@ -13,7 +13,11 @@ const Header = ({ place }: InformationProps) => {
   return (
     <div className="detail-header">
       <div className="detail-img">
-        <img src={`/images/places/${place.tourId}.jpeg`} alt={t('image.alt', { title: place.tourNm })} />
+        <img
+          src={place.firstImage || "/images/places/no-image.png"}
+          alt={t('image.alt', { title: place.tourNm })}
+          onError={(event) => { event.currentTarget.src = "/images/places/no-image.png"; }}
+        />
       </div>
       <div className="detail-info">
         <div className="place-name">{place.tourNm}</div>

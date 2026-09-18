@@ -30,6 +30,7 @@ const nextTime = (count: number) => {
 const Step4 = ({ day, watch, items, onAddItem, onDone }: Step4Props) => {
   const { t } = useTranslation();
   const moimCateData = watch("moimCateData");
+  const region = watch("region");
   const cateCodes = useMemo(() => (moimCateData ?? []).map((c) => c.cateCd), [moimCateData]);
 
   const [activeTab, setActiveTab] = useState<TabId>("all");
@@ -42,13 +43,17 @@ const Step4 = ({ day, watch, items, onAddItem, onDone }: Step4Props) => {
   const [addedIds, setAddedIds] = useState<string[]>([]);
 
   useEffect(() => {
+    // 검색어를 직접 입력하지 않은 기본 목록은 Step2에서 고른 지역으로 좁혀서 보여준다.
+    // (검색어를 입력하면 그 검색어를 우선한다 — 백엔드가 키워드 하나만 받기 때문에 동시 적용은 안 됨)
+    const searchKeyword = keyword.trim() || region || "";
+
     const timer = window.setTimeout(async () => {
-      const result = await apiClient.get<{ data: Place[] }>("/tourList/tourSearch", { page: 1, keyword });
+      const result = await apiClient.get<{ data: Place[] }>("/tourList/tourSearch", { page: 1, keyword: searchKeyword });
       if (!result.success) return;
 
       let places = result.data.data ?? [];
-      if (isMock && keyword) {
-        const lower = keyword.toLowerCase();
+      if (isMock && searchKeyword) {
+        const lower = searchKeyword.toLowerCase();
         places = places.filter((place) =>
           place.tourNm?.toLowerCase().includes(lower)
           || place.roadAddr?.toLowerCase().includes(lower)
@@ -59,7 +64,7 @@ const Step4 = ({ day, watch, items, onAddItem, onDone }: Step4Props) => {
       setResults(places);
     }, 300);
     return () => window.clearTimeout(timer);
-  }, [keyword]);
+  }, [keyword, region]);
 
   const tabs = [
     { id: "all", label: t("moimCreate.step4.tabAll") },
@@ -77,11 +82,12 @@ const Step4 = ({ day, watch, items, onAddItem, onDone }: Step4Props) => {
     onAddItem({
       id: `${place.tourId}-${Date.now()}`,
       time: nextTime(items.length + addedIds.length),
-      placeName: t(place.tourNm),
+      placeName: place.tourNm,
       tourId: place.tourId,
       imageUrl: place.firstImage,
       sidoNm: place.sidoNm,
       sggNm: place.sggNm,
+      roadAddr: place.roadAddr,
     });
     setAddedIds((prev) => [...prev, place.tourId]);
   };
@@ -148,7 +154,7 @@ const Step4 = ({ day, watch, items, onAddItem, onDone }: Step4Props) => {
                   {place.firstImage && <img src={place.firstImage} alt="" />}
                 </span>
                 <span className="step4-info">
-                  <strong>{t(place.tourNm)}</strong>
+                  <strong>{place.tourNm}</strong>
                   <span className="step4-cate">{place.cateNm || t("moimCreate.step4.customCateNm")}</span>
                 </span>
                 <button

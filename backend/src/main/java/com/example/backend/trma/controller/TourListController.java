@@ -104,4 +104,11 @@ public class TourListController {
         return tourListService.registerCustomTour(request, userId);
     }
 
+    //일정별 교통편 추천
+    @PostMapping("/transportRecommend")
+    public TransportRecommendResponse transportRecommend(@RequestBody TransportRecommendRequest request) {
+
+        return tourListService.transportRecommend(request);
+    }
+
 }

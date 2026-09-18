@@ -35,5 +35,5 @@ public interface MoimListService {
     CreateMoimReviewResponse createMoimReview(String moimId, CreateMoimReviewRequest request, String userId);
 
     //모임(여행) 후기 목록 조회
-    MoimReviewsResponse moimReviews(String moimId);
+    MoimReviewsResponse moimReviews(String moimId, String lang);
 }

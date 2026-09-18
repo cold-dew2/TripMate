@@ -11,4 +11,5 @@ public class LoginRequest {
     private String userId;
     private String userPw;
     private String loginToken;
+    private boolean rememberMe;
 }

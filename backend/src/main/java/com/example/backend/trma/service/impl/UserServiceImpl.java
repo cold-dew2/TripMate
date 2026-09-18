@@ -35,6 +35,9 @@ public class UserServiceImpl implements UserService {
     @Value("${jwt.expiration}")
     private long expiration;
 
+    @Value("${jwt.rememberMeExpiration}")
+    private long rememberMeExpiration;
+
     //아이디 중복확인
     @Override
     public ExistsUserIdResponse existsUserId(ExistsUserIdRequest request) {
@@ -147,7 +150,7 @@ public class UserServiceImpl implements UserService {
 
             String token = jwtUtil.createToken(
                     request.getUserId(),
-                    expiration
+                    request.isRememberMe() ? rememberMeExpiration : expiration
             );
 
             request.setLoginToken(token);

@@ -172,8 +172,9 @@ public class MoimListController {
 
     //모임(여행) 후기 목록 조회
     @GetMapping("/{moimId}/reviews")
-    public MoimReviewsResponse moimReviews(@PathVariable String moimId) {
+    public MoimReviewsResponse moimReviews(@PathVariable String moimId,
+                                           @RequestParam(required = false) String lang) {
 
-        return moimListService.moimReviews(moimId);
+        return moimListService.moimReviews(moimId, lang);
     }
 }

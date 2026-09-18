@@ -56,7 +56,7 @@ const MoimManageDetail = () => {
 
   return (
     <div className="manage-detail">
-      {result && <h2 className="manage-detail-title">{t(result.data.moimTitle)}</h2>}
+      {result && <h2 className="manage-detail-title">{result.data.moimTitle}</h2>}
 
       <FilterTabs
         options={[
@@ -114,7 +114,12 @@ const MoimManageDetail = () => {
                         className="applicant-approve"
                         aria-label={t('moim.approve')}
                         disabled={updateMember.isPending}
-                        onClick={() => updateMember.mutate({ userId: member.userId, approve: true })}
+                        onClick={() => {
+                          setActionError('');
+                          updateMember.mutate({ userId: member.userId, approve: true }, {
+                            onError: () => setActionError(t('moim.approveFailed')),
+                          });
+                        }}
                       >
                         ✓
                       </button>
@@ -123,7 +128,12 @@ const MoimManageDetail = () => {
                         className="applicant-reject"
                         aria-label={t('moim.reject')}
                         disabled={updateMember.isPending}
-                        onClick={() => updateMember.mutate({ userId: member.userId, approve: false })}
+                        onClick={() => {
+                          setActionError('');
+                          updateMember.mutate({ userId: member.userId, approve: false }, {
+                            onError: () => setActionError(t('moim.approveFailed')),
+                          });
+                        }}
                       >
                         ✕
                       </button>
@@ -138,7 +148,7 @@ const MoimManageDetail = () => {
 
       {tab === 'chat' && (
         <section className="manage-detail-chat-wrap">
-          <ChatRoom roomId={`moim-${moimId}`} title={result ? t(result.data.moimTitle) : undefined} />
+          <ChatRoom roomId={`moim-${moimId}`} title={result ? result.data.moimTitle : undefined} />
         </section>
       )}
 
@@ -152,7 +162,7 @@ const MoimManageDetail = () => {
                 key={date}
                 day={index + 1}
                 date={date}
-                items={planByDay[date].map((item) => ({ id: `${date}-${item.tourNm}`, time: item.rmks, placeName: t(item.tourNm) }))}
+                items={planByDay[date].map((item) => ({ id: `${date}-${item.tourNm}`, time: item.rmks, placeName: item.tourNm }))}
               />
             ))
           )}

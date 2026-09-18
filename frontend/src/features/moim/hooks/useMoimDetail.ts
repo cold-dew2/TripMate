@@ -1,4 +1,5 @@
 import { apiClient } from "@/shared/api/client";
+import { getApiLang } from "@/shared/utils/lang";
 import { useQuery } from "@tanstack/react-query";
 import type { MoimDetailResponse } from "@/types/moim";
 
@@ -8,11 +9,11 @@ const isMock = (import.meta.env.VITE_API_BASE_URL ?? "").startsWith("/data");
 
 const useMoimDetail = (moimId: string) => {
   return useQuery({
-    queryKey: ["moimDetail", moimId],
+    queryKey: ["moimDetail", moimId, getApiLang()],
     queryFn: async () => {
       const endpoint = isMock
         ? `/moimList/moimDetail/${encodeURIComponent(moimId)}.json`
-        : `/moimList/moimDetail?moimId=${encodeURIComponent(moimId)}`;
+        : `/moimList/moimDetail?moimId=${encodeURIComponent(moimId)}&lang=${getApiLang()}`;
       const result = await apiClient.get<MoimDetailResponse>(endpoint);
 
       if (!result.success) {

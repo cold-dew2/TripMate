@@ -41,6 +41,8 @@ export interface MoimCreateForm {
   moimEndDt: string;
   maxMember: number;
   moimImgUrl?: string;
+  region?: string;
+  dayCount?: number;
   moimCateData: {
     cateCd: string;
     cateNm?: string;

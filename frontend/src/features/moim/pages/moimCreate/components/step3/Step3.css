@@ -24,3 +24,9 @@
 .step3-ai-btn.btn {
   width: 100%;
 }
+.step3-ai-error {
+  color: var(--red-700);
+  font-size: var(--fs-sm);
+  text-align: center;
+  margin-bottom: var(--space-sm);
+}

@@ -14,6 +14,8 @@ const PlaceDetail = () => {
   const { t } = useTranslation();
   const { tourId } = useParams<{ tourId: string }>();
   const { data: place, isLoading, isError } = usePlaceDetail(tourId ?? "");
+  // 관광지 상세(이름/주소/개요 등)만으로 화면을 그리고, 이용 정보(운영시간 등)는
+  // Information에서 각자 별도로 불러온다(느린 AI 호출이 전체 화면을 막지 않도록).
   const {
     data: reviewPages,
     isLoading: reviewIsLoading,
@@ -42,7 +44,7 @@ const PlaceDetail = () => {
             <Introduce place={place} />
           </div>
           <div className="tab-content" id="tab2" tabIndex={-1}>
-            <Information place={place} />
+            <Information tourId={tourId ?? ""} />
           </div>
           <div className="tab-content" id="tab3" tabIndex={-1}>
             {reviewIsLoading && <p>리뷰 불러오는 중...</p>}

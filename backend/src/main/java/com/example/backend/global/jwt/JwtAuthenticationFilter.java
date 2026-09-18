@@ -2,6 +2,7 @@ package com.example.backend.global.jwt;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
@@ -49,17 +50,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         try {
 
-            String header = request.getHeader("Authorization");
+            String token = resolveToken(request);
 
-
-            if (header == null || !header.startsWith("Bearer ")) {
+            if (token == null) {
 
                 filterChain.doFilter(request, response);
                 return;
             }
-
-
-            String token = header.substring(7);
 
 
             if (!jwtUtil.validateToken(token)) {
@@ -99,5 +96,24 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     e
             );
         }
+    }
+
+    // 쿠키(accessToken)를 우선 사용하고, 없으면 Authorization 헤더를 사용한다.
+    private String resolveToken(HttpServletRequest request) {
+
+        if (request.getCookies() != null) {
+            for (Cookie cookie : request.getCookies()) {
+                if ("accessToken".equals(cookie.getName()) && !cookie.getValue().isBlank()) {
+                    return cookie.getValue();
+                }
+            }
+        }
+
+        String header = request.getHeader("Authorization");
+        if (header != null && header.startsWith("Bearer ")) {
+            return header.substring(7);
+        }
+
+        return null;
     }
 }

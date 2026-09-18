@@ -20,15 +20,13 @@ public interface MoimListMapper {
     //모임 카테고리 조회
     List<MoimCateData> moimCate(String moimId);
     //모임 상세조회(일정)
-    List<MoimPlanData> moimPlan(String moimId);
+    List<MoimPlanData> moimPlan(@Param("moimId") String moimId, @Param("lang") String lang);
     //모임 가입여부 검토
     MoimJoinStatusData moimJoinStatus(String moimId, String userId);
     //내 모임 목록 조회
     List<MyMoimData> myMoim(String userId);
     //모임 테마 조회
     List<MoimCateData> moimCateSearch();
-    //모임ID 생성
-    String moimIdCreate();
     //모임 등록
     int createMoimList(@Param("request") CreateMoimRequest request,
                        @Param("moimId") String moimId,
@@ -71,4 +69,11 @@ public interface MoimListMapper {
 
     //모임(여행) 후기 목록 조회
     List<MoimReviewData> moimReviews(String moimId);
+
+    //소모임 제목/소개 번역 캐시 저장
+    int updateMoimTranslation(@Param("moimId") String moimId,
+                              @Param("moimTitleEn") String moimTitleEn,
+                              @Param("moimTitleJa") String moimTitleJa,
+                              @Param("moimDscrEn") String moimDscrEn,
+                              @Param("moimDscrJa") String moimDscrJa);
 }

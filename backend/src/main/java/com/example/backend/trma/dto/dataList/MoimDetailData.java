@@ -21,4 +21,8 @@ public class MoimDetailData {
     private String userNm;
     private int reviewScore;
     private String imageUrl;
+    private String moimTitleEn;
+    private String moimTitleJa;
+    private String moimDscrEn;
+    private String moimDscrJa;
 }

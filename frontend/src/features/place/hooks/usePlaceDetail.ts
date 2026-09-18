@@ -1,60 +1,41 @@
 import { apiClient } from "@/shared/api/client";
-import { fetchMockJson } from "@/shared/api/mockFallback";
 import { getApiLang } from "@/shared/utils/lang";
 import { useQuery } from "@tanstack/react-query";
 import type { PlaceDetail, PlaceAIDetail } from "@/types/place";
 
+// 기본 정보(이름/주소/개요/좌표 등)는 DB에서 바로 조회되어 빠르지만,
+// 이용 정보(운영시간 등)는 매번 Gemini를 호출해 느리므로 별도 쿼리로 분리한다.
+// 하나로 묶으면 느린 AI 조회가 끝날 때까지 기본 정보까지 화면에 못 그리게 된다.
 const usePlaceDetail = (tourId: string) => {
-  const detailQuery = useQuery({
+  return useQuery({
     queryKey: ["placeDetail", tourId, getApiLang()],
     queryFn: async () => {
       const result = await apiClient.get<{ data: PlaceDetail }>(
         `/tourList/tourDetail?tourId=${encodeURIComponent(tourId)}&lang=${getApiLang()}`
       );
 
-      if (result.success && result.data.data) return result.data.data;
-
-      // 실 API 연동이 실패했거나(네트워크/서버 오류), DB에 아직 데이터가 없어 성공 응답에
-      // data가 비어있는 경우(HTTP 200 + data:null) 모두 임시로 로컬 목업 데이터로 대체한다.
-      const mock = await fetchMockJson<{ data: PlaceDetail }>(
-        `/data/tourList/tourDetail/${encodeURIComponent(tourId)}.json`
-      );
-      if (mock) return mock.data;
-
-      throw result;
+      if (!result.success) throw result;
+      return result.data.data;
     },
 
     enabled: !!tourId,
   });
+};
 
-  const aiDetailQuery = useQuery({
+export const usePlaceAIDetail = (tourId: string) => {
+  return useQuery({
     queryKey: ["placeAiDetail", tourId, getApiLang()],
     queryFn: async () => {
       const result = await apiClient.get<{ data: PlaceAIDetail }>(
         `/tourList/tourAIDetail?tourId=${encodeURIComponent(tourId)}&lang=${getApiLang()}`
       );
 
-      if (result.success && result.data.data) return result.data.data;
-
-      const mock = await fetchMockJson<{ data: PlaceAIDetail }>(
-        `/data/tourList/tourAIDetail/${encodeURIComponent(tourId)}.json`
-      );
-      if (mock) return mock.data;
-
-      throw result;
+      if (!result.success) throw result;
+      return result.data.data;
     },
 
     enabled: !!tourId,
   });
-
-  return {
-    data:
-      detailQuery.data && aiDetailQuery.data
-        ? {...detailQuery.data, ...aiDetailQuery.data}
-        : undefined,
-    isLoading: detailQuery.isLoading || aiDetailQuery.isLoading,
-    isError: detailQuery.isError || aiDetailQuery.isError,
-  };
 };
 
 export default usePlaceDetail;

@@ -9,4 +9,5 @@ import lombok.Setter;
 @Setter
 public class MoimDetailRequest {
     private String moimId;
+    private String lang;
 }

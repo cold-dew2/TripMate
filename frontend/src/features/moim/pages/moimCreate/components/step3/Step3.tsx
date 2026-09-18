@@ -7,12 +7,13 @@ import { apiClient } from "@/shared/api/client";
 import { addDays, formatMonthDay } from "@/shared/utils/date";
 import type { MoimCreateForm } from "@/types/moim";
 import type { PlanItem } from "../../MoimCreate";
-import type { UseFormWatch } from "react-hook-form";
+import type { UseFormSetValue, UseFormWatch } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import "./Step3.css";
 
 interface Step3Props {
   watch: UseFormWatch<MoimCreateForm>;
+  setValue: UseFormSetValue<MoimCreateForm>;
   itemsByDay: Record<number, PlanItem[]>;
   setItemsByDay: Dispatch<SetStateAction<Record<number, PlanItem[]>>>;
   onAddDay: (day: number) => void;
@@ -26,13 +27,16 @@ interface AiScheduleItem {
   tourId: string;
   tourNm: string;
   firstImage?: string;
+  roadAddr?: string;
 }
 
-const Step3 = ({ watch, itemsByDay, setItemsByDay, onAddDay, onPrev, onNext }: Step3Props) => {
+const Step3 = ({ watch, setValue, itemsByDay, setItemsByDay, onAddDay, onPrev, onNext }: Step3Props) => {
   const { t } = useTranslation();
   const moimStartDt = watch("moimStartDt");
   const moimEndDt = watch("moimEndDt");
   const moimCateData = watch("moimCateData");
+  const maxMember = watch("maxMember");
+  const region = watch("region");
 
   const maxDays = useMemo(() => {
     if (!moimStartDt || !moimEndDt) return 1;
@@ -42,10 +46,12 @@ const Step3 = ({ watch, itemsByDay, setItemsByDay, onAddDay, onPrev, onNext }: S
 
   const [dayCount, setDayCount] = useState(maxDays);
   const [isRecommending, setIsRecommending] = useState(false);
+  const [recommendError, setRecommendError] = useState<string | null>(null);
 
   useEffect(() => {
     setDayCount(maxDays);
-  }, [maxDays]);
+    setValue("dayCount", maxDays);
+  }, [maxDays, setValue]);
 
   const dayOptions = Array.from({ length: 10 }, (_, index) => {
     const count = index + 1;
@@ -70,12 +76,21 @@ const Step3 = ({ watch, itemsByDay, setItemsByDay, onAddDay, onPrev, onNext }: S
 
   const requestAiSchedule = async () => {
     setIsRecommending(true);
+    setRecommendError(null);
     try {
       const result = await apiClient.post<{ data: AiScheduleItem[] }>("/tourList/aiSchedule", {
         cateCd: moimCateData?.[0]?.cateCd,
+        cateNms: (moimCateData ?? []).map((c) => c.cateNm).filter(Boolean).join(", "),
+        keyword: region,
         dayCount,
+        maxMember,
+        moimStartDt,
+        moimEndDt,
       });
-      if (!result.success) return;
+      if (!result.success) {
+        setRecommendError(t("moimCreate.step3.aiRecommendError"));
+        return;
+      }
 
       const grouped: Record<number, PlanItem[]> = {};
       result.data.data?.forEach((item) => {
@@ -83,12 +98,19 @@ const Step3 = ({ watch, itemsByDay, setItemsByDay, onAddDay, onPrev, onNext }: S
         list.push({
           id: `${item.tourId}-${item.day}-${item.time}`,
           time: item.time,
-          placeName: t(item.tourNm),
+          placeName: item.tourNm,
           tourId: item.tourId,
           imageUrl: item.firstImage,
+          roadAddr: item.roadAddr,
         });
         grouped[item.day] = list;
       });
+
+      if (Object.keys(grouped).length === 0) {
+        setRecommendError(t("moimCreate.step3.aiRecommendEmpty"));
+        return;
+      }
+
       setItemsByDay(grouped);
     } finally {
       setIsRecommending(false);
@@ -106,7 +128,11 @@ const Step3 = ({ watch, itemsByDay, setItemsByDay, onAddDay, onPrev, onNext }: S
           name="dayCount"
           value={String(dayCount)}
           options={dayOptions}
-          onChange={(event) => setDayCount(Number(event.target.value))}
+          onChange={(event) => {
+            const next = Number(event.target.value);
+            setDayCount(next);
+            setValue("dayCount", next);
+          }}
         />
       </div>
 
@@ -125,6 +151,8 @@ const Step3 = ({ watch, itemsByDay, setItemsByDay, onAddDay, onPrev, onNext }: S
           />
         );
       })}
+
+      {recommendError && <p className="step3-ai-error">{recommendError}</p>}
 
       <div className="buttons fixed step3-fixed">
         <div className="step3-fixed-row">

@@ -14,6 +14,7 @@ import tools.jackson.databind.ObjectMapper;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -531,14 +532,33 @@ public class TourListServicelmpl implements TourListService {
                         """.formatted(no++, tour.getTourId(), tour.getTourNm(), tour.getCateNm()));
             }
 
+            StringBuilder conditionPrompt = new StringBuilder();
+            if (request.getMoimStartDt() != null && !request.getMoimStartDt().isBlank()) {
+                conditionPrompt.append("여행 기간: ").append(request.getMoimStartDt());
+                if (request.getMoimEndDt() != null && !request.getMoimEndDt().isBlank()) {
+                    conditionPrompt.append(" ~ ").append(request.getMoimEndDt());
+                }
+                conditionPrompt.append(" (총 ").append(dayCount).append("일)\n");
+            } else {
+                conditionPrompt.append("여행 기간: 총 ").append(dayCount).append("일\n");
+            }
+            if (request.getCateNms() != null && !request.getCateNms().isBlank()) {
+                conditionPrompt.append("관심 테마/여행 목적: ").append(request.getCateNms()).append("\n");
+            }
+            if (request.getMaxMember() != null && request.getMaxMember() > 0) {
+                conditionPrompt.append("동행 인원: ").append(request.getMaxMember()).append("명\n");
+            }
+
             String prompt = "당신은 대한민국 여행 일정 플래너입니다.\n"
-                    + "다음 관광지 목록 중에서만 골라 " + dayCount + "일 여행 일정을 만들어주세요.\n"
+                    + "다음 관광지 목록 중에서만 골라, 아래 조건에 맞는 " + dayCount + "일 여행 일정을 만들어주세요.\n"
+                    + "[여행 조건]\n" + conditionPrompt
                     + "[규칙]\n"
                     + "1. 반드시 제공된 목록에 있는 관광지ID만 사용하세요.\n"
                     + "2. 하루에 2~3개의 관광지를 배정하세요.\n"
                     + "3. 시간은 09:00~18:00 사이로, 이동 시간을 고려해 배정하세요.\n"
                     + "4. 하루 안에서는 시간 순서대로 정렬하세요.\n"
-                    + "5. 반드시 JSON 형식으로만 응답하세요. 다른 설명은 절대 포함하지 마세요.\n"
+                    + "5. 관심 테마/여행 목적과 동행 인원을 고려해 어울리는 관광지 위주로 배정하세요.\n"
+                    + "6. 반드시 JSON 형식으로만 응답하세요. 다른 설명은 절대 포함하지 마세요.\n"
                     + "[응답 형식]\n"
                     + "{\"recommendations4\":[{\"day\":1,\"time\":\"10:00\",\"tourId\":\"T0001\"}]}\n"
                     + "[관광지 목록]\n" + tourListPrompt;
@@ -572,6 +592,7 @@ public class TourListServicelmpl implements TourListService {
                     data.setTourId(item.getTourId());
                     data.setTourNm(tourInfo.getTourNm());
                     data.setFirstImage(tourInfo.getFirstImage());
+                    data.setRoadAddr(tourInfo.getRoadAddr());
                     schedule.add(data);
                 }
             }
@@ -630,6 +651,150 @@ public class TourListServicelmpl implements TourListService {
                     "FAIL",
                     "관광지 등록 중 오류가 발생했습니다.",
                     "/tourList/customTour",
+                    "",
+                    null
+            );
+        }
+    }
+
+    //일정별 교통편 추천
+    @Override
+    public TransportRecommendResponse transportRecommend(TransportRecommendRequest request) {
+
+        try {
+            List<TransportRecommendRequest.TransportStopInput> items = request.getItems();
+            if (items == null || items.size() < 2) {
+                return new TransportRecommendResponse(
+                        true,
+                        200,
+                        "SUCCESS",
+                        "이동할 구간이 없습니다.",
+                        "/tourList/transportRecommend",
+                        "",
+                        new ArrayList<>()
+                );
+            }
+
+            // 같은 날짜(day) 안에서 시간 순으로 연속된 관광지 쌍만 이동 구간으로 본다
+            // (날짜가 바뀌는 지점은 실제 이동이 아니므로 제외)
+            Map<Integer, List<TransportRecommendRequest.TransportStopInput>> byDay = new LinkedHashMap<>();
+            for (TransportRecommendRequest.TransportStopInput item : items) {
+                byDay.computeIfAbsent(item.getDay(), k -> new ArrayList<>()).add(item);
+            }
+            for (List<TransportRecommendRequest.TransportStopInput> dayItems : byDay.values()) {
+                dayItems.sort((a, b) -> {
+                    String ta = a.getTime() == null ? "" : a.getTime();
+                    String tb = b.getTime() == null ? "" : b.getTime();
+                    return ta.compareTo(tb);
+                });
+            }
+
+            StringBuilder legPrompt = new StringBuilder();
+            int legNo = 0;
+            for (Map.Entry<Integer, List<TransportRecommendRequest.TransportStopInput>> entry : byDay.entrySet()) {
+                List<TransportRecommendRequest.TransportStopInput> dayItems = entry.getValue();
+                for (int i = 0; i < dayItems.size() - 1; i++) {
+                    TransportRecommendRequest.TransportStopInput from = dayItems.get(i);
+                    TransportRecommendRequest.TransportStopInput to = dayItems.get(i + 1);
+                    legPrompt.append("""
+                            [구간 번호 %d]
+                            day : %d
+                            출발 관광지ID : %s / 이름 : %s / 주소 : %s
+                            도착 관광지ID : %s / 이름 : %s / 주소 : %s
+                            """.formatted(
+                            legNo++, entry.getKey(),
+                            from.getTourId(), from.getTourNm(), from.getRoadAddr(),
+                            to.getTourId(), to.getTourNm(), to.getRoadAddr()
+                    ));
+                }
+            }
+
+            if (legNo == 0) {
+                return new TransportRecommendResponse(
+                        true,
+                        200,
+                        "SUCCESS",
+                        "이동할 구간이 없습니다.",
+                        "/tourList/transportRecommend",
+                        "",
+                        new ArrayList<>()
+                );
+            }
+
+            String prompt = "당신은 대한민국 대중교통에 정통한 여행 이동 전문가입니다.\n"
+                    + "다음은 하루 일정 안에서 연속으로 방문하는 관광지 구간 목록입니다.\n"
+                    + "각 구간마다 두 관광지의 주소를 바탕으로 가장 적절한 이동수단과 예상 소요시간(분), "
+                    + "예상 비용(원), 환승 횟수를 추천해주세요.\n"
+                    + "[규칙]\n"
+                    + "1. 이동수단은 지하철, 버스, 도보, 택시, 자가용/렌터카 중 실제 거리에 맞는 것으로 고르세요.\n"
+                    + "2. 도보로 15분 이내인 거리는 도보를 우선 추천하세요.\n"
+                    + "3. 정확한 수치를 모르더라도 주소 간 거리를 바탕으로 합리적인 추정치를 제시하세요.\n"
+                    + "4. 반드시 JSON 형식으로만 응답하고, 요청받은 day와 관광지ID를 그대로 포함해서 응답하세요.\n"
+                    + "[응답 형식]\n"
+                    + "{\"transportLegs\":[{\"day\":1,\"fromTourId\":\"T0001\",\"toTourId\":\"T0002\","
+                    + "\"mode\":\"지하철\",\"durationMinutes\":20,\"cost\":1500,\"transferCount\":0}]}\n"
+                    + "[이동 구간 목록]\n" + legPrompt;
+
+            GeminiRequest geminiRequest = new GeminiRequest(List.of(new GeminiRequest.Content(List.of(new GeminiRequest.Part(prompt)))));
+
+            GeminiResponse response = restClient.post()
+                    .uri(url)
+                    .header("X-goog-api-key", apiKey)
+                    .body(geminiRequest)
+                    .retrieve()
+                    .body(GeminiResponse.class);
+
+            String aiResult = "";
+            if (response != null && response.candidates() != null && !response.candidates().isEmpty()) {
+                aiResult = response.candidates().get(0).content().parts().get(0).text();
+            }
+
+            ObjectMapper objectMapper = new ObjectMapper();
+            GeminiData recommend = objectMapper.readValue(aiResult, GeminiData.class);
+
+            List<TransportLegData> legs = new ArrayList<>();
+            if (recommend.getTransportLegs() != null) {
+                Map<String, TransportRecommendRequest.TransportStopInput> byTourId = new LinkedHashMap<>();
+                for (TransportRecommendRequest.TransportStopInput item : items) {
+                    byTourId.putIfAbsent(item.getTourId(), item);
+                }
+
+                for (GeminiData.TransportLegItem item : recommend.getTransportLegs()) {
+                    TransportRecommendRequest.TransportStopInput from = byTourId.get(item.getFromTourId());
+                    TransportRecommendRequest.TransportStopInput to = byTourId.get(item.getToTourId());
+                    if (from == null || to == null) continue;
+
+                    TransportLegData leg = new TransportLegData();
+                    leg.setDay(item.getDay());
+                    leg.setFromTourId(from.getTourId());
+                    leg.setFromTourNm(from.getTourNm());
+                    leg.setToTourId(to.getTourId());
+                    leg.setToTourNm(to.getTourNm());
+                    leg.setMode(item.getMode());
+                    leg.setDurationMinutes(item.getDurationMinutes());
+                    leg.setCost(item.getCost());
+                    leg.setTransferCount(item.getTransferCount());
+                    legs.add(leg);
+                }
+            }
+
+            return new TransportRecommendResponse(
+                    true,
+                    200,
+                    "SUCCESS",
+                    "교통편 추천을 정상적으로 생성했습니다.",
+                    "/tourList/transportRecommend",
+                    "",
+                    legs
+            );
+        } catch (Exception e) {
+            log.error("처리 중 오류가 발생했습니다.", e);
+            return new TransportRecommendResponse(
+                    false,
+                    500,
+                    "FAIL",
+                    "교통편 추천 중 오류가 발생했습니다.",
+                    "/tourList/transportRecommend",
                     "",
                     null
             );
