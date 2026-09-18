@@ -1,44 +1,47 @@
 import { apiClient } from "@/shared/api/client";
+import { fetchMockJson } from "@/shared/api/mockFallback";
 import { getApiLang } from "@/shared/utils/lang";
 import { useQuery } from "@tanstack/react-query";
 import type { PlaceDetail, PlaceAIDetail } from "@/types/place";
-
-// .env의 VITE_API_BASE_URL이 /data(로컬 목업 JSON)를 가리킬 때는
-// 쿼리스트링 대신 tourId별 정적 파일 경로로 요청한다.
-const isMock = (import.meta.env.VITE_API_BASE_URL ?? "").startsWith("/data");
 
 const usePlaceDetail = (tourId: string) => {
   const detailQuery = useQuery({
     queryKey: ["placeDetail", tourId, getApiLang()],
     queryFn: async () => {
-      const endpoint = isMock
-        ? `/tourList/tourDetail/${encodeURIComponent(tourId)}.json`
-        : `/tourList/tourDetail?tourId=${encodeURIComponent(tourId)}&lang=${getApiLang()}`;
-      const result = await apiClient.get<{ data: PlaceDetail }>(endpoint);
+      const result = await apiClient.get<{ data: PlaceDetail }>(
+        `/tourList/tourDetail?tourId=${encodeURIComponent(tourId)}&lang=${getApiLang()}`
+      );
 
-      if (!result.success) {
-        throw result;
-      }
+      if (result.success && result.data.data) return result.data.data;
 
-      return result.data.data;
+      // 실 API 연동이 실패했거나(네트워크/서버 오류), DB에 아직 데이터가 없어 성공 응답에
+      // data가 비어있는 경우(HTTP 200 + data:null) 모두 임시로 로컬 목업 데이터로 대체한다.
+      const mock = await fetchMockJson<{ data: PlaceDetail }>(
+        `/data/tourList/tourDetail/${encodeURIComponent(tourId)}.json`
+      );
+      if (mock) return mock.data;
+
+      throw result;
     },
 
     enabled: !!tourId,
   });
 
   const aiDetailQuery = useQuery({
-    queryKey: ["placeAiDetail", tourId],
+    queryKey: ["placeAiDetail", tourId, getApiLang()],
     queryFn: async () => {
-      const endpoint = isMock
-        ? `/tourList/tourAIDetail/${encodeURIComponent(tourId)}.json`
-        : `/tourList/tourAIDetail?tourId=${encodeURIComponent(tourId)}`;
-      const result = await apiClient.get<{ data: PlaceAIDetail }>(endpoint);
+      const result = await apiClient.get<{ data: PlaceAIDetail }>(
+        `/tourList/tourAIDetail?tourId=${encodeURIComponent(tourId)}&lang=${getApiLang()}`
+      );
 
-      if (!result.success) {
-        throw result;
-      }
+      if (result.success && result.data.data) return result.data.data;
 
-      return result.data.data;
+      const mock = await fetchMockJson<{ data: PlaceAIDetail }>(
+        `/data/tourList/tourAIDetail/${encodeURIComponent(tourId)}.json`
+      );
+      if (mock) return mock.data;
+
+      throw result;
     },
 
     enabled: !!tourId,

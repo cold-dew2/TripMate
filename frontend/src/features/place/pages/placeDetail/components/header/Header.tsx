@@ -16,8 +16,8 @@ const Header = ({ place }: InformationProps) => {
         <img src={`/images/places/${place.tourId}.jpeg`} alt={t('image.alt', { title: place.tourNm })} />
       </div>
       <div className="detail-info">
-        <div className="place-name">{t(place.tourNm)}</div>
-        <div className="place-addr">{t(place.roadAddr)}</div>
+        <div className="place-name">{place.tourNm}</div>
+        <div className="place-addr">{place.roadAddr}</div>
         <div className="place-avgScore">
           <img src="/icons/icon_star.png" alt="" />
           <span>{place.avgScore}</span>

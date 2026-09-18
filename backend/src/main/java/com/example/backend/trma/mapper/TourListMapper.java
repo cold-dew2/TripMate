@@ -23,17 +23,22 @@ public interface TourListMapper {
     //관광지 상세조회(리뷰)
     List<TourDetailReviewData> tourDetailReview(@Param("tourId") String tourId, @Param("offset") int offset);
     //관광지 후기 등록
-    int insertTourReview(@Param("request") CreateTourReviewRequest request,
+    int insertTourReview(@Param("reviewId") String reviewId,
+                         @Param("request") CreateTourReviewRequest request,
                          @Param("imgUrls") String imgUrls,
                          @Param("userId") String userId);
     //사용자 관광지 등록(소모임 생성 시 직접 입력)
     int insertCustomTour(@Param("tourId") String tourId,
                           @Param("request") CustomTourRequest request,
                           @Param("userId") String userId);
-    //관광지명/개요 번역 캐시 저장
+    //관광지명/개요/주소 번역 캐시 저장
     int updateTourTranslation(@Param("tourId") String tourId,
                                @Param("tourNmEn") String tourNmEn,
                                @Param("tourNmJa") String tourNmJa,
                                @Param("overviewEn") String overviewEn,
-                               @Param("overviewJa") String overviewJa);
+                               @Param("overviewJa") String overviewJa,
+                               @Param("roadAddrEn") String roadAddrEn,
+                               @Param("roadAddrJa") String roadAddrJa,
+                               @Param("detailAddrEn") String detailAddrEn,
+                               @Param("detailAddrJa") String detailAddrJa);
 }

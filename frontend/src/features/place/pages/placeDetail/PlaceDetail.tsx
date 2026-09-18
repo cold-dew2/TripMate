@@ -15,10 +15,11 @@ const PlaceDetail = () => {
   const { tourId } = useParams<{ tourId: string }>();
   const { data: place, isLoading, isError } = usePlaceDetail(tourId ?? "");
   const {
-    data: reviews,
+    data: reviewPages,
     isLoading: reviewIsLoading,
     isError: reviewIsError,
   } = useReview(tourId ?? "");
+  const reviews = reviewPages?.pages.flat();
 
   if (isLoading) return <div>{tourId}로딩</div>;
   if (isError || !place) return <div>{tourId}nodata</div>;

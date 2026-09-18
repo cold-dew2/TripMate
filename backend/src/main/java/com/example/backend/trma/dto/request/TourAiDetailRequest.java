@@ -9,4 +9,5 @@ import lombok.Setter;
 @Setter
 public class TourAiDetailRequest {
     private String tourId;
+    private String lang;
 }

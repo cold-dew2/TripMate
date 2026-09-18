@@ -215,6 +215,8 @@ public class GeminiData {
         private String tourId;
         private String tourNm;
         private String overview;
+        private String roadAddr;
+        private String detailAddr;
 
         public String getTourId() {
             return tourId;
@@ -235,6 +237,57 @@ public class GeminiData {
         }
         public void setOverview(String overview) {
             this.overview = overview;
+        }
+
+        public String getRoadAddr() {
+            return roadAddr;
+        }
+        public void setRoadAddr(String roadAddr) {
+            this.roadAddr = roadAddr;
+        }
+
+        public String getDetailAddr() {
+            return detailAddr;
+        }
+        public void setDetailAddr(String detailAddr) {
+            this.detailAddr = detailAddr;
+        }
+    }
+
+    private List<ReviewTranslationItem> reviewTranslations;
+
+    public List<ReviewTranslationItem> getReviewTranslations() {
+        return reviewTranslations;
+    }
+
+    public void setReviewTranslations(List<ReviewTranslationItem> reviewTranslations) {
+        this.reviewTranslations = reviewTranslations;
+    }
+
+    public static class ReviewTranslationItem {
+        private int index;
+        private String reviewTitle;
+        private String reviewContent;
+
+        public int getIndex() {
+            return index;
+        }
+        public void setIndex(int index) {
+            this.index = index;
+        }
+
+        public String getReviewTitle() {
+            return reviewTitle;
+        }
+        public void setReviewTitle(String reviewTitle) {
+            this.reviewTitle = reviewTitle;
+        }
+
+        public String getReviewContent() {
+            return reviewContent;
+        }
+        public void setReviewContent(String reviewContent) {
+            this.reviewContent = reviewContent;
         }
     }
 }

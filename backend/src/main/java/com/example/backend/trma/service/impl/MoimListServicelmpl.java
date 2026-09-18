@@ -17,6 +17,7 @@ import tools.jackson.databind.ObjectMapper;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -559,7 +560,8 @@ public class MoimListServicelmpl implements MoimListService {
 
         try {
             String imgUrls = request.getImageUrls() == null ? null : String.join(",", request.getImageUrls());
-            moimListMapper.insertMoimReview(moimId, request, imgUrls, userId);
+            String reviewId = "RVO" + UUID.randomUUID().toString().replace("-", "").substring(0, 12).toUpperCase();
+            moimListMapper.insertMoimReview(reviewId, moimId, request, imgUrls, userId);
 
             return new CreateMoimReviewResponse(
                     true,

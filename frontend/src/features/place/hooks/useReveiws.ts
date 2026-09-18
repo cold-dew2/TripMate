@@ -1,10 +1,8 @@
 import { apiClient } from "@/shared/api/client";
+import { fetchMockJson } from "@/shared/api/mockFallback";
+import { getApiLang } from "@/shared/utils/lang";
 import type { TourReview } from "@/types/reviews";
 import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-
-// .env의 VITE_API_BASE_URL이 /data(로컬 목업 JSON)를 가리킬 때는
-// 쿼리스트링 대신 tourId별 정적 파일 경로로 요청한다.
-const isMock = (import.meta.env.VITE_API_BASE_URL ?? "").startsWith("/data");
 
 export interface CreateReviewPayload {
   tourId: string;
@@ -16,26 +14,24 @@ export interface CreateReviewPayload {
 
 const useReview = (tourId: string) => {
   return useInfiniteQuery({
-    queryKey: ["tourReview", tourId],
+    queryKey: ["tourReview", tourId, getApiLang()],
     queryFn: async ({ pageParam = 1 }) => {
-      const endpoint = isMock
-        ? `/tourDetailReview/${encodeURIComponent(tourId)}.json`
-        : `/tourList/tourDetailReview?tourId=${encodeURIComponent(tourId)}&page=${pageParam}`;
-      const result = await apiClient.get<{ data: TourReview[] }>(endpoint);
+      const result = await apiClient.get<{ data: TourReview[] }>(
+        `/tourList/tourDetailReview?tourId=${encodeURIComponent(tourId)}&page=${pageParam}&lang=${getApiLang()}`
+      );
 
-      if (!result.success) {
-        // 목업 모드에서는 후기 파일이 없는 관광지도 많으므로 에러 대신 빈 배열로 처리
-        if (isMock) return [];
-        throw result;
-      }
+      if (result.success) return result.data.data ?? [];
 
-      let reviews = result.data.data ?? [];
-      if (isMock) {
-        // 목업 파일은 페이지네이션을 지원하지 않는 정적 전체 목록이므로 10개씩 잘라서 반환
-        const start = (pageParam - 1) * 10;
-        reviews = reviews.slice(start, start + 10);
-      }
-      return reviews;
+      // 실 API 연동이 실패하면 임시로 로컬 목업 후기 데이터로 대체한다.
+      // 목업 파일은 페이지네이션을 지원하지 않는 정적 전체 목록이므로 10개씩 잘라서 반환하고,
+      // 후기 목업이 없는 관광지도 많으므로 그 경우엔 에러 대신 빈 배열로 처리한다.
+      const mock = await fetchMockJson<{ data: TourReview[] }>(
+        `/data/tourDetailReview/${encodeURIComponent(tourId)}.json`
+      );
+      if (!mock) return [];
+
+      const start = (pageParam - 1) * 10;
+      return (mock.data ?? []).slice(start, start + 10);
     },
     initialPageParam: 1,
     getNextPageParam: (lastPage, allPages) => {

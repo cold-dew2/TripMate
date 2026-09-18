@@ -251,7 +251,8 @@
     "searchLabel": "観光地検索",
     "searchPlaceholder": "観光地を検索してください",
     "emptyMsg": "観光地が存在しません！",
-    "errorMsg": "もう一度お試しください！"
+    "errorMsg": "もう一度お試しください！",
+    "mapUnavailable": "地図を読み込めませんでした。"
   },
   "review": {
     "score": "評価",
@@ -262,7 +263,8 @@
     "images": "写真（最大5枚）",
     "titleRequired": "タイトルを入力してください。",
     "contentRequired": "内容を入力してください。",
-    "imageCount": "{{count}}枚を選択"
+    "imageCount": "{{count}}枚を選択",
+    "empty": "まだレビューがありません。最初のレビューを書いてみましょう！"
   },
   "my": {
     "moiming": "進行中のグループ",

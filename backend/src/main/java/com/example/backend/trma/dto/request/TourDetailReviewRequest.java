@@ -11,4 +11,5 @@ public class TourDetailReviewRequest {
     private String tourId;
     private int page;
     private int offset;
+    private String lang;
 }

@@ -233,6 +233,7 @@
     "searchPlaceholder": "Search for a destination",
     "emptyMsg": "No destinations found!",
     "errorMsg": "Please try again!",
+    "mapUnavailable": "The map could not be loaded.",
     "introduce": "Introduction",
     "info": "Information",
     "review": "Reviews",
@@ -253,7 +254,8 @@
     "score": "Rating", "title": "Title", "content": "Review", "images": "Photos (up to 5)",
     "scoreLabel1": "Not great", "scoreLabel2": "Meh", "scoreLabel3": "OK", "scoreLabel4": "Good", "scoreLabel5": "Excellent!",
     "registerTitle": "Write a Review", "moimPrompt": "How was your trip? Tell us about it!", "moimContentPlaceholder": "Say a word to others! We all had so much fun, let's do it again!",
-    "titleRequired": "Please enter a title.", "contentRequired": "Please enter a review.", "imageCount": "{{count}} image(s) selected"
+    "titleRequired": "Please enter a title.", "contentRequired": "Please enter a review.", "imageCount": "{{count}} image(s) selected",
+    "empty": "No reviews yet. Be the first to leave one!"
   },
   "my": {
     "moiming": "Ongoing Groups",
