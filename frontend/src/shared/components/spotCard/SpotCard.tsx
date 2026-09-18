@@ -1,6 +1,6 @@
 import { useTranslation } from "react-i18next";
 import Card from "../card/Card"
-import "./spotCard.css"
+import "./SpotCard.css"
 import Skeleton from "../skeleton/Skeleton";
 
 interface Props {
