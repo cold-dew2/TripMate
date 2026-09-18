@@ -254,6 +254,104 @@ public class GeminiData {
         }
     }
 
+    private MoimTranslationItem moimTranslation;
+
+    public MoimTranslationItem getMoimTranslation() {
+        return moimTranslation;
+    }
+
+    public void setMoimTranslation(MoimTranslationItem moimTranslation) {
+        this.moimTranslation = moimTranslation;
+    }
+
+    public static class MoimTranslationItem {
+        private String moimTitle;
+        private String moimDscr;
+
+        public String getMoimTitle() {
+            return moimTitle;
+        }
+        public void setMoimTitle(String moimTitle) {
+            this.moimTitle = moimTitle;
+        }
+
+        public String getMoimDscr() {
+            return moimDscr;
+        }
+        public void setMoimDscr(String moimDscr) {
+            this.moimDscr = moimDscr;
+        }
+    }
+
+    private List<TransportLegItem> transportLegs;
+
+    public List<TransportLegItem> getTransportLegs() {
+        return transportLegs;
+    }
+
+    public void setTransportLegs(List<TransportLegItem> transportLegs) {
+        this.transportLegs = transportLegs;
+    }
+
+    public static class TransportLegItem {
+        private int day;
+        private String fromTourId;
+        private String toTourId;
+        private String mode;
+        private Integer durationMinutes;
+        private Integer cost;
+        private Integer transferCount;
+
+        public int getDay() {
+            return day;
+        }
+        public void setDay(int day) {
+            this.day = day;
+        }
+
+        public String getFromTourId() {
+            return fromTourId;
+        }
+        public void setFromTourId(String fromTourId) {
+            this.fromTourId = fromTourId;
+        }
+
+        public String getToTourId() {
+            return toTourId;
+        }
+        public void setToTourId(String toTourId) {
+            this.toTourId = toTourId;
+        }
+
+        public String getMode() {
+            return mode;
+        }
+        public void setMode(String mode) {
+            this.mode = mode;
+        }
+
+        public Integer getDurationMinutes() {
+            return durationMinutes;
+        }
+        public void setDurationMinutes(Integer durationMinutes) {
+            this.durationMinutes = durationMinutes;
+        }
+
+        public Integer getCost() {
+            return cost;
+        }
+        public void setCost(Integer cost) {
+            this.cost = cost;
+        }
+
+        public Integer getTransferCount() {
+            return transferCount;
+        }
+        public void setTransferCount(Integer transferCount) {
+            this.transferCount = transferCount;
+        }
+    }
+
     private List<ReviewTranslationItem> reviewTranslations;
 
     public List<ReviewTranslationItem> getReviewTranslations() {

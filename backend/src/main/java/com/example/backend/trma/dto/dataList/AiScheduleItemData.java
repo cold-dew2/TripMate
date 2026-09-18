@@ -13,4 +13,5 @@ public class AiScheduleItemData {
     private String tourId;
     private String tourNm;
     private String firstImage;
+    private String roadAddr;
 }

@@ -317,8 +317,9 @@ public class MoimListServicelmpl implements MoimListService {
 
         try {
             MoimDetailData moimDetail = moimListMapper.moimDetail(request.getMoimId());
+            applyMoimDetailTranslation(moimDetail, request.getLang());
             List<MoimCateData> moimCate = moimListMapper.moimCate(request.getMoimId());
-            List<MoimPlanData> moimPlan = moimListMapper.moimPlan(request.getMoimId());
+            List<MoimPlanData> moimPlan = moimListMapper.moimPlan(request.getMoimId(), request.getLang());
             MoimJoinStatusData moimJoinStatus = moimListMapper.moimJoinStatus(request.getMoimId(), userId);
 
             return new MoimDetailResponse(
@@ -415,8 +416,11 @@ public class MoimListServicelmpl implements MoimListService {
 
         try {
 
-            //모임ID 생성
-            String moimId = moimListMapper.moimIdCreate();
+            //모임ID 생성 (기존에는 DB 함수 FN_GET_MOIM_ID()를 호출했는데, 이 함수가 어느 스크립트에도
+            //정의되어 있지 않아 실제 DB에 없을 가능성이 높고 소모임 생성 실패의 유력한 원인이었다.
+            //다른 ID들(RVT/RVO 리뷰ID, UGC 관광지ID)과 동일하게 애플리케이션에서 직접 생성하도록 바꿔
+            //DB 함수 존재 여부와 무관하게 항상 동작하게 한다)
+            String moimId = "M" + UUID.randomUUID().toString().replace("-", "").substring(0, 10).toUpperCase();
 
             //모임 등록
             moimListMapper.createMoimList(request, moimId, userId);
@@ -448,7 +452,7 @@ public class MoimListServicelmpl implements MoimListService {
                     "SUCCESS",
                     "모임 생성 성공",
                     "/moimList/createMoim",
-                    null
+                    new CreateMoimData(moimId)
             );
         } catch (Exception e) {
             log.error("처리 중 오류가 발생했습니다.", e);
@@ -586,10 +590,11 @@ public class MoimListServicelmpl implements MoimListService {
 
     //모임(여행) 후기 목록 조회
     @Override
-    public MoimReviewsResponse moimReviews(String moimId) {
+    public MoimReviewsResponse moimReviews(String moimId, String lang) {
 
         try {
             List<MoimReviewData> reviews = moimListMapper.moimReviews(moimId);
+            applyMoimReviewTranslations(reviews, lang);
 
             return new MoimReviewsResponse(
                     true,
@@ -611,6 +616,106 @@ public class MoimListServicelmpl implements MoimListService {
                     "",
                     null
             );
+        }
+    }
+
+    // ========================= 소모임 제목/소개/후기 번역 =========================
+    // 사용자가 직접 입력하는 값이라 한국어만 존재하므로, 관광지와 동일한 방식으로
+    // 제목/소개는 DB에 캐시하고(재사용), 계속 새로 작성되는 후기는 조회 시점에 매번 번역한다.
+
+    private GeminiData callGeminiForTranslation(String prompt) {
+        GeminiRequest geminiRequest = new GeminiRequest(List.of(new GeminiRequest.Content(List.of(new GeminiRequest.Part(prompt)))));
+
+        GeminiResponse response = restClient.post()
+                .uri(url)
+                .header("X-goog-api-key", apiKey)
+                .body(geminiRequest)
+                .retrieve()
+                .body(GeminiResponse.class);
+
+        String aiResult = "";
+        if (response != null && response.candidates() != null && !response.candidates().isEmpty()) {
+            aiResult = response.candidates().get(0).content().parts().get(0).text();
+        }
+        if (aiResult == null || aiResult.isBlank()) return null;
+
+        ObjectMapper objectMapper = new ObjectMapper();
+        return objectMapper.readValue(aiResult, GeminiData.class);
+    }
+
+    private void applyMoimDetailTranslation(MoimDetailData moim, String lang) {
+        if (moim == null) return;
+        if (!"en".equals(lang) && !"ja".equals(lang)) return;
+
+        String cachedTitle = "en".equals(lang) ? moim.getMoimTitleEn() : moim.getMoimTitleJa();
+        String cachedDscr = "en".equals(lang) ? moim.getMoimDscrEn() : moim.getMoimDscrJa();
+        if (cachedTitle != null && !cachedTitle.isBlank()) {
+            moim.setMoimTitle(cachedTitle);
+            if (cachedDscr != null && !cachedDscr.isBlank()) moim.setMoimDscr(cachedDscr);
+            return;
+        }
+
+        try {
+            String langLabel = "en".equals(lang) ? "영어" : "일본어";
+            String prompt = "다음 여행 소모임의 제목과 소개글을 " + langLabel + "로 자연스럽게 번역해주세요.\n"
+                    + "반드시 JSON 형식으로만 응답하세요. 다른 설명은 절대 포함하지 마세요.\n"
+                    + "[응답 형식]\n"
+                    + "{\"moimTranslation\":{\"moimTitle\":\"번역된 제목\",\"moimDscr\":\"번역된 소개글\"}}\n"
+                    + "[소모임 정보]\n"
+                    + "제목: " + moim.getMoimTitle() + "\n"
+                    + "소개글: " + (moim.getMoimDscr() == null ? "" : moim.getMoimDscr());
+
+            GeminiData result = callGeminiForTranslation(prompt);
+            if (result == null || result.getMoimTranslation() == null) return;
+
+            String title = result.getMoimTranslation().getMoimTitle();
+            String dscr = result.getMoimTranslation().getMoimDscr();
+
+            moimListMapper.updateMoimTranslation(
+                    moim.getMoimId(),
+                    "en".equals(lang) ? title : null,
+                    "ja".equals(lang) ? title : null,
+                    "en".equals(lang) ? dscr : null,
+                    "ja".equals(lang) ? dscr : null
+            );
+            if (title != null && !title.isBlank()) moim.setMoimTitle(title);
+            if (dscr != null && !dscr.isBlank()) moim.setMoimDscr(dscr);
+        } catch (Exception e) {
+            log.warn("소모임 제목/소개 번역에 실패해 한국어로 표시합니다. moimId={}, lang={}", moim.getMoimId(), lang, e);
+        }
+    }
+
+    private void applyMoimReviewTranslations(List<MoimReviewData> reviews, String lang) {
+        if (!"en".equals(lang) && !"ja".equals(lang)) return;
+        if (reviews == null || reviews.isEmpty()) return;
+
+        try {
+            StringBuilder listPrompt = new StringBuilder();
+            for (int i = 0; i < reviews.size(); i++) {
+                listPrompt.append("[index %d]\n내용: %s\n\n".formatted(
+                        i,
+                        reviews.get(i).getReviewContent() == null ? "" : reviews.get(i).getReviewContent()
+                ));
+            }
+
+            String langLabel = "en".equals(lang) ? "영어" : "일본어";
+            String prompt = "다음은 여행 후기 목록입니다. 각 후기 내용을 " + langLabel + "로 자연스럽게 번역해주세요.\n"
+                    + "반드시 JSON 형식으로만 응답하고, 요청받은 index를 그대로 포함해서 응답하세요.\n"
+                    + "[응답 형식]\n"
+                    + "{\"reviewTranslations\":[{\"index\":0,\"reviewContent\":\"번역된 내용\"}]}\n"
+                    + "[후기 목록]\n" + listPrompt;
+
+            GeminiData result = callGeminiForTranslation(prompt);
+            if (result == null || result.getReviewTranslations() == null) return;
+
+            for (GeminiData.ReviewTranslationItem item : result.getReviewTranslations()) {
+                if (item.getIndex() < 0 || item.getIndex() >= reviews.size()) continue;
+                if (item.getReviewContent() != null && !item.getReviewContent().isBlank()) {
+                    reviews.get(item.getIndex()).setReviewContent(item.getReviewContent());
+                }
+            }
+        } catch (Exception e) {
+            log.warn("모임 후기 번역에 실패해 한국어로 표시합니다. lang={}", lang, e);
         }
     }
 }

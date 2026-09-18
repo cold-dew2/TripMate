@@ -14,26 +14,17 @@ interface ApiFailure {
 
 type ApiResult<T> = ApiSuccess<T> | ApiFailure;
 
-const clearToken = () => {
-  localStorage.removeItem("accessToken");
-  sessionStorage.removeItem("accessToken");
-};
-
+// 로그인 토큰은 httpOnly 쿠키(accessToken)로 저장/전송되므로 JS에서 직접 읽거나
+// 지울 수 없고(보안상 의도된 동작), 지울 필요가 있을 때는 /login/logout 호출로 서버가 쿠키를 만료시킨다.
 const req = async<T>(endpoint: string, options?: RequestInit): Promise<ApiResult<T>> => {
     try {
-      const token = sessionStorage.getItem("accessToken") || localStorage.getItem("accessToken");
       const res = await fetch(`${API_BASE_URL}${endpoint}`, {
         ...options,
-        headers: {
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          ...options?.headers,
-        },
+        credentials: "include",
+        headers: options?.headers,
       });
 
       if (!res.ok) {
-        if (res.status === 401) {
-          clearToken();
-        }
         return {
           success: false,
           status: res.status,
@@ -45,10 +36,9 @@ const req = async<T>(endpoint: string, options?: RequestInit): Promise<ApiResult
 
       // 백엔드는 로그인 필요/처리 실패 등 비즈니스 실패도 HTTP 200으로 내려주고
       // 응답 바디의 success 플래그로만 구분하므로, 여기서도 함께 확인해야 한다.
+      // (NEED_LOGIN은 "이 화면/기능은 로그인해야 함"을 뜻할 뿐 세션이 끊어졌다는 뜻은
+      // 아니므로, 여기서 더 이상 쿠키를 지우지 않는다 — 실제 로그아웃은 /login/logout에서만 처리)
       if (data && typeof data === "object" && data.success === false) {
-        if (data.code === "NEED_LOGIN") {
-          clearToken();
-        }
         return {
           success: false,
           status: typeof data.status === "number" ? data.status : res.status,
@@ -99,4 +89,5 @@ export const apiClient = {
   delete: <T>(endpoint: string) => req<T>(endpoint, { method: "DELETE" }),
   upload: <T>(endpoint: string, body: FormData) =>
     req<T>(endpoint, { method: "POST", body }),
+  logout: () => req<void>("/login/logout", { method: "POST" }),
 };

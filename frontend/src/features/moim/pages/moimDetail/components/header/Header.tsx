@@ -29,7 +29,7 @@ const Header = ({ moim, cate, onShare }: moimDetailProps) => {
         </button>
       </div>
       <div className="detail-info">
-        <div className="place-name">{t(moim.moimTitle)}</div>
+        <div className="place-name">{moim.moimTitle}</div>
         <div className="tags">
           {cate.map((category) => (
             <span key={category.cateCd} className="tag-badge">{t(category.cateNm)}</span>

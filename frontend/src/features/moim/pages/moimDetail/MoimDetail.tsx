@@ -72,7 +72,7 @@ const MoimDetail = () => {
               key={date}
               day={index + 1}
               date={date}
-              items={planByDay[date].map((item) => ({ id: `${date}-${item.tourNm}`, time: item.rmks, placeName: t(item.tourNm) }))}
+              items={planByDay[date].map((item) => ({ id: `${date}-${item.tourNm}`, time: item.rmks, placeName: item.tourNm }))}
             />
           ))
         )}
@@ -116,7 +116,9 @@ const MoimDetail = () => {
         ) : (
           <Button
             text={applyMoim.isPending ? t('common.saving') : t('moim.applyBtn')}
-            onClick={() => applyMoim.mutate()}
+            onClick={() => applyMoim.mutate(undefined, {
+              onError: () => window.alert(t('moim.applyError')),
+            })}
             disabled={applyMoim.isPending}
           />
         )}

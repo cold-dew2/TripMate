@@ -14,10 +14,6 @@ interface LoginFormValues {
   rememberMe: boolean;
 }
 
-interface LoginData {
-  token: string;
-}
-
 const LoginPage = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -32,20 +28,16 @@ const LoginPage = () => {
 
   const onSubmit = async (values: LoginFormValues) => {
     setLoginError("");
-    const result = await apiClient.post<LoginData>("/login/login", {
+    // 로그인 토큰은 백엔드가 httpOnly 쿠키로 내려주므로 프론트에서 직접 저장하지 않는다.
+    const result = await apiClient.post<unknown>("/login/login", {
       userId: values.userId,
       userPw: values.userPw,
+      rememberMe: values.rememberMe,
     });
 
-    if (!result.success || !result.data?.token) {
+    if (!result.success) {
       setLoginError(t("account.loginFailed"));
       return;
-    }
-
-    if (values.rememberMe) {
-      localStorage.setItem("accessToken", result.data.token);
-    } else {
-      sessionStorage.setItem("accessToken", result.data.token);
     }
 
     navigate("/", { replace: true });

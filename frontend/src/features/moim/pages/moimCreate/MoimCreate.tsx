@@ -30,6 +30,7 @@ export interface PlanItem {
   imageUrl?: string;
   sidoNm?: string;
   sggNm?: string;
+  roadAddr?: string;
 }
 
 const MoimCreate = () => {
@@ -85,6 +86,7 @@ const MoimCreate = () => {
           tourId,
           sidoNm: stop.sidoNm,
           sggNm: stop.sggNm,
+          roadAddr: stop.address,
         });
       }
       if (!cancelled) setItemsByDay({ 1: items });
@@ -129,7 +131,10 @@ const MoimCreate = () => {
 
   const onSubmit = async (data: MoimCreateForm) => {
     const result = await apiClient.post<{ data: { moimId: string } }>("/moimList/createMoim", data);
-    if (!result.success) return;
+    if (!result.success || !result.data.data) {
+      window.alert(t("moimCreate.step6.registerError"));
+      return;
+    }
     setCreatedMoimId(result.data.data.moimId);
     goToStep(7);
   };
@@ -166,6 +171,7 @@ const MoimCreate = () => {
       {currentStep === 3 && (
         <Step3
           watch={watch}
+          setValue={setValue}
           itemsByDay={itemsByDay}
           setItemsByDay={setItemsByDay}
           onAddDay={openSpotPick}

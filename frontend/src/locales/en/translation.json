@@ -99,7 +99,9 @@
       "info": "Group description",
       "infoPlaceholder": "Join people who want to travel together!",
       "maxMember": "Max members",
-      "travelType": "Trip dates"
+      "travelType": "Trip dates",
+      "region": "Trip region",
+      "regionPlaceholder": "Select a region"
     },
     "step3": {
       "daysLabel": "Trip length",
@@ -110,6 +112,8 @@
       "emptyView": "No schedule has been registered.",
       "addSchedule": "Add schedule",
       "aiRecommend": "Get AI schedule suggestion",
+      "aiRecommendError": "Couldn't get a schedule suggestion. Please try again in a moment.",
+      "aiRecommendEmpty": "No destinations matched your region/theme. Try a different region or theme.",
       "timeHourLabel": "Visit hour for {{place}}",
       "timeMinuteLabel": "Visit minute for {{place}}"
     },
@@ -131,7 +135,12 @@
       "mapPreview": "Map · Route preview",
       "flowTitle": "{{count}}-day itinerary ({{range}})",
       "dayLabel": "DAY {{day}} ({{date}})",
-      "editPlan": "Edit plan"
+      "editPlan": "Edit plan",
+      "transportRecommend": "Get transport suggestions",
+      "transportRecommendError": "Couldn't get transport suggestions. Please try again in a moment.",
+      "transportDuration": "{{count}} min",
+      "transportCost": "₩{{cost}}",
+      "transportTransfer": "{{count}} transfer(s)"
     },
     "step6": {
       "photoLabel": "Group cover photo",
@@ -140,7 +149,8 @@
       "regionLabel": "Destination",
       "nightsLabel": "{{nights}}N {{count}}D",
       "memberLabel": "Members",
-      "register": "Create group"
+      "register": "Create group",
+      "registerError": "Couldn't create the group. Please try again in a moment."
     },
     "step7": {
       "title": "Your group has been created!",
@@ -210,6 +220,7 @@
     "selectApplicant": "Select {{name}}",
     "scheduleTitle": "Trip Itinerary",
     "applyBtn": "Apply",
+    "applyError": "Couldn't apply. Please try again in a moment.",
     "applying": "Pending",
     "applied": "Approved",
     "chatWithMembers": "Chat with Members",
@@ -234,6 +245,8 @@
     "emptyMsg": "No destinations found!",
     "errorMsg": "Please try again!",
     "mapUnavailable": "The map could not be loaded.",
+    "infoLoading": "Loading visit information...",
+    "infoError": "Couldn't load visit information.",
     "introduce": "Introduction",
     "info": "Information",
     "review": "Reviews",

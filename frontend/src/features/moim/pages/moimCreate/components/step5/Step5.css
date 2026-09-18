@@ -32,10 +32,12 @@
   font-size: var(--fs-sm);
 }
 .step5-items li {
+  padding: var(--space-sm) 0;
+}
+.step5-item-row {
   display: flex;
   align-items: center;
   gap: var(--space-md);
-  padding: var(--space-sm) 0;
 }
 .step5-time {
   flex-shrink: 0;
@@ -45,4 +47,20 @@
 .step5-place {
   flex: 1;
   font-weight: var(--fw-bold);
+}
+.step5-transport-trigger {
+  margin-bottom: var(--space-lg);
+}
+.step5-transport-error {
+  margin-top: var(--space-xs);
+  color: var(--red-700);
+  font-size: var(--fs-sm);
+}
+.step5-transport-leg {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  margin: var(--space-2xs) 0 var(--space-2xs) 40px;
+  color: var(--gray-500);
+  font-size: var(--fs-xs);
 }

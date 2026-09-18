@@ -35,15 +35,12 @@ interface MyProfile {
 
 const FLAG_BY_LANG: Record<string, string> = { ko: '🇰🇷', en: '🇺🇸', ja: '🇯🇵' };
 
-// .env의 VITE_API_BASE_URL이 /data(로컬 목업 JSON)를 가리킬 때는
-// 백엔드/로그인 없이도 마이페이지 디자인을 확인할 수 있도록 게스트 화면을 건너뛴다.
-const isMock = (import.meta.env.VITE_API_BASE_URL ?? '').startsWith('/data');
-
 const MyPageScreen = () => {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
-  const isLoggedIn = isMock || !!(localStorage.getItem('accessToken') || sessionStorage.getItem('accessToken'));
 
+  // 로그인 토큰이 httpOnly 쿠키라 JS에서 로그인 여부를 미리 알 수 없으므로,
+  // 항상 호출해보고 결과(성공/NEED_LOGIN)로 로그인 여부를 판단한다.
   const profile = useQuery({
     queryKey: ['myProfile'],
     queryFn: async () => {
@@ -51,7 +48,6 @@ const MyPageScreen = () => {
       if (!r.success) throw r;
       return r.data.data;
     },
-    enabled: isLoggedIn,
   });
 
   const uploadPhoto = useMutation({
@@ -78,7 +74,11 @@ const MyPageScreen = () => {
     event.target.value = '';
   };
 
-  if (!isLoggedIn) {
+  if (profile.isLoading) {
+    return null;
+  }
+
+  if (!profile.data) {
     return (
       <main className="mypage-screen">
         <div className="mypage-hero-bg" />
@@ -208,9 +208,8 @@ const MyPageScreen = () => {
         <li><Link to="/safetyReport">{t('my.declaration')}<i aria-hidden="true">›</i></Link></li>
       </ul>
 
-      <button type="button" className="mypage-logout" onClick={() => {
-        localStorage.removeItem('accessToken');
-        sessionStorage.removeItem('accessToken');
+      <button type="button" className="mypage-logout" onClick={async () => {
+        await apiClient.logout();
         window.location.href = '/auth';
       }}>
         {t('my.logout')}

@@ -28,4 +28,7 @@ public interface TourListService {
     //사용자 관광지 등록(소모임 생성 시 직접 입력)
     CustomTourResponse registerCustomTour(CustomTourRequest request, String userId);
 
+    //일정별 교통편 추천
+    TransportRecommendResponse transportRecommend(TransportRecommendRequest request);
+
 }

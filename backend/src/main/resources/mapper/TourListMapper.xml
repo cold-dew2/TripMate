@@ -93,7 +93,7 @@
                 SELECT
                     GROUP_CONCAT(d.CMM_CM_NM ORDER BY d.CMM_CM_NM)
                 FROM TB_TRMA_TOUR_CATE c
-                JOIN TB_TRMA_CMM_CD_D ON c.CATE_CD = d.CMM_CDV AND d.CMM_CD_ID = 'TOUR_LCLS_CD'
+                JOIN TB_TRMA_CMM_CD_D d ON c.CATE_CD = d.CMM_CDV AND d.CMM_CD_ID = 'TOUR_LCLS_CD'
                 WHERE c.TOUR_ID = a.TOUR_ID
             ) AS CATE_NM
         FROM TB_TRMA_TOUR_LIST a

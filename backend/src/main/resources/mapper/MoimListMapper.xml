@@ -139,6 +139,10 @@
             ,a.MOIM_END_DT
             ,a.MAX_MEMBER
             ,a.MOIM_IMG_URL AS IMAGE_URL
+            ,a.MOIM_TITLE_EN
+            ,a.MOIM_TITLE_JA
+            ,a.MOIM_DSCR_EN
+            ,a.MOIM_DSCR_JA
             ,COUNT(c.USER_ID) AS memberCnt
             ,a.CREATE_USER AS USER_ID
             ,b.USER_NM
@@ -156,6 +160,10 @@
             ,a.MOIM_END_DT
             ,a.MAX_MEMBER
             ,a.MOIM_IMG_URL
+            ,a.MOIM_TITLE_EN
+            ,a.MOIM_TITLE_JA
+            ,a.MOIM_DSCR_EN
+            ,a.MOIM_DSCR_JA
             ,a.CREATE_USER
             ,b.USER_NM
 
@@ -183,13 +191,16 @@
     <!-- 모임 상세조회(일정) -->
     <!-- ========================= -->
     <select id="moimPlan"
-            parameterType="com.example.backend.trma.dto.request.MoimDetailRequest"
             resultType="com.example.backend.trma.dto.dataList.MoimPlanData">
 
         SELECT
             a.START_DT
             ,a.RMKS
-            ,b.TOUR_NM
+            <choose>
+                <when test="lang == 'en'">,COALESCE(NULLIF(b.TOUR_NM_EN, ''), b.TOUR_NM) AS TOUR_NM</when>
+                <when test="lang == 'ja'">,COALESCE(NULLIF(b.TOUR_NM_JA, ''), b.TOUR_NM) AS TOUR_NM</when>
+                <otherwise>,b.TOUR_NM</otherwise>
+            </choose>
             ,d.CMM_CDV AS CATE_CD
             ,d.CMM_CM_NM AS CATE_NM
         FROM TB_TRMA_MOIM_CALENDAR a
@@ -273,16 +284,6 @@
         FROM TB_TRMA_CMM_CD_D a
         WHERE a.CMM_CD_ID = 'CATE_ID'
             AND a.USE_YN = 'Y'
-
-    </select>
-
-    <!-- ========================= -->
-    <!-- 모임ID 생성 -->
-    <!-- ========================= -->
-    <select id="moimIdCreate"
-            resultType="String">
-
-        SELECT FN_GET_MOIM_ID()
 
     </select>
 
@@ -520,4 +521,20 @@
         ORDER BY a.CREATE_DT DESC
 
     </select>
+
+    <!-- ========================= -->
+    <!-- 소모임 제목/소개 번역 캐시 저장 -->
+    <!-- ========================= -->
+    <update id="updateMoimTranslation">
+
+        UPDATE TB_TRMA_MOIM_LIST
+        <set>
+            <if test="moimTitleEn != null">MOIM_TITLE_EN = #{moimTitleEn},</if>
+            <if test="moimTitleJa != null">MOIM_TITLE_JA = #{moimTitleJa},</if>
+            <if test="moimDscrEn != null">MOIM_DSCR_EN = #{moimDscrEn},</if>
+            <if test="moimDscrJa != null">MOIM_DSCR_JA = #{moimDscrJa},</if>
+        </set>
+        WHERE MOIM_ID = #{moimId}
+
+    </update>
 </mapper>

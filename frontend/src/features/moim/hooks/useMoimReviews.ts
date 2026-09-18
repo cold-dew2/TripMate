@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "@/shared/api/client";
+import { getApiLang } from "@/shared/utils/lang";
 
 export interface MoimReview {
   userNm: string;
@@ -11,9 +12,9 @@ export interface MoimReview {
 
 export const useMoimReviews = (moimId: string) => {
   return useQuery({
-    queryKey: ["moimReviews", moimId],
+    queryKey: ["moimReviews", moimId, getApiLang()],
     queryFn: async () => {
-      const result = await apiClient.get<{ data: MoimReview[] }>(`/moimList/${moimId}/reviews`);
+      const result = await apiClient.get<{ data: MoimReview[] }>(`/moimList/${moimId}/reviews`, { lang: getApiLang() });
       if (!result.success) throw result;
       return result.data.data ?? [];
     },
