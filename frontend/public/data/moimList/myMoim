@@ -1,0 +1,88 @@
+{
+  "success": true,
+  "status": 200,
+  "code": "SUCCESS",
+  "message": "내 모임 목록 조회를 정상적으로 조회했습니다.",
+  "path": "/moimList/myMoim",
+  "token": "",
+  "data": [
+    {
+      "moimId": "M001",
+      "moimTitle": "서울 근교 당일치기 여행 같이가요!",
+      "moimDscr": "남산타워에서 한강공원까지 서울의 밤을 함께 걷는 소모임",
+      "moimStartDt": "2026-07-20",
+      "moimEndDt": "2026-07-20",
+      "maxMember": 10,
+      "memberCnt": 2,
+      "roleCd": "A",
+      "stateCd": "Y",
+      "cateCd": "C01",
+      "cateNm": "서울"
+    },
+    {
+      "moimId": "M002",
+      "moimTitle": "부산 바다 여행 같이가요! (2박3일)",
+      "moimDscr": "광안리, 해운대까지 부산 바다를 제대로 즐기는 여행",
+      "moimStartDt": "2026-08-02",
+      "moimEndDt": "2026-08-04",
+      "maxMember": 8,
+      "memberCnt": 4,
+      "roleCd": "M",
+      "stateCd": "Y",
+      "cateCd": "C15",
+      "cateNm": "바다"
+    },
+    {
+      "moimId": "M003",
+      "moimTitle": "부산 바다 여행 3일차 산행",
+      "moimDscr": "부산 여행 마지막 날 근교 산행 코스",
+      "moimStartDt": "2026-08-04",
+      "moimEndDt": "2026-08-04",
+      "maxMember": 6,
+      "memberCnt": 3,
+      "roleCd": "M",
+      "stateCd": "N",
+      "cateCd": "C03",
+      "cateNm": "등산"
+    },
+    {
+      "moimId": "M101",
+      "moimTitle": "경주 벚꽃길 드라이브 여행",
+      "moimDscr": "경주 보문호 벚꽃길을 드라이브하며 즐기는 봄나들이",
+      "moimStartDt": "2026-08-10",
+      "moimEndDt": "2026-08-10",
+      "maxMember": 6,
+      "memberCnt": 2,
+      "roleCd": "A",
+      "stateCd": "Y",
+      "cateCd": "C04",
+      "cateNm": "드라이브"
+    },
+    {
+      "moimId": "M102",
+      "moimTitle": "전주 한옥마을 미식 투어",
+      "moimDscr": "전주 한옥마을 맛집을 함께 탐방하는 미식 여행",
+      "moimStartDt": "2026-08-15",
+      "moimEndDt": "2026-08-15",
+      "maxMember": 8,
+      "memberCnt": 5,
+      "roleCd": "A",
+      "stateCd": "Y",
+      "cateCd": "C02",
+      "cateNm": "맛집"
+    },
+    {
+      "moimId": "M103",
+      "moimTitle": "인천 야경 사진 산책 모임",
+      "moimDscr": "인천 송도 야경을 함께 촬영하는 산책 모임",
+      "moimStartDt": "2026-09-02",
+      "moimEndDt": "2026-09-02",
+      "maxMember": 8,
+      "memberCnt": 2,
+      "roleCd": "A",
+      "stateCd": "Y",
+      "cateCd": "C08",
+      "cateNm": "야경"
+    }
+  ]
+}

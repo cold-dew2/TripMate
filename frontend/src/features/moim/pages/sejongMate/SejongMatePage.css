@@ -1,0 +1,50 @@
+.sejong-mate-page {
+  padding-top: var(--space-lg);
+}
+.sejong-mate-eyebrow {
+  margin-bottom: var(--space-lg);
+  color: var(--purple-600);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-bold);
+}
+.sejong-mate-page .filter-tabs {
+  margin-bottom: var(--space-2xl);
+}
+
+.sejong-course-card {
+  overflow: hidden;
+  margin-bottom: var(--space-3xl);
+  padding: var(--space-2xl);
+  border: 1.5px solid var(--purple-500);
+  border-radius: var(--radius-xl);
+  background: var(--purple-100);
+}
+.sejong-course-eyebrow {
+  margin-bottom: 4px;
+  color: var(--purple-600);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-bold);
+}
+.sejong-course-card h2 {
+  margin-bottom: var(--space-md);
+  font-size: var(--fs-lg);
+  font-weight: var(--fw-ebold);
+}
+.sejong-course-route {
+  margin-bottom: var(--space-sm);
+  color: var(--gray-800);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-bold);
+  line-height: 1.6;
+}
+.sejong-course-duration {
+  margin-bottom: var(--space-lg);
+  color: var(--gray-600);
+  font-size: var(--fs-sm);
+}
+
+.sejong-mate-section-title {
+  margin-bottom: var(--space-lg);
+  font-size: var(--fs-lg);
+  font-weight: var(--fw-bold);
+}

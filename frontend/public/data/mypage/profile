@@ -1,0 +1,39 @@
+{
+  "success": true,
+  "status": 200,
+  "code": "SUCCESS",
+  "message": "마이페이지 프로필 조회를 정상적으로 조회했습니다.",
+  "path": "/mypage/profile",
+  "token": "",
+  "data": {
+    "userNm": "김지수",
+    "areaNm": "서울",
+    "description": "서울 로컬 가이드로 3년째 활동 중. 한국의 숨은 명소와 맛집을 외국인 친구들과 함께 탐방해요!",
+    "profileImageUrl": "",
+    "rating": 4.8,
+    "reviewCount": 42,
+    "ongoingMoimCount": 23,
+    "memberCount": 347,
+    "languages": [
+      { "langCd": "ko", "langNm": "한국어", "levelNm": "원어민" },
+      { "langCd": "en", "langNm": "영어", "levelNm": "유창" },
+      { "langCd": "ja", "langNm": "일본어", "levelNm": "기초" }
+    ],
+    "recentReviews": [
+      {
+        "reviewId": "R001",
+        "reviewerName": "Sarah K.",
+        "reviewScore": 5,
+        "reviewContent": "너무 좋았어요! 한국 문화를 배울 수 있었습니다.",
+        "createDt": "2026-06-28"
+      },
+      {
+        "reviewId": "R002",
+        "reviewerName": "田中さくら",
+        "reviewScore": 5,
+        "reviewContent": "친절하게 안내해 주셔서 감사합니다!",
+        "createDt": "2026-06-15"
+      }
+    ]
+  }
+}

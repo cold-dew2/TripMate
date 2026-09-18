@@ -4,8 +4,10 @@ import com.example.backend.trma.dto.dataList.*;
 import com.example.backend.trma.dto.request.*;
 import com.example.backend.trma.dto.response.*;
 import com.example.backend.trma.mapper.MoimListMapper;
+import com.example.backend.trma.mapper.NotificationMapper;
 import com.example.backend.trma.service.MoimListService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.NonNull;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -18,9 +20,11 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class MoimListServicelmpl implements MoimListService {
 
     private final MoimListMapper moimListMapper;
+    private final NotificationMapper notificationMapper;
     private final RestClient restClient;
 
     //사용자 정보 조회
@@ -44,6 +48,7 @@ public class MoimListServicelmpl implements MoimListService {
                     moimSearch
             );
         } catch (Exception e) {
+            log.error("처리 중 오류가 발생했습니다.", e);
             return new MoimSearchResponse(
                     false,
                     500,
@@ -270,6 +275,7 @@ public class MoimListServicelmpl implements MoimListService {
             );
 
         } catch (Exception e) {
+            log.error("처리 중 오류가 발생했습니다.", e);
 
             e.printStackTrace();
 
@@ -327,6 +333,7 @@ public class MoimListServicelmpl implements MoimListService {
                     moimJoinStatus
             );
         } catch (Exception e) {
+            log.error("처리 중 오류가 발생했습니다.", e);
             return new MoimDetailResponse(
                     false,
                     500,
@@ -358,6 +365,7 @@ public class MoimListServicelmpl implements MoimListService {
                     moimCateList
             );
         } catch (Exception e) {
+            log.error("처리 중 오류가 발생했습니다.", e);
             return new MoimCateSearchResponse(
                     false,
                     500,
@@ -386,6 +394,7 @@ public class MoimListServicelmpl implements MoimListService {
                     myMoimList
             );
         } catch (Exception e) {
+            log.error("처리 중 오류가 발생했습니다.", e);
             return new MyMoimResponse(
                     false,
                     500,
@@ -410,6 +419,9 @@ public class MoimListServicelmpl implements MoimListService {
 
             //모임 등록
             moimListMapper.createMoimList(request, moimId, userId);
+
+            //모임장 등록
+            moimListMapper.insertMoimMember(moimId, userId, "A", "Y");
 
             //모임 테마 등록
             if (request.getMoimCateData() != null) {
@@ -438,12 +450,163 @@ public class MoimListServicelmpl implements MoimListService {
                     null
             );
         } catch (Exception e) {
+            log.error("처리 중 오류가 발생했습니다.", e);
             return new CreateMoimResponse(
                     false,
                     500,
                     "FAIL",
                     "모임 생성 중 오류가 발생했습니다.",
                     "/moimList/createMoim",
+                    null
+            );
+        }
+    }
+
+    //모임 신청
+    @Override
+    public ApplyMoimResponse applyMoim(String moimId, String userId) {
+
+        try {
+            moimListMapper.insertMoimMember(moimId, userId, "M", "N");
+            notificationMapper.insertApplyNotification(moimId, userId);
+
+            return new ApplyMoimResponse(
+                    true,
+                    200,
+                    "SUCCESS",
+                    "모임 신청이 완료되었습니다.",
+                    "/moimList/" + moimId + "/apply",
+                    ""
+            );
+        } catch (Exception e) {
+            log.error("처리 중 오류가 발생했습니다.", e);
+            return new ApplyMoimResponse(
+                    false,
+                    500,
+                    "FAIL",
+                    "모임 신청 중 오류가 발생했습니다.",
+                    "/moimList/" + moimId + "/apply",
+                    ""
+            );
+        }
+    }
+
+    //모임 멤버 목록 조회
+    @Override
+    public MoimMembersResponse moimMembers(String moimId) {
+
+        try {
+            List<MoimMemberData> members = moimListMapper.moimMembers(moimId);
+
+            return new MoimMembersResponse(
+                    true,
+                    200,
+                    "SUCCESS",
+                    "모임 멤버 목록을 정상적으로 조회했습니다.",
+                    "/moimList/" + moimId + "/members",
+                    "",
+                    members
+            );
+        } catch (Exception e) {
+            log.error("처리 중 오류가 발생했습니다.", e);
+            return new MoimMembersResponse(
+                    false,
+                    500,
+                    "FAIL",
+                    "조회 중 오류가 발생했습니다.",
+                    "/moimList/" + moimId + "/members",
+                    "",
+                    null
+            );
+        }
+    }
+
+    //모임 멤버 상태 변경(승인/거절)
+    @Override
+    public UpdateMoimMemberResponse updateMoimMember(String moimId, String targetUserId, UpdateMoimMemberRequest request, String userId) {
+
+        try {
+            if (request.isApprove()) {
+                moimListMapper.updateMoimMemberState(moimId, targetUserId, "Y", userId);
+            } else {
+                moimListMapper.deleteMoimMember(moimId, targetUserId);
+            }
+
+            return new UpdateMoimMemberResponse(
+                    true,
+                    200,
+                    "SUCCESS",
+                    request.isApprove() ? "신청을 승인했습니다." : "신청을 거절했습니다.",
+                    "/moimList/" + moimId + "/members/" + targetUserId,
+                    ""
+            );
+        } catch (Exception e) {
+            log.error("처리 중 오류가 발생했습니다.", e);
+            return new UpdateMoimMemberResponse(
+                    false,
+                    500,
+                    "FAIL",
+                    "처리 중 오류가 발생했습니다.",
+                    "/moimList/" + moimId + "/members/" + targetUserId,
+                    ""
+            );
+        }
+    }
+
+    //모임(여행) 후기 등록
+    @Override
+    public CreateMoimReviewResponse createMoimReview(String moimId, CreateMoimReviewRequest request, String userId) {
+
+        try {
+            String imgUrls = request.getImageUrls() == null ? null : String.join(",", request.getImageUrls());
+            moimListMapper.insertMoimReview(moimId, request, imgUrls, userId);
+
+            return new CreateMoimReviewResponse(
+                    true,
+                    200,
+                    "SUCCESS",
+                    "후기 등록이 완료되었습니다.",
+                    "/moimList/" + moimId + "/review",
+                    ""
+            );
+        } catch (Exception e) {
+            log.error("처리 중 오류가 발생했습니다.", e);
+            return new CreateMoimReviewResponse(
+                    false,
+                    500,
+                    "FAIL",
+                    "후기 등록 중 오류가 발생했습니다.",
+                    "/moimList/" + moimId + "/review",
+                    ""
+            );
+        }
+    }
+
+    //모임(여행) 후기 목록 조회
+    @Override
+    public MoimReviewsResponse moimReviews(String moimId) {
+
+        try {
+            List<MoimReviewData> reviews = moimListMapper.moimReviews(moimId);
+
+            return new MoimReviewsResponse(
+                    true,
+                    200,
+                    "SUCCESS",
+                    "모임 후기 목록을 정상적으로 조회했습니다.",
+                    "/moimList/" + moimId + "/reviews",
+                    "",
+                    reviews
+            );
+        } catch (Exception e) {
+            log.error("처리 중 오류가 발생했습니다.", e);
+            return new MoimReviewsResponse(
+                    false,
+                    500,
+                    "FAIL",
+                    "조회 중 오류가 발생했습니다.",
+                    "/moimList/" + moimId + "/reviews",
+                    "",
                     null
             );
         }

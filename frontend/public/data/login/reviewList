@@ -1,0 +1,42 @@
+{
+  "success": true,
+  "status": 200,
+  "code": "SUCCESS",
+  "message": "리뷰 조회 완료",
+  "path": "/login/reviewList",
+  "token": "",
+  "data": [
+    {
+      "reviewTitle": "",
+      "reviewContent": "너무 좋았어요! 한국 문화를 배울 수 있었습니다.",
+      "reviewScore": 5,
+      "userNm": "Sarah K.",
+      "imgUrls": null,
+      "createDt": "2026-06-28"
+    },
+    {
+      "reviewTitle": "",
+      "reviewContent": "친절하게 안내해 주셔서 감사합니다!",
+      "reviewScore": 5,
+      "userNm": "田中さくら",
+      "imgUrls": null,
+      "createDt": "2026-06-15"
+    },
+    {
+      "reviewTitle": "",
+      "reviewContent": "정말 즐거운 여행이었어요. 다음에 또 참여하고 싶습니다.",
+      "reviewScore": 4,
+      "userNm": "이준호",
+      "imgUrls": null,
+      "createDt": "2026-05-30"
+    },
+    {
+      "reviewTitle": "",
+      "reviewContent": "설명도 자세하고 배려심이 느껴지는 모임이었어요.",
+      "reviewScore": 5,
+      "userNm": "박서연",
+      "imgUrls": null,
+      "createDt": "2026-05-12"
+    }
+  ]
+}

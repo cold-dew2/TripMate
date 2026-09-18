@@ -9,7 +9,8 @@ const MoimList = ({moimTitle, moimStartDt, applicantCount}: MoimListProps ) => {
     <ul className="moim-list">
       <li>
         <div className="info-left">
-          <p className="info-title"></p>
+          <p className="info-title">{moimTitle}</p>
+          <p>{moimStartDt} · {applicantCount}</p>
         </div>
       </li>
     </ul>

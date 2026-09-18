@@ -13,8 +13,7 @@ const Header = ({ place }: InformationProps) => {
   return (
     <div className="detail-header">
       <div className="detail-img">
-        {/* <img src={`place.firstImage`} alt={`${place.tourNm}의 이미지`} /> */}
-        <img src={`/images/places/${place.tourId}.jpeg`} alt="" />
+        <img src={`/images/places/${place.tourId}.jpeg`} alt={t('image.alt', { title: place.tourNm })} />
       </div>
       <div className="detail-info">
         <div className="place-name">{t(place.tourNm)}</div>

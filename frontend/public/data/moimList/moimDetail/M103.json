@@ -1,0 +1,16 @@
+{
+  "success": true, "status": 200, "code": "SUCCESS",
+  "message": "모임 상세조회(기본)을 정상적으로 조회했습니다.",
+  "path": "/moimList/moimDetail", "token": null,
+  "data": {
+    "moimId": "M103", "moimTitle": "인천 야경 사진 산책 모임",
+    "moimDscr": "인천 송도 야경을 함께 촬영하는 산책 모임",
+    "moimStartDt": "2026-09-02", "moimEndDt": "2026-09-02",
+    "maxMember": 8, "memberCnt": 2, "userId": "U000", "userNm": "김지수", "reviewScore": 4.8
+  },
+  "cate": [{ "cateCd": "C08", "cateNm": "야경" }],
+  "plan": [
+    { "startDt": "2026-09-02", "rmks": "19:00", "cateCd": "OBS", "cateNm": "전망", "tourNm": "송도 센트럴파크" }
+  ],
+  "joinStatus": { "roleCd": "A", "stateCd": "Y" }
+}

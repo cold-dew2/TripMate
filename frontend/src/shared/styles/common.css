@@ -1,23 +1,23 @@
 /* Layout */
 .container {
   width: 100%;
-  min-height: calc(100vh - 191px - 78px + 44px);
+  min-height: calc(100vh - 191px - 78px);
   margin: 0 auto;
-  padding: 0 28px 100px;
+  padding: 20px 20px 92px;
   overflow: auto;
+  margin-top: -48px;
 }
 .content-container {
   width: 100%;
   min-height: calc(100vh - 191px - 78px + 44px);
   margin: 0 auto;
-  padding: 30px 28px 100px;
+  padding: 22px 20px 92px;
   /* overflow: auto; */
 }
 .my-container {
-  border: 1px solid red;
   position: relative;
   min-height: calc(100vh - 80px);
-  padding: 104px 28px 100px;
+  padding: 88px 20px 92px;
 }
 .my-container:before {
   content: "";
@@ -170,15 +170,15 @@ section {
 
 /* Font Weight */
 .fw-regular {
-  font-weight: var(--fw-regular);
+  font-weight: var(--fw-rg);
 }
 
 .fw-medium {
-  font-weight: var(--fw-medium);
+  font-weight: var(--fw-md);
 }
 
 .fw-semibold {
-  font-weight: var(--fw-semibold);
+  font-weight: var(--fw-sbold);
 }
 
 .fw-bold {
@@ -186,7 +186,7 @@ section {
 }
 
 .fw-extrabold {
-  font-weight: var(--fw-extrabold);
+  font-weight: var(--fw-ebold);
 }
 
 /* Font Size */

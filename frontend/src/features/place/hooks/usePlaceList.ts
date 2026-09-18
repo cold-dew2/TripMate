@@ -1,20 +1,29 @@
 import { apiClient } from "@/shared/api/client";
+import { getApiLang } from "@/shared/utils/lang";
 import type { PlaceResponse } from "@/types/place";
 import { useInfiniteQuery } from "@tanstack/react-query";
 
-export const usePlaceList = (category: string) => {
+// .env의 VITE_API_BASE_URL이 /data(로컬 목업 JSON)를 가리킬 때는 정적 파일이라
+// 쿼리스트링(keyword/cateCd)을 반영하지 못하므로 프론트에서 직접 필터링한다.
+const isMock = (import.meta.env.VITE_API_BASE_URL ?? "").startsWith("/data");
+
+export const usePlaceList = (category: string, keyword?: string) => {
   return useInfiniteQuery({
-    queryKey: ["placeList", category],
+    queryKey: ["placeList", category, keyword ?? "", getApiLang()],
     queryFn: async ({ pageParam = 1 }) => {
       const cateParam = category !== "all" ? category : "";
 
-      // 쿼리 스트링 조합 (?page=1&cateNm=서울)
+      // 쿼리 스트링 조합 (?page=1&cateCd=...&keyword=...&lang=...)
       const queryParams = new URLSearchParams({
         page: String(pageParam),
+        lang: getApiLang(),
       });
 
       if (cateParam) {
-        queryParams.append("cateNm", cateParam); // 백엔드 DTO 필드명에 맞게 설정
+        queryParams.append("cateCd", cateParam); // 백엔드 TourSearchRequest 필드명(cateCd)에 맞춤
+      }
+      if (keyword) {
+        queryParams.append("keyword", keyword);
       }
 
       // 백엔드 엔드포인트: /tourList/tourSearch?page=1
@@ -25,7 +34,23 @@ export const usePlaceList = (category: string) => {
       if (!result.success) {
         throw result;
       }
-      return result.data.data;
+
+      let places = result.data.data;
+      if (isMock) {
+        if (cateParam) {
+          places = places.filter((place) => place.cateCd === cateParam);
+        }
+        if (keyword) {
+          const lower = keyword.toLowerCase();
+          places = places.filter((place) =>
+            place.tourNm?.toLowerCase().includes(lower)
+            || place.roadAddr?.toLowerCase().includes(lower)
+            || place.sidoNm?.toLowerCase().includes(lower)
+            || place.sggNm?.toLowerCase().includes(lower)
+          );
+        }
+      }
+      return places;
     },
     initialPageParam: 1,
     getNextPageParam: (lastPage, allPages) => {

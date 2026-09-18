@@ -1,3 +1,7 @@
 .create-content {
-  padding: var(--space-4xl);
+  min-height: calc(100vh - 140px);
+  padding: var(--space-4xl) 20px 200px;
+  background: var(--white);
 }
+
+.create-content .buttons.fixed { position: fixed; z-index: 5; bottom: 0; left: 0; right: 0; display: flex; gap: 8px; width: 100%; padding: 12px 20px calc(12px + env(safe-area-inset-bottom)); border-top: 1px solid var(--gray-100); background: #fff; }.create-content .buttons.fixed .btn { flex: 1; }

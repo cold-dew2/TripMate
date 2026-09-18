@@ -1,4 +1,4 @@
-import React, { type InputHTMLAttributes } from 'react'
+import { forwardRef, type InputHTMLAttributes } from 'react'
 import "./Checkbox.css"
 
 interface CheckboxProps extends InputHTMLAttributes<HTMLInputElement> {
@@ -6,16 +6,18 @@ interface CheckboxProps extends InputHTMLAttributes<HTMLInputElement> {
   icon?: string;
 }
 
-const Checkbox = ({ label, icon, id, ...props }: CheckboxProps) => {
+const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(({ label, icon, id, ...props }, ref) => {
   return (
     <div className="checkbox">
-      <input type="checkbox" id={id} {...props} className="blind" />
+      <input ref={ref} type="checkbox" id={id} {...props} className="blind" />
       <label htmlFor={id}>
         {icon && <img src={`/icons/${icon}`} alt={label} className="icon"/>}
         {label && <span className="label-text">{label}</span>}
       </label>
     </div>
   )
-}
+})
+
+Checkbox.displayName = "Checkbox";
 
 export default Checkbox

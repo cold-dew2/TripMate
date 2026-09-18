@@ -1,5 +1,3 @@
-
-
 .date-picker label {
   display: block;
   margin-bottom: var(--space-xl);
@@ -20,8 +18,67 @@
   border-radius: 12px;
   background: var(--white);
   box-sizing: border-box;
-} 
+}
+.btn-datePicker.active {
+  border-color: var(--purple-500);
+  color: var(--purple-600);
+  font-weight: var(--fw-bold);
+}
 
-.rdp-month {
-  border: 1p solid var(--gray-900);
+/* react-day-picker 테마를 앱의 보라색 팔레트/카드 스타일에 맞춰 재정의 */
+.date-picker .rdp-root {
+  --rdp-accent-color: var(--purple-500);
+  --rdp-accent-background-color: var(--purple-100);
+  --rdp-today-color: var(--purple-600);
+  --rdp-range_start-date-background-color: var(--purple-500);
+  --rdp-range_end-date-background-color: var(--purple-500);
+  --rdp-range_middle-background-color: var(--purple-100);
+  --rdp-day_button-border-radius: 10px;
+  --rdp-day-width: 40px;
+  --rdp-day-height: 40px;
+  --rdp-day_button-width: 36px;
+  --rdp-day_button-height: 36px;
+  --rdp-nav_button-width: 32px;
+  --rdp-nav_button-height: 32px;
+
+  display: inline-block;
+  width: fit-content;
+  margin-top: var(--space-lg);
+  padding: var(--space-xl);
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-lg);
+  background: var(--white);
+  font-family: inherit;
+}
+.date-picker .rdp-months {
+  width: fit-content;
+}
+.date-picker .rdp-weekday {
+  color: var(--gray-400);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-bold);
+}
+.date-picker .rdp-month_caption {
+  color: var(--gray-900);
+  font-weight: var(--fw-ebold);
+}
+.date-picker .rdp-day_button {
+  color: var(--gray-800);
+  font-size: var(--fs-sm);
+}
+.date-picker .rdp-selected .rdp-day_button {
+  color: var(--white);
+  font-weight: var(--fw-bold);
+}
+.date-picker .rdp-button_next,
+.date-picker .rdp-button_previous {
+  border-radius: 50%;
+  color: var(--purple-600);
+}
+.date-picker .rdp-button_next:hover,
+.date-picker .rdp-button_previous:hover {
+  background: var(--purple-100);
+}
+.date-picker .rdp-chevron {
+  fill: var(--purple-600);
 }

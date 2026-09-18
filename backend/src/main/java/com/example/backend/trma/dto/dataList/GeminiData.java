@@ -163,4 +163,78 @@ public class GeminiData {
         }
 
     }
+
+    private List<Recommendation4> recommendations4;
+
+    public List<Recommendation4> getRecommendations4() {
+        return recommendations4;
+    }
+
+    public void setRecommendations4(List<Recommendation4> recommendations4) {
+        this.recommendations4 = recommendations4;
+    }
+
+    public static class Recommendation4 {
+        private int day;
+        private String time;
+        private String tourId;
+
+        public int getDay() {
+            return day;
+        }
+        public void setDay(int day) {
+            this.day = day;
+        }
+
+        public String getTime() {
+            return time;
+        }
+        public void setTime(String time) {
+            this.time = time;
+        }
+
+        public String getTourId() {
+            return tourId;
+        }
+        public void setTourId(String tourId) {
+            this.tourId = tourId;
+        }
+    }
+
+    private List<TranslationItem> translations;
+
+    public List<TranslationItem> getTranslations() {
+        return translations;
+    }
+
+    public void setTranslations(List<TranslationItem> translations) {
+        this.translations = translations;
+    }
+
+    public static class TranslationItem {
+        private String tourId;
+        private String tourNm;
+        private String overview;
+
+        public String getTourId() {
+            return tourId;
+        }
+        public void setTourId(String tourId) {
+            this.tourId = tourId;
+        }
+
+        public String getTourNm() {
+            return tourNm;
+        }
+        public void setTourNm(String tourNm) {
+            this.tourNm = tourNm;
+        }
+
+        public String getOverview() {
+            return overview;
+        }
+        public void setOverview(String overview) {
+            this.overview = overview;
+        }
+    }
 }

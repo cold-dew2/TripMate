@@ -1,0 +1,48 @@
+.step5-content {
+  padding-top: var(--space-2xl);
+}
+.step5-map {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 150px;
+  margin-bottom: var(--space-2xl);
+  border-radius: var(--radius-md);
+  background: var(--purple-100);
+  color: var(--gray-500);
+  font-size: var(--fs-sm);
+}
+.step5-flow-title {
+  margin-bottom: var(--space-lg);
+  font-weight: var(--fw-bold);
+}
+.step5-day {
+  margin-bottom: var(--space-lg);
+  padding: var(--space-lg);
+  border: 1px solid var(--gray-100);
+  border-radius: var(--radius-md);
+}
+.step5-day-title {
+  margin-bottom: var(--space-md);
+  color: var(--purple-600);
+  font-weight: var(--fw-bold);
+}
+.step5-empty {
+  color: var(--gray-400);
+  font-size: var(--fs-sm);
+}
+.step5-items li {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-sm) 0;
+}
+.step5-time {
+  flex-shrink: 0;
+  color: var(--gray-600);
+  font-size: var(--fs-sm);
+}
+.step5-place {
+  flex: 1;
+  font-weight: var(--fw-bold);
+}

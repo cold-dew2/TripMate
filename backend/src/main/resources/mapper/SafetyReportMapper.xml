@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.example.backend.trma.mapper.SafetyReportMapper">
+
+    <!-- ========================= -->
+    <!-- 안심신고 등록 -->
+    <!-- ========================= -->
+    <insert id="insertSafetyReport">
+
+        INSERT INTO TB_TRMA_SAFETY_REPORT
+        (
+            MOIM_ID
+            ,TARGET_USER_ID
+            ,REPORT_TYPE_CD
+            ,CONTENT
+            ,STATE_CD
+
+            ,CREATE_USER
+            ,CREATE_DT
+            ,UPDATE_USER
+            ,UPDATE_DT
+        )VALUES(
+            #{request.moimId}
+            ,#{request.targetUserId}
+            ,#{request.reportType}
+            ,#{request.content}
+            ,'N'
+
+            ,#{userId}
+            ,CURRENT_TIMESTAMP
+            ,#{userId}
+            ,CURRENT_TIMESTAMP
+        )
+
+    </insert>
+</mapper>

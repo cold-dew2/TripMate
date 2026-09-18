@@ -1,31 +1,37 @@
-.header + .container {
-  margin-top: -44px;
+.home-banner-section {
+  position: relative;
+  z-index: 1;
 }
-
-.icon-card {
-  display: flex;
-  justify-content: space-between;
-  gap: 20px;
-  overflow-x: scroll;
-}
-.icon-item .icon {
+.sejong-banner {
   display: flex;
   align-items: center;
-  justify-content: center;
-  width: 52px;
-  height: 52px;
-  margin: 0 auto;
-  font-size: var(--fs-3xl);
-  border-radius: 50%;
-  background-color: var(--purple-100);
-  box-sizing: border-box;
+  justify-content: space-between;
+  gap: var(--space-2xl);
+  padding: var(--space-3xl) var(--space-4xl);
+  border: 1.5px solid var(--purple-500);
+  border-radius: var(--radius-xl);
+  background: var(--white);
+  box-shadow: var(--shadow-card-lg);
 }
-.icon-item .title {
-  margin-top: 10px;
-  color: var(--gray-700);
-  font-size: var(--fs-md);
+.sejong-banner-eyebrow {
+  color: var(--purple-500);
+  font-size: var(--fs-xs);
   font-weight: var(--fw-bold);
-  text-align: center;
+}
+.sejong-banner-title {
+  margin-top: 4px;
+  color: var(--gray-900);
+  font-size: var(--fs-xl);
+  font-weight: var(--fw-ebold);
+}
+.sejong-banner-desc {
+  margin-top: 6px;
+  color: var(--gray-500);
+  font-size: var(--fs-sm);
+}
+.sejong-banner-icon {
+  flex-shrink: 0;
+  font-size: 40px;
 }
 
 .spot-list {

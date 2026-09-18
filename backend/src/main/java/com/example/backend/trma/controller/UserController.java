@@ -8,6 +8,7 @@ package com.example.backend.trma.controller;
 import com.example.backend.trma.dto.request.*;
 import com.example.backend.trma.dto.response.*;
 import com.example.backend.trma.service.UserService;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 // 3. 클래스 어노테이션
@@ -38,8 +39,8 @@ public class UserController {
     }
 
     //로그인
-    @GetMapping("/login")
-    public LoginResponse login(@ModelAttribute LoginRequest request){
+    @PostMapping("/login")
+    public LoginResponse login(@RequestBody LoginRequest request){
         //System.out.println("request : " + request);
         return userService.login(request);
     }
@@ -53,8 +54,23 @@ public class UserController {
 
     //마이페이지_리뷰조회
     @GetMapping("/reviewList")
-    public UserReviewResponse reviewList(@ModelAttribute UserReviewRequest request){
-        //System.out.println("request : " + request);
+    public UserReviewResponse reviewList(@ModelAttribute UserReviewRequest request, Authentication authentication){
+
+        if (authentication == null || !authentication.isAuthenticated()
+                || "anonymousUser".equals(authentication.getName())) {
+
+            return new UserReviewResponse(
+                    false,
+                    500,
+                    "NEED_LOGIN",
+                    "로그인이 필요합니다.",
+                    "/login/reviewList",
+                    "",
+                    null
+            );
+        }
+
+        request.setUserId(authentication.getName());
         return userService.reviewList(request);
     }
 }

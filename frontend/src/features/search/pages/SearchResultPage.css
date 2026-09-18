@@ -1,0 +1,6 @@
+.search-empty {
+  padding: 60px 0;
+  color: var(--gray-400);
+  font-size: var(--fs-sm);
+  text-align: center;
+}

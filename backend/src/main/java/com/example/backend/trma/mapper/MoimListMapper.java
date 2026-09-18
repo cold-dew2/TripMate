@@ -2,6 +2,7 @@ package com.example.backend.trma.mapper;
 
 import com.example.backend.trma.dto.dataList.*;
 import com.example.backend.trma.dto.request.CreateMoimRequest;
+import com.example.backend.trma.dto.request.CreateMoimReviewRequest;
 import com.example.backend.trma.dto.request.MoimSearchRequest;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
@@ -41,4 +42,32 @@ public interface MoimListMapper {
     int insertMoimPlan(@Param("moimPlan") MoimPlanInsertData moimPlan,
                        @Param("moimId") String moimId,
                        @Param("userId") String userId);
+
+    //모임 멤버 등록
+    int insertMoimMember(@Param("moimId") String moimId,
+                         @Param("userId") String userId,
+                         @Param("roleCd") String roleCd,
+                         @Param("stateCd") String stateCd);
+
+    //모임 멤버 목록 조회
+    List<MoimMemberData> moimMembers(String moimId);
+
+    //모임 멤버 상태 변경(승인)
+    int updateMoimMemberState(@Param("moimId") String moimId,
+                              @Param("targetUserId") String targetUserId,
+                              @Param("stateCd") String stateCd,
+                              @Param("userId") String userId);
+
+    //모임 멤버 삭제(거절)
+    int deleteMoimMember(@Param("moimId") String moimId,
+                         @Param("targetUserId") String targetUserId);
+
+    //모임(여행) 후기 등록
+    int insertMoimReview(@Param("moimId") String moimId,
+                         @Param("request") CreateMoimReviewRequest request,
+                         @Param("imgUrls") String imgUrls,
+                         @Param("userId") String userId);
+
+    //모임(여행) 후기 목록 조회
+    List<MoimReviewData> moimReviews(String moimId);
 }

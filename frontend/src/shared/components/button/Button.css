@@ -8,6 +8,7 @@
 }
 /* button */
 .btn {
+  display: block;
   flex: 1;
   text-align: center;
   box-sizing: border-box;
@@ -80,8 +81,8 @@
   background-color: var(--red-700);
 }
 .btn-negative:hover:not(:disabled) {
-  border-color: var(--red-100);
-  background-color: var(--red-100);
+  border-color: var(--red-600);
+  background-color: var(--red-600);
 }
 .btn-negative:disabled {
   color: var(--white);

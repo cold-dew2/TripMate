@@ -1,0 +1,5 @@
+.chat-page { display: grid; grid-template-rows: auto 1fr; height:100vh; }
+.chat-room-header { display: flex; align-items: center; gap: 12px; padding: 14px 20px; border-bottom: 1px solid var(--gray-100); }
+.chat-room-header button { color: var(--gray-900); font-size: 32px; line-height: .7; }
+.chat-room-header b, .chat-room-header span { display: block; }
+.chat-room-header span { margin-top: 3px; color: var(--gray-500); font-size: 11px; }

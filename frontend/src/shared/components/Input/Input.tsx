@@ -1,29 +1,27 @@
+import { forwardRef, type InputHTMLAttributes } from "react";
 import "./Input.css"
 
-interface InputProps {
+interface InputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, "name"> {
   id?: string;
   className?: string;
   label: string;
   blind?: boolean;
-  type?: string;
   name: string;
-  placeholder?: string;
-  value?: string;
-  disabled?: boolean;
-  readonly?: boolean;
-  error?: string;  
-  onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  error?: string;
 }
 
-const Input = ({ 
-  type = "text", id, className, label, blind, name, placeholder, value, disabled, readonly, error, onChange 
-}: InputProps) => {
+const Input = forwardRef<HTMLInputElement, InputProps>(({
+  type = "text", id, className, label, blind, name, error, ...rest
+}, ref) => {
   return (
     <div className={`form ${className ? `${className}` : ""}`}>
       <label htmlFor={id} className={blind ? "blind" : "label"}>{label}</label>
-      <input type={type} id={id} placeholder={placeholder} name={name} disabled={disabled} readOnly={readonly} onChange={onChange} value={value}/>
-        {error && <p className="error-msg">{error}</p>}
+      <input ref={ref} type={type} id={id} name={name} {...rest} />
+      {error && <p className="error-msg">{error}</p>}
     </div>
   )
-}
+})
+
+Input.displayName = "Input";
+
 export default Input

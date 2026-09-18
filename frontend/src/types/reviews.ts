@@ -5,6 +5,7 @@ export interface TourReview {
   reviewTitle: string;
   reviewContent: string;
   reviewScore: number;
+  imgUrls: string | null;
   creatDt: string;
   userNm: string;
 }

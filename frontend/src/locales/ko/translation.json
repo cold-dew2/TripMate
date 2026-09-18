@@ -1,11 +1,157 @@
 {
+  "sejongMate": {
+    "title": "세종 여행메이트",
+    "eyebrow": "세종",
+    "courseEyebrow": "세종 추천 코스",
+    "courseTitle": "세종 초록 산책 코스",
+    "courseDuration": "약 5시간",
+    "courseCta": "이 코스로 메이트 구하기",
+    "recruitingTitle": "지금 모집 중",
+    "emptyMsg": "아직 모집 중인 세종 소모임이 없어요. 첫 모집을 시작해보세요!"
+  },
+  "notifications": {
+    "title": "알림",
+    "empty": "아직 알림이 없어요."
+  },
+  "userProfile": {
+    "title": "사용자 정보 조회",
+    "tabInfo": "정보",
+    "tabMoims": "참여한 모임",
+    "tabReviews": "사용자 후기",
+    "joinDt": "가입일"
+  },
+  "chat": {
+    "title": "채팅",
+    "me": "나",
+    "subtitle": "여행 메이트와 대화해요",
+    "loadingRooms": "채팅방을 불러오는 중입니다.",
+    "emptyRooms": "아직 채팅방이 없어요.",
+    "filterAll": "전체",
+    "filterUnread": "안읽음",
+    "emptyUnread": "안읽은 채팅이 없어요.",
+    "emptyRoomsCta": "새로운 채팅을 시작해보세요!",
+    "roomTitle": "채팅방",
+    "roomSubtitle": "실시간 대화",
+    "backToList": "채팅 목록으로",
+    "placeholder": "메시지를 입력하세요",
+    "send": "전송",
+    "loadFailed": "메시지를 불러오지 못했습니다.",
+    "sendFailed": "메시지 전송에 실패했습니다. 다시 시도해 주세요."
+  },
+  "account": {
+    "loading": "불러오는 중…", "edit": "프로필 편집", "activity": "내 활동", "settings": "설정", "profileSettings": "프로필 설정",
+    "loginTitle": "TripMate",
+    "loginSubtitle": "여행의 순간을 함께",
+    "email": "이메일",
+    "emailPlaceholder": "이메일",
+    "password": "비밀번호",
+    "passwordPlaceholder": "비밀번호",
+    "rememberMe": "로그인 상태 유지",
+    "login": "로그인",
+    "findId": "아이디 찾기",
+    "findPw": "비밀번호 찾기",
+    "signup": "회원가입",
+    "signupTitle": "회원가입",
+    "name": "이름",
+    "namePlaceholder": "이름을 입력하세요",
+    "nationality": "국적 선택",
+    "language": "언어 선택",
+    "next": "다음",
+    "back": "이전",
+    "emailRequired": "이메일을 입력해 주세요.",
+    "emailInvalid": "올바른 이메일 형식이 아니에요.",
+    "passwordRequired": "비밀번호를 입력해 주세요.",
+    "passwordMin": "비밀번호는 8자 이상이어야 해요.",
+    "nameRequired": "이름을 입력해 주세요.",
+    "loginFailed": "아이디 또는 비밀번호가 올바르지 않습니다.",
+    "signupFailed": "회원가입에 실패했습니다. 다시 시도해 주세요.",
+    "signupSuccess": "회원가입이 완료되었습니다. 로그인해 주세요.",
+    "backToLogin": "로그인으로 돌아가기"
+  },
   "common": {
+    "loading": "불러오는 중…",
+    "loadError": "정보를 불러오지 못했습니다.",
+    "submit": "등록",
+    "saving": "저장 중…",
     "travelPeriod": "여행 기간",
     "previous": "이전",
     "next": "다음",
-    "declaration": "신고하기"
+    "declaration": "신고하기",
+    "remove": "삭제",
+    "close": "닫기",
+    "selectAll": "전체 선택",
+    "deselectAll": "선택 해제"
+  },
+  "moimCreate": {
+    "title": "소모임 생성",
+    "step1": {
+      "title": "어떤 테마로 여행을 계획하시나요?",
+      "theme1": "자연/힐링",
+      "theme2": "문화/역사",
+      "theme3": "맛집/미식",
+      "theme4": "액티비티",
+      "theme5": "쇼핑",
+      "theme6": "기타"
+    },
+    "step2": {
+      "name": "모임 제목",
+      "namePlaceholder": "예: 서울 근교 힐링 여행",
+      "info": "모임 소개",
+      "infoPlaceholder": "함께 여행하고 싶은 사람과 함께해요!",
+      "maxMember": "최대 인원",
+      "travelType": "여행 유형"
+    },
+    "step3": {
+      "daysLabel": "여행 일수",
+      "daysOption": "{{count}}일",
+      "daysOptionOne": "1일 (당일치기)",
+      "daysOptionMulti": "{{count}}일 ({{nights}}박 {{count}}일)",
+      "empty": "일정을 추가해 주세요.",
+      "emptyView": "등록된 일정이 없습니다.",
+      "addSchedule": "일정 추가",
+      "aiRecommend": "일정 추천받기",
+      "timeHourLabel": "{{place}} 방문 시(시간)",
+      "timeMinuteLabel": "{{place}} 방문 시(분)"
+    },
+    "step4": {
+      "dayLabel": "DAY {{day}}",
+      "searchPlaceholder": "관광지, 주소 검색",
+      "tabAll": "전체",
+      "tabRecommend": "추천 관광지",
+      "tabCustom": "사용자 관광지 등록",
+      "customCateNm": "직접 등록",
+      "empty": "검색 결과가 없어요.",
+      "emptyCustom": "등록한 관광지가 없어요.",
+      "directInput": "직접 입력",
+      "nameInputPlaceholder": "관광지 이름",
+      "addressInputPlaceholder": "관광지 주소",
+      "save": "저장"
+    },
+    "step5": {
+      "mapPreview": "지도 · 경로 미리보기",
+      "flowTitle": "{{count}}일 여행 흐름 ({{range}})",
+      "dayLabel": "DAY {{day}} ({{date}})",
+      "editPlan": "플랜 수정"
+    },
+    "step6": {
+      "photoLabel": "모임 대표 사진",
+      "tagRecruit": "소모임 모집",
+      "scheduleLabel": "일정",
+      "regionLabel": "모집 인원",
+      "nightsLabel": "{{nights}}박 {{count}}일",
+      "memberLabel": "모임 인원",
+      "register": "등록하기"
+    },
+    "step7": {
+      "title": "소모임이 등록되었습니다!",
+      "subtitle": "모임원을 모집해보세요.",
+      "viewDetail": "소모임 상세보기",
+      "share": "공유하기",
+      "shareCopied": "링크가 복사되었습니다."
+    }
   },
   "home": {
+    "language": "언어",
     "greeting": "안녕하세요!",
     "userName": "{{name}}님",
     "notice": "알림",
@@ -14,7 +160,14 @@
     "searchPlaceholder": "여행지 또는 소모임을 검색해보세요",
     "userError": "불러오기 실패",
     "guest": "게스트님",
-    "errorMsg": "데이터를 불러올 수 없어요"
+    "errorMsg": "데이터를 불러올 수 없어요",
+    "sejongEyebrow": "TRAVEL DESTINATION",
+    "sejongTitle": "세종시로 떠나는 여행",
+    "sejongDesc": "호수공원, 국립수목원까지 세종시 여행지를 만나보세요",
+    "sejongMoimTitle": "세종시 소모임 찾아보기",
+    "popularPlaces": "인기 여행지",
+    "popularMoims": "내 주변 소모임",
+    "viewAll": "전체"
   },
   "nav": {
     "home": "홈",
@@ -39,14 +192,46 @@
     "errorMsg": "다시 시도해주세요!",
     "button": "+ 새모임 만들기",
     "manageTitle": "내 소모임 관리",
+    "detailsTitle": "소모임 상세",
+    "manageDesc": "참여 중인 여행 모임을 관리해요.",
+    "hostedList": "내가 만든 소모임",
+    "emptyManageMsg": "아직 만든 소모임이 없어요.",
+    "emptyManageCta": "첫 소모임 만들기",
+    "applicantList": "신청자 목록",
+    "moimChat": "소모임 채팅",
+    "scheduleEdit": "일정 수정",
+    "noApplicants": "신청자가 없어요.",
+    "approve": "승인",
+    "reject": "거절",
+    "scheduleEditComingSoon": "일정 수정 기능은 준비 중이에요.",
+    "waitingCount": "대기 {{count}}",
+    "approveSelected": "선택한 {{count}}명 승인하기",
+    "approveFailed": "승인 처리 중 일부 오류가 발생했습니다. 다시 시도해 주세요.",
+    "selectApplicant": "{{name}}님 선택",
+    "scheduleTitle": "여행 일정",
+    "applyBtn": "신청하기",
+    "applying": "신청중",
+    "applied": "신청완료",
+    "chatWithMembers": "모임원과 채팅하기",
+    "share": "공유하기",
+    "shareCopied": "링크가 복사되었습니다.",
     "step3": {
-      "title": "여행 일정을 구성할 일수를 선택하세요"
+      "title": "여행 일정을 구성할 일수를 선택하세요",
+      "emptyView": "등록된 일정이 없어요."
     }
   },
   "image": {
-    "alt": "{{title}} 이미지"
+    "alt": "{{title}} 이미지",
+    "reviewPhoto": "후기 사진 {{index}}",
+    "profilePhoto": "{{name}}님의 프로필 사진"
   },
   "place": {
+    "location": "위치",
+    "overviewFallback": "{{name}} 관광 정보입니다.",
+    "free": "무료",
+    "paid": "유료",
+    "available": "이용 가능",
+    "unavailable": "이용 불가",
     "details": "관광지 상세",
     "introduce": "소개",
     "info": "이용 정보",
@@ -60,21 +245,45 @@
     "lastUpdatedNote": "방문 전 운영시간 및 이용요금을 확인해주세요.",
     "listTitle": "관광지 찾기",
     "searchLabel": "관광지 검색",
-    "details": "관광지 상세",
     "searchPlaceholder": "관광지를 검색해주세요",
     "emptyMsg": "관광지가 존재하지 않아요!",
     "errorMsg": "다시 시도해주세요!"
+  },
+  "review": {
+    "score": "평점", "title": "제목", "content": "후기", "images": "사진 (최대 5장)",
+    "scoreLabel1": "별로예요", "scoreLabel2": "그저 그래요", "scoreLabel3": "괜찮아요", "scoreLabel4": "좋아요", "scoreLabel5": "최고예요!",
+    "registerTitle": "후기 등록", "moimPrompt": "후기를 작성해주세요, 어떤 여행이었나요?", "moimContentPlaceholder": "다른 사람에게 한마디! 모두 너무 즐거웠어요! 다음에도 또 함께해요!",
+    "titleRequired": "제목을 입력해 주세요.", "contentRequired": "후기 내용을 입력해 주세요.", "imageCount": "{{count}}장 선택됨"
   },
   "my": {
     "moiming": "진행 중 소모임",
     "member": "참여 멤버",
     "getReview": "받은 후기",
     "useLang": "사용 언어",
+    "langMaxHint": "최대 {{max}}개",
     "recentlyReviews": "최근 리뷰",
+    "noReviewsYet": "아직 작성한 후기가 없어요.",
     "myPlan": "내 일정",
+    "myPlanTitle": "일정 (내 일정)",
     "myMoim": "내 소모임 관리",
     "declaration": "안심신고",
-    "logout": "로그아웃"
+    "logout": "로그아웃",
+    "statusDone": "완료",
+    "statusPending": "승인대기중",
+    "introduce": "소개",
+    "guestDesc": "로그인하고 여행 메이트를 만나보세요.",
+    "registerReviewBtn": "여행 완료 후기 등록",
+    "applicantCount": "신청자 {{count}}",
+    "uploadPhoto": "사진 등록",
+    "uploadFailed": "사진 업로드에 실패했습니다. 다시 시도해 주세요.",
+    "saveFailed": "저장 중 오류가 발생했습니다. 다시 시도해 주세요."
+  },
+  "search": {
+    "title": "검색 결과",
+    "placeholder": "여행지, 소모임 검색",
+    "tabPlace": "관광지",
+    "tabMoim": "소모임",
+    "emptyMsg": "\"{{keyword}}\"에 대한 검색 결과가 없어요."
   },
   "safetyReport": {
     "title": "안심신고",
@@ -82,7 +291,19 @@
     "moimName": "신고 대상 소모임",
     "safetydesc": "상세 내용",
     "placeholder": "상황을 자세히 적어주세요",
-    "personName": "신고할 사람"
+    "personName": "신고할 사람",
+    "selectMoim": "신고 대상 소모임을 선택하세요",
+    "selectPerson": "신고할 사람을 선택하세요",
+    "selectMoimFirst": "먼저 소모임을 선택하세요",
+    "moimRequired": "신고 대상 소모임을 선택해 주세요.",
+    "personRequired": "신고할 사람을 선택해 주세요.",
+    "contentRequired": "상황을 자세히 입력해 주세요.",
+    "typeLabel": "신고 유형",
+    "typeSafety": "안전 위협",
+    "typeRude": "불쾌한 언행",
+    "typeNoshow": "노쇼",
+    "typeEtc": "기타",
+    "success": "신고가 접수되었습니다. 빠르게 확인하겠습니다."
   },
   "lang": {
     "ko": "한국어",
@@ -178,5 +399,6 @@
   "바다": "바다",
   "조회수": "조회수",
   "명": "명",
-  "사진, 야경": "사진, 야경"
+  "사진, 야경": "사진, 야경",
+  "원어민": "원어민"
 }

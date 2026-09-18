@@ -1,0 +1,17 @@
+{
+  "success": true, "status": 200, "code": "SUCCESS",
+  "message": "모임 상세조회(기본)을 정상적으로 조회했습니다.",
+  "path": "/moimList/moimDetail", "token": null,
+  "data": {
+    "moimId": "M002", "moimTitle": "부산 바다 여행 같이가요! (2박3일)",
+    "moimDscr": "광안리, 해운대까지 부산 바다를 제대로 즐기는 여행",
+    "moimStartDt": "2026-08-02", "moimEndDt": "2026-08-04",
+    "maxMember": 8, "memberCnt": 4, "userId": "U002", "userNm": "Brian", "reviewScore": 4.6
+  },
+  "cate": [{ "cateCd": "C15", "cateNm": "바다" }],
+  "plan": [
+    { "startDt": "2026-08-02", "rmks": "10:00", "cateCd": "SEA", "cateNm": "해변", "tourNm": "해운대해수욕장" },
+    { "startDt": "2026-08-03", "rmks": "11:00", "cateCd": "SEA", "cateNm": "해변", "tourNm": "광안리해수욕장" }
+  ],
+  "joinStatus": { "roleCd": "M", "stateCd": "Y" }
+}

@@ -1,0 +1,109 @@
+.moim-detail {
+  padding: 0 var(--space-2xl) var(--space-3xl);
+}
+.moim-detail-status {
+  padding: var(--space-3xl) 0;
+  color: var(--gray-400);
+  font-size: var(--fs-sm);
+  text-align: center;
+}
+.moim-detail-host {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  margin-top: var(--space-xl);
+  padding: var(--space-lg) 0;
+  border-top: 1px solid var(--white-200);
+  border-bottom: 1px solid var(--white-200);
+  color: var(--gray-700);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-md);
+}
+.moim-detail-host-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--gray-100);
+}
+.moim-detail-host-score {
+  margin-left: auto;
+  color: var(--purple-600);
+  font-weight: var(--fw-bold);
+}
+.moim-detail-plan {
+  margin-top: var(--space-2xl);
+}
+.moim-detail-plan h2 {
+  margin-bottom: var(--space-lg);
+  color: var(--gray-900);
+  font-size: var(--fs-lg);
+  font-weight: var(--fw-ebold);
+}
+.moim-detail-empty {
+  padding: var(--space-2xl) 0;
+  color: var(--gray-400);
+  font-size: var(--fs-sm);
+  text-align: center;
+}
+.moim-detail-reviews {
+  margin-top: var(--space-2xl);
+}
+.moim-detail-reviews h2 {
+  margin-bottom: var(--space-lg);
+  color: var(--gray-900);
+  font-size: var(--fs-lg);
+  font-weight: var(--fw-ebold);
+}
+.moim-detail-review-list {
+  display: grid;
+  gap: var(--space-lg);
+}
+.moim-detail-review-list li {
+  padding: var(--space-lg);
+  border: 1px solid var(--gray-100);
+  border-radius: var(--radius-md);
+}
+.moim-detail-review-top {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+.moim-detail-review-top strong {
+  color: var(--gray-900);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-bold);
+}
+.moim-detail-review-top .stars {
+  color: var(--yellow-500);
+  font-size: var(--fs-xs);
+}
+.moim-detail-review-top time {
+  margin-left: auto;
+  color: var(--gray-400);
+  font-size: var(--fs-xs);
+}
+.moim-detail-review-list p {
+  margin-top: 4px;
+  color: var(--gray-700);
+  font-size: var(--fs-sm);
+}
+.moim-detail-review-images {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+  margin-top: var(--space-sm);
+}
+.moim-detail-review-images img {
+  width: 52px;
+  height: 52px;
+  border-radius: var(--radius-sm);
+  object-fit: cover;
+}
+.moim-detail-actions {
+  display: flex;
+  gap: var(--space-md);
+  margin-top: var(--space-2xl);
+}
+.moim-detail-actions .btn {
+  flex: 1;
+}

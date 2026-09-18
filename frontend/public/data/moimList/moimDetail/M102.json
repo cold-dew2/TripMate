@@ -1,0 +1,16 @@
+{
+  "success": true, "status": 200, "code": "SUCCESS",
+  "message": "모임 상세조회(기본)을 정상적으로 조회했습니다.",
+  "path": "/moimList/moimDetail", "token": null,
+  "data": {
+    "moimId": "M102", "moimTitle": "전주 한옥마을 미식 투어",
+    "moimDscr": "전주 한옥마을 맛집을 함께 탐방하는 미식 여행",
+    "moimStartDt": "2026-08-15", "moimEndDt": "2026-08-15",
+    "maxMember": 8, "memberCnt": 5, "userId": "U000", "userNm": "김지수", "reviewScore": 4.8
+  },
+  "cate": [{ "cateCd": "C02", "cateNm": "맛집" }],
+  "plan": [
+    { "startDt": "2026-08-15", "rmks": "11:30", "cateCd": "VIL", "cateNm": "한옥", "tourNm": "전주한옥마을" }
+  ],
+  "joinStatus": { "roleCd": "A", "stateCd": "Y" }
+}

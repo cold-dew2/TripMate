@@ -1,0 +1,17 @@
+{
+  "success": true, "status": 200, "code": "SUCCESS",
+  "message": "모임 상세조회(기본)을 정상적으로 조회했습니다.",
+  "path": "/moimList/moimDetail", "token": null,
+  "data": {
+    "moimId": "M101", "moimTitle": "경주 벚꽃길 드라이브 여행",
+    "moimDscr": "경주 보문호 벚꽃길을 드라이브하며 즐기는 봄나들이",
+    "moimStartDt": "2026-08-10", "moimEndDt": "2026-08-10",
+    "maxMember": 6, "memberCnt": 2, "userId": "U000", "userNm": "김지수", "reviewScore": 4.8
+  },
+  "cate": [{ "cateCd": "C04", "cateNm": "드라이브" }],
+  "plan": [
+    { "startDt": "2026-08-10", "rmks": "10:00", "cateCd": "HIS", "cateNm": "역사", "tourNm": "불국사" },
+    { "startDt": "2026-08-10", "rmks": "14:00", "cateCd": "HIS", "cateNm": "역사", "tourNm": "첨성대" }
+  ],
+  "joinStatus": { "roleCd": "A", "stateCd": "Y" }
+}

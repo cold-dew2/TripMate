@@ -20,4 +20,13 @@ public interface UserService {
     //마이페이지
     UserReviewResponse reviewList(UserReviewRequest request);
 
+    //마이페이지_프로필 조회
+    MyProfileResponse myProfile(String userId);
+
+    //마이페이지_프로필 수정
+    UpdateProfileResponse updateProfile(UpdateProfileRequest request, String userId);
+
+    //공개 사용자 프로필 조회
+    PublicProfileResponse publicProfile(String targetUserId);
+
 }

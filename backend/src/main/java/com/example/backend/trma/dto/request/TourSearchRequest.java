@@ -12,4 +12,5 @@ public class TourSearchRequest {
     private String cateCd;
     private int page;
     private int offset;
+    private String lang;
 }

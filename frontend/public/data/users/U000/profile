@@ -1,0 +1,69 @@
+{
+  "success": true,
+  "status": 200,
+  "code": "SUCCESS",
+  "message": "사용자 프로필을 정상적으로 조회했습니다.",
+  "path": "/users/U000/profile",
+  "token": "",
+  "data": {
+    "userId": "U000",
+    "userNm": "김지수",
+    "areaNm": "서울",
+    "description": "서울 로컬 가이드로 3년째 활동 중. 한국의 숨은 명소와 맛집을 외국인 친구들과 함께 탐방해요!",
+    "profileImageUrl": "",
+    "rating": 4.8,
+    "reviewCount": 42,
+    "joinDt": "2024-03-15",
+    "languages": [
+      { "langCd": "ko", "langNm": "한국어", "levelNm": "원어민" },
+      { "langCd": "en", "langNm": "영어", "levelNm": "유창" },
+      { "langCd": "ja", "langNm": "일본어", "levelNm": "기초" }
+    ]
+  },
+  "moims": [
+    {
+      "moimId": "M001",
+      "moimTitle": "서울 근교 당일치기 여행 같이가요!",
+      "moimDscr": "남산타워에서 한강공원까지 서울의 밤을 함께 걷는 소모임",
+      "moimStartDt": "2026-07-20",
+      "moimEndDt": "2026-07-20",
+      "maxMember": 10,
+      "memberCnt": 2,
+      "roleCd": "A",
+      "stateCd": "Y",
+      "cateCd": "C01",
+      "cateNm": "서울"
+    },
+    {
+      "moimId": "M101",
+      "moimTitle": "경주 벚꽃길 드라이브 여행",
+      "moimDscr": "경주 보문호 벚꽃길을 드라이브하며 즐기는 봄나들이",
+      "moimStartDt": "2026-08-10",
+      "moimEndDt": "2026-08-10",
+      "maxMember": 6,
+      "memberCnt": 2,
+      "roleCd": "A",
+      "stateCd": "Y",
+      "cateCd": "C04",
+      "cateNm": "드라이브"
+    }
+  ],
+  "reviews": [
+    {
+      "reviewTitle": "",
+      "reviewContent": "너무 좋았어요! 한국 문화를 배울 수 있었습니다.",
+      "reviewScore": 5,
+      "userNm": "Sarah K.",
+      "imgUrls": null,
+      "createDt": "2026-06-28"
+    },
+    {
+      "reviewTitle": "",
+      "reviewContent": "친절하게 안내해 주셔서 감사합니다!",
+      "reviewScore": 5,
+      "userNm": "田中さくら",
+      "imgUrls": null,
+      "createDt": "2026-06-15"
+    }
+  ]
+}

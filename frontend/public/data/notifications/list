@@ -1,0 +1,37 @@
+{
+  "success": true,
+  "status": 200,
+  "code": "SUCCESS",
+  "message": "알림 목록을 정상적으로 조회했습니다.",
+  "path": "/notifications",
+  "token": "",
+  "data": [
+    {
+      "notiId": 1,
+      "typeCd": "APPLY",
+      "title": "새로운 참가 신청이 있어요",
+      "content": "Alice님이 \"경주 벚꽃길 드라이브 여행\"에 참가 신청했습니다.",
+      "linkUrl": "/moimManage/M101",
+      "isRead": "N",
+      "createDt": "2026-08-01 14:20"
+    },
+    {
+      "notiId": 2,
+      "typeCd": "CHAT",
+      "title": "Alice",
+      "content": "반가워요! 잘 부탁드려요 :)",
+      "linkUrl": "/chat/moim-M101",
+      "isRead": "N",
+      "createDt": "2026-08-01 10:05"
+    },
+    {
+      "notiId": 3,
+      "typeCd": "COMPLETE",
+      "title": "여행이 완료되었어요",
+      "content": "\"서울 근교 당일치기 여행 같이가요!\" 여행이 종료되었습니다. 후기를 남겨보세요!",
+      "linkUrl": "/moim/M001/review",
+      "isRead": "Y",
+      "createDt": "2026-07-21 09:00"
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+.manage-page { display: grid; gap: 8px; }
+.manage-list { display: grid; gap: var(--space-md); }
+.manage-list li { border: 1px solid var(--gray-100); border-radius: var(--radius-lg); }
+.manage-row { display: flex; align-items: center; gap: var(--space-md); padding: var(--space-lg); }
+.manage-thumb { flex-shrink: 0; width: 48px; height: 48px; border-radius: var(--radius-md); }
+.thumb-a { background: linear-gradient(135deg, #ffe9c7, #ffd28a); }
+.thumb-b { background: linear-gradient(135deg, #e3d9ff, #c6b3ff); }
+.thumb-c { background: linear-gradient(135deg, #cfe8ff, #a7d3ff); }
+.thumb-d { background: linear-gradient(135deg, #d3f5df, #a8ebc0); }
+.manage-row-info { flex: 1; min-width: 0; }
+.manage-row-title { color: var(--gray-900); font-size: var(--fs-sm); font-weight: var(--fw-bold); }
+.manage-row-meta { margin-top: 4px; color: var(--gray-400); font-size: var(--fs-xs); }
+.manage-applicant-badge { flex-shrink: 0; padding: 6px 10px; border-radius: 999px; color: var(--purple-600); background: var(--purple-100); font-size: var(--fs-2xs); font-weight: var(--fw-bold); white-space: nowrap; }
+.empty-manage { display: grid; place-items: center; gap: 8px; min-height: 150px; border: 1px dashed var(--gray-300); border-radius: 14px; color: var(--gray-500); font-size: 13px; }
+.empty-manage a { color: var(--purple-600); font-weight: var(--fw-bold); }
+.manage-loading { padding: var(--space-2xl) 0; color: var(--gray-400); font-size: var(--fs-sm); text-align: center; }

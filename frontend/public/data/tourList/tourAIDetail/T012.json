@@ -1,0 +1,19 @@
+{
+  "success": true,
+  "status": 0,
+  "code": "SUCCESS",
+  "message": "AI 관광지 상세 조회 성공",
+  "path": "/tourList/tourAIDetail",
+  "token": "",
+  "data": {
+    "tourId": "T012",
+    "admissionFeeDetails": "무료",
+    "admissionFeeIsFree": "Y",
+    "closedDays": "연중무휴",
+    "lastUpdatedNote": "방문 전 운영시간 및 이용요금을 확인해주세요.",
+    "operatingHours": "상시 개방",
+    "parkingAvailable": "Y",
+    "parkingFeeInfo": "무료 주차 가능",
+    "websiteUrl": "https://www.sejong.go.kr/"
+  }
+}

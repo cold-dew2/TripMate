@@ -1,26 +1,25 @@
-import React from 'react'
+import { forwardRef, type SelectHTMLAttributes } from 'react'
 import "./Select.css"
-
-interface SelectProps {
-  id?: string;
-  className?: string;
-  label: string;
-  blind?: boolean;
-  name: string;
-  value?: string;
-  disabled?: boolean;
-  error?: string;  
-  options?: OptionProps[];
-  onChange?: (e: React.ChangeEvent<HTMLSelectElement>) => void;
-}
 
 interface OptionProps {
   value: string;
   option: string;
 }
 
-const Select = ({ id, className, label, blind, name, value, disabled, error, options, onChange }: SelectProps) => {
-  
+interface SelectProps extends Omit<SelectHTMLAttributes<HTMLSelectElement>, "name"> {
+  id?: string;
+  className?: string;
+  label: string;
+  blind?: boolean;
+  name: string;
+  error?: string;
+  options?: OptionProps[];
+  placeholder?: string;
+}
+
+const Select = forwardRef<HTMLSelectElement, SelectProps>(({
+  id, className, label, blind, name, error, options, placeholder, ...rest
+}, ref) => {
   return (
     <div className={`form select ${className || ''}`}>
       {label && (
@@ -28,22 +27,31 @@ const Select = ({ id, className, label, blind, name, value, disabled, error, opt
           {label}
         </label>
       )}
-      <select
-        id={id}
-        name={name}
-        value={value}
-        disabled={disabled}
-        onChange={onChange}
-      >
-        {options?.map((option) => (
-          <option key={option.value} value={option.value}>
-            {option.option}
-          </option>
-        ))}
-      </select>
+      <div className="select-control">
+        <select
+          ref={ref}
+          id={id}
+          name={name}
+          defaultValue={rest.defaultValue ?? (placeholder ? "" : undefined)}
+          {...rest}
+        >
+          {placeholder && (
+            <option value="" disabled hidden>
+              {placeholder}
+            </option>
+          )}
+          {options?.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.option}
+            </option>
+          ))}
+        </select>
+      </div>
       {error && <span className="error">{error}</span>}
     </div>
   )
-}
+})
+
+Select.displayName = "Select";
 
 export default Select

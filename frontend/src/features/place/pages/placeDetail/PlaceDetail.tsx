@@ -7,6 +7,7 @@ import Information from './components/information/Information';
 import Header from './components/header/Header';
 import useReview from '../../hooks/useReveiws';
 import Reviews from './components/reviews/Reviews';
+import './PlaceDetail.css';
 
 
 const PlaceDetail = () => {
@@ -37,7 +38,7 @@ const PlaceDetail = () => {
 
         <div className="tab-contents">
           <div className="tab-content" id="tab1" tabIndex={-1}>
-            <Introduce />
+            <Introduce place={place} />
           </div>
           <div className="tab-content" id="tab2" tabIndex={-1}>
             <Information place={place} />
@@ -48,7 +49,7 @@ const PlaceDetail = () => {
             {reviewIsError && <p>리뷰를 불러오지 못했습니다.</p>}
 
             {!reviewIsLoading && !reviewIsError && reviews && (
-              <Reviews reviews={reviews} />
+              <Reviews reviews={reviews} tourId={tourId ?? ""} />
             )}
           </div>
 
