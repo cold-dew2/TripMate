@@ -28,4 +28,8 @@ public class TourDetailData {
     private String tourNmJa;
     private String overviewEn;
     private String overviewJa;
+    private String roadAddrEn;
+    private String roadAddrJa;
+    private String detailAddrEn;
+    private String detailAddrJa;
 }

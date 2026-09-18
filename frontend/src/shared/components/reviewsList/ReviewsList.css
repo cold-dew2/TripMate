@@ -44,3 +44,9 @@
   border-radius: var(--radius-sm);
   object-fit: cover;
 }
+.review-empty {
+  padding: var(--space-2xl) var(--space-lg);
+  text-align: center;
+  color: var(--gray-400);
+  font-size: var(--fs-sm);
+}

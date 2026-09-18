@@ -9,9 +9,14 @@ interface ReviewsProps {
 }
 const ReviewsList = ({ reviews }: ReviewsProps) => {
   const { t } = useTranslation();
+
+  if (!reviews?.length) {
+    return <p className="review-empty">{t('review.empty')}</p>;
+  }
+
   return (
     <ul className="review-list">
-      {reviews?.map((review, index) => (
+      {reviews.map((review, index) => (
         <li key={index}>
           <div className="review-item">
             <div className="review-header">

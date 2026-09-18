@@ -100,7 +100,7 @@
             SELECT
                 MOIM_ID
                 ,COUNT(USER_ID) AS MEMBER_CNT
-            FROM TB_TRMA_MOIM_MEMER
+            FROM TB_TRMA_MOIM_MEMBER
             GROUP BY MOIM_ID
         ) m ON a.MOIM_ID = m.MOIM_ID
         LEFT JOIN (
@@ -464,30 +464,40 @@
 
         INSERT INTO TB_TRMA_MOIM_REVIEW
         (
-            MOIM_ID
+            REVIEW_ID
+            ,MOIM_ID
             ,REVIEW_TYPE_CD
+            ,REVIEW_TITLE
             ,REVIEW_CONTENT
             ,REVIEW_SCORE
             ,IMG_URLS
+            ,MOIM_START_DT
+            ,MOIM_END_DT
 
             ,USE_YN
             ,CREATE_USER
             ,CREATE_DT
             ,UPDATE_USER
             ,UPDATE_DT
-        )VALUES(
-            #{moimId}
+        )
+        SELECT
+            #{reviewId}
+            ,#{moimId}
             ,'O'
+            ,CONCAT(m.MOIM_TITLE, ' 후기')
             ,#{request.reviewContent}
             ,#{request.reviewScore}
             ,#{imgUrls}
+            ,m.MOIM_START_DT
+            ,m.MOIM_END_DT
 
             ,'Y'
             ,#{userId}
             ,CURRENT_TIMESTAMP
             ,#{userId}
             ,CURRENT_TIMESTAMP
-        )
+        FROM TB_TRMA_MOIM_LIST m
+        WHERE m.MOIM_ID = #{moimId}
 
     </insert>
 

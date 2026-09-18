@@ -63,7 +63,8 @@ public interface MoimListMapper {
                          @Param("targetUserId") String targetUserId);
 
     //모임(여행) 후기 등록
-    int insertMoimReview(@Param("moimId") String moimId,
+    int insertMoimReview(@Param("reviewId") String reviewId,
+                         @Param("moimId") String moimId,
                          @Param("request") CreateMoimReviewRequest request,
                          @Param("imgUrls") String imgUrls,
                          @Param("userId") String userId);

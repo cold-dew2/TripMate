@@ -354,10 +354,15 @@ public class TourListServicelmpl implements TourListService {
                     tourDetail.getCateNm()
             ));
 
+            String aiDetailLangLabel = "ja".equals(request.getLang()) ? "일본어"
+                    : "en".equals(request.getLang()) ? "영어"
+                    : "한국어";
+
             prompt = prompt + "[요청 사항]\n" +
                     "1. 해당 관광지의 운영시간, 휴무일, 입장료, 공식/관련 홈페이지 URL, 주차 정보(가능 여부 및 요금)를 정확하게 작성해줘.\n" +
                     "2. 정보가 불확실하거나 수집할 수 없는 항목은 null로 표시해줘.\n" +
                     "3. 부연 설명이나 인삿말은 모두 제외하고, 오직 순수한 JSON 데이터만 반환해줘.\n" +
+                    "4. JSON의 키 이름은 아래 형식 그대로 영어로 유지하되, operatingHours/closedDays/admissionFeeDetails/parkingFeeInfo/lastUpdatedNote 값은 반드시 " + aiDetailLangLabel + "로 작성해줘. (websiteUrl은 번역하지 말고 그대로)\n" +
                     "\n" +
                     "[JSON 반환 형식]\n" +
                     "{\n" +
@@ -445,6 +450,7 @@ public class TourListServicelmpl implements TourListService {
             }
             int offset = (request.getPage() - 1) * 10;
             List<TourDetailReviewData> tourDetailReview = tourListMapper.tourDetailReview(request.getTourId(), offset);
+            applyReviewTranslations(tourDetailReview, request.getLang());
 
             return new TourDetailReviewResponse(
                     true,
@@ -474,7 +480,8 @@ public class TourListServicelmpl implements TourListService {
 
         try {
             String imgUrls = request.getImageUrls() == null ? null : String.join(",", request.getImageUrls());
-            tourListMapper.insertTourReview(request, imgUrls, userId);
+            String reviewId = "RVT" + UUID.randomUUID().toString().replace("-", "").substring(0, 12).toUpperCase();
+            tourListMapper.insertTourReview(reviewId, request, imgUrls, userId);
 
             return new CreateTourReviewResponse(
                     true,
@@ -700,6 +707,10 @@ public class TourListServicelmpl implements TourListService {
                         "en".equals(lang) ? translatedNm : null,
                         "ja".equals(lang) ? translatedNm : null,
                         null,
+                        null,
+                        null,
+                        null,
+                        null,
                         null
                 );
                 tour.setTourNm(translatedNm);
@@ -715,21 +726,29 @@ public class TourListServicelmpl implements TourListService {
 
         String cachedNm = "en".equals(lang) ? tour.getTourNmEn() : tour.getTourNmJa();
         String cachedOverview = "en".equals(lang) ? tour.getOverviewEn() : tour.getOverviewJa();
+        String cachedRoadAddr = "en".equals(lang) ? tour.getRoadAddrEn() : tour.getRoadAddrJa();
+        String cachedDetailAddr = "en".equals(lang) ? tour.getDetailAddrEn() : tour.getDetailAddrJa();
         if (cachedNm != null && !cachedNm.isBlank()) {
             tour.setTourNm(cachedNm);
             if (cachedOverview != null && !cachedOverview.isBlank()) tour.setOverview(cachedOverview);
+            if (cachedRoadAddr != null && !cachedRoadAddr.isBlank()) tour.setRoadAddr(cachedRoadAddr);
+            if (cachedDetailAddr != null && !cachedDetailAddr.isBlank()) tour.setDetailAddr(cachedDetailAddr);
             return;
         }
 
         try {
             String langLabel = "en".equals(lang) ? "영어" : "일본어";
-            String prompt = "다음 한국 관광지의 이름과 설명을 " + langLabel + "로 자연스럽게 번역해주세요.\n"
+            String prompt = "다음 한국 관광지의 이름, 설명, 주소를 " + langLabel + "로 자연스럽게 번역해주세요.\n"
+                    + "주소는 관용적으로 통용되는 로마자/가나 표기를 사용하고, 우편번호 등 숫자는 그대로 두세요.\n"
+                    + "detailAddr가 비어있으면 빈 문자열로 응답하세요.\n"
                     + "반드시 JSON 형식으로만 응답하세요. 다른 설명은 절대 포함하지 마세요.\n"
                     + "[응답 형식]\n"
-                    + "{\"translations\":[{\"tourId\":\"" + tour.getTourId() + "\",\"tourNm\":\"번역된 이름\",\"overview\":\"번역된 설명\"}]}\n"
+                    + "{\"translations\":[{\"tourId\":\"" + tour.getTourId() + "\",\"tourNm\":\"번역된 이름\",\"overview\":\"번역된 설명\",\"roadAddr\":\"번역된 도로명주소\",\"detailAddr\":\"번역된 상세주소\"}]}\n"
                     + "[관광지 정보]\n"
                     + "이름: " + tour.getTourNm() + "\n"
-                    + "설명: " + (tour.getOverview() == null ? "" : tour.getOverview());
+                    + "설명: " + (tour.getOverview() == null ? "" : tour.getOverview()) + "\n"
+                    + "도로명주소: " + tour.getRoadAddr() + "\n"
+                    + "상세주소: " + (tour.getDetailAddr() == null ? "" : tour.getDetailAddr());
 
             GeminiData result = callGeminiForTranslation(prompt);
             if (result == null || result.getTranslations() == null || result.getTranslations().isEmpty()) return;
@@ -737,18 +756,71 @@ public class TourListServicelmpl implements TourListService {
             GeminiData.TranslationItem item = result.getTranslations().get(0);
             String tourNm = item.getTourNm();
             String overview = item.getOverview();
+            String roadAddr = item.getRoadAddr();
+            String detailAddr = item.getDetailAddr();
 
             tourListMapper.updateTourTranslation(
                     tour.getTourId(),
                     "en".equals(lang) ? tourNm : null,
                     "ja".equals(lang) ? tourNm : null,
                     "en".equals(lang) ? overview : null,
-                    "ja".equals(lang) ? overview : null
+                    "ja".equals(lang) ? overview : null,
+                    "en".equals(lang) ? roadAddr : null,
+                    "ja".equals(lang) ? roadAddr : null,
+                    "en".equals(lang) ? detailAddr : null,
+                    "ja".equals(lang) ? detailAddr : null
             );
             if (tourNm != null && !tourNm.isBlank()) tour.setTourNm(tourNm);
             if (overview != null && !overview.isBlank()) tour.setOverview(overview);
+            if (roadAddr != null && !roadAddr.isBlank()) tour.setRoadAddr(roadAddr);
+            if (detailAddr != null && !detailAddr.isBlank()) tour.setDetailAddr(detailAddr);
         } catch (Exception e) {
             log.warn("관광지 상세 번역에 실패해 한국어로 표시합니다. tourId={}, lang={}", tour.getTourId(), lang, e);
+        }
+    }
+
+    // ========================= 후기 번역 =========================
+    // 후기는 사용자가 계속 새로 작성하는 데이터라 이름/개요처럼 DB에 캐시하지 않고,
+    // 조회 시점에 해당 페이지(최대 10건)만 매번 번역한다. 후기에는 안정적인 ID가 없으므로
+    // 요청 시 배열 순서(index)로 보내고 그대로 매칭해서 되돌려 받는다.
+    private void applyReviewTranslations(List<TourDetailReviewData> reviews, String lang) {
+        if (!"en".equals(lang) && !"ja".equals(lang)) return;
+        if (reviews == null || reviews.isEmpty()) return;
+
+        try {
+            StringBuilder listPrompt = new StringBuilder();
+            for (int i = 0; i < reviews.size(); i++) {
+                TourDetailReviewData review = reviews.get(i);
+                listPrompt.append("[index %d]\n제목: %s\n내용: %s\n\n".formatted(
+                        i,
+                        review.getReviewTitle() == null ? "" : review.getReviewTitle(),
+                        review.getReviewContent() == null ? "" : review.getReviewContent()
+                ));
+            }
+
+            String langLabel = "en".equals(lang) ? "영어" : "일본어";
+            String prompt = "다음은 여행 후기 목록입니다. 각 후기의 제목과 내용을 " + langLabel + "로 자연스럽게 번역해주세요.\n"
+                    + "반드시 JSON 형식으로만 응답하고, 요청받은 index를 그대로 포함해서 응답하세요.\n"
+                    + "[응답 형식]\n"
+                    + "{\"reviewTranslations\":[{\"index\":0,\"reviewTitle\":\"번역된 제목\",\"reviewContent\":\"번역된 내용\"}]}\n"
+                    + "[후기 목록]\n" + listPrompt;
+
+            GeminiData result = callGeminiForTranslation(prompt);
+            if (result == null || result.getReviewTranslations() == null) return;
+
+            for (GeminiData.ReviewTranslationItem item : result.getReviewTranslations()) {
+                if (item.getIndex() < 0 || item.getIndex() >= reviews.size()) continue;
+
+                TourDetailReviewData review = reviews.get(item.getIndex());
+                if (item.getReviewTitle() != null && !item.getReviewTitle().isBlank()) {
+                    review.setReviewTitle(item.getReviewTitle());
+                }
+                if (item.getReviewContent() != null && !item.getReviewContent().isBlank()) {
+                    review.setReviewContent(item.getReviewContent());
+                }
+            }
+        } catch (Exception e) {
+            log.warn("후기 번역에 실패해 한국어로 표시합니다. lang={}", lang, e);
         }
     }
 }
