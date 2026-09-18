@@ -15,6 +15,8 @@ public interface MoimListMapper {
     List<MoimSearchData> moimSearch(MoimSearchRequest request);
     //모임 정보
     MoimSearchData moimInfo(String moimId);
+    //모임장(생성자) 계정 조회
+    String moimHostUserId(String moimId);
     //모임 상세조회(기본)
     MoimDetailData moimDetail(String moimId);
     //모임 카테고리 조회

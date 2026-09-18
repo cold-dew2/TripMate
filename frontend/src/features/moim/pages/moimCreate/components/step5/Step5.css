@@ -56,11 +56,3 @@
   color: var(--red-700);
   font-size: var(--fs-sm);
 }
-.step5-transport-leg {
-  display: flex;
-  align-items: center;
-  gap: var(--space-xs);
-  margin: var(--space-2xs) 0 var(--space-2xs) 40px;
-  color: var(--gray-500);
-  font-size: var(--fs-xs);
-}

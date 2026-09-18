@@ -78,7 +78,9 @@ export interface MoimPlan {
   rmks: string;
   cateCd: string;
   cateNm: string;
+  tourId: string;
   tourNm: string;
+  roadAddr: string;
 }
 
 export interface MoimJoinStatus {

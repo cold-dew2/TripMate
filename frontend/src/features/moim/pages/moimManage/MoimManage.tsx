@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import useMyMoim from '../../hooks/useMyMoim';
 import useMoimMembers from '../../hooks/useMoimMembers';
 import { formatDateWithDow } from '@/shared/utils/date';
+import PageState from '@/shared/components/pageState/PageState';
 import type { MyMoim } from '@/types/moim';
 import './MoimManage.css';
 
@@ -18,7 +19,7 @@ const MoimManageRow = ({ moim, index }: { moim: MyMoim; index: number }) => {
       <Link to={`/moimManage/${moim.moimId}`} className="manage-row">
         <div className={`manage-thumb ${THUMB_COLORS[index % THUMB_COLORS.length]}`} aria-hidden="true" />
         <div className="manage-row-info">
-          <p className="manage-row-title">{t(moim.moimTitle)}</p>
+          <p className="manage-row-title">{moim.moimTitle}</p>
           <p className="manage-row-meta">{formatDateWithDow(moim.moimStartDt)} · {moim.memberCnt}/{moim.maxMember}{t('명')}</p>
         </div>
         <span className="manage-applicant-badge">{t('my.applicantCount', { count: pendingCount })}</span>
@@ -35,9 +36,9 @@ const MoimManage = () => {
   return (
     <div className="manage-page">
       {isLoading ? (
-        <p className="manage-loading">{t('account.loading')}</p>
+        <PageState status="loading" />
       ) : isError ? (
-        <p className="manage-loading">{t('common.loadError')}</p>
+        <PageState status="error" />
       ) : hostedMoims.length === 0 ? (
         <div className="empty-manage">
           <span>🧳</span>

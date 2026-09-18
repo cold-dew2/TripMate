@@ -17,4 +17,8 @@ public class TransportLegData {
     private Integer durationMinutes;
     private Integer cost;
     private Integer transferCount;
+    private String congestionLevel;
+    private Integer delayRiskMinutes;
+    private String alternativeMode;
+    private String alternativeReason;
 }

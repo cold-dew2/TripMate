@@ -11,7 +11,8 @@
   },
   "notifications": {
     "title": "알림",
-    "empty": "아직 알림이 없어요."
+    "empty": "아직 알림이 없어요.",
+    "loginRequired": "알림을 보려면 로그인이 필요해요."
   },
   "userProfile": {
     "title": "사용자 정보 조회",
@@ -24,6 +25,7 @@
     "title": "채팅",
     "me": "나",
     "subtitle": "여행 메이트와 대화해요",
+    "loginRequired": "채팅 목록을 보려면 로그인이 필요해요.",
     "loadingRooms": "채팅방을 불러오는 중입니다.",
     "emptyRooms": "아직 채팅방이 없어요.",
     "filterAll": "전체",
@@ -71,6 +73,9 @@
   "common": {
     "loading": "불러오는 중…",
     "loadError": "정보를 불러오지 못했습니다.",
+    "empty": "표시할 내용이 없어요.",
+    "retry": "다시 시도",
+    "aiUnavailable": "AI 기능이 잠시 붐벼서 사용할 수 없어요. AI 기능 없이 계속 진행하실 수 있어요.",
     "submit": "등록",
     "saving": "저장 중…",
     "travelPeriod": "여행 기간",
@@ -137,10 +142,7 @@
       "dayLabel": "DAY {{day}} ({{date}})",
       "editPlan": "플랜 수정",
       "transportRecommend": "교통편 추천받기",
-      "transportRecommendError": "교통편 추천에 실패했어요. 잠시 후 다시 시도해주세요.",
-      "transportDuration": "{{count}}분",
-      "transportCost": "{{cost}}원",
-      "transportTransfer": "환승 {{count}}회"
+      "transportRecommendError": "교통편 추천에 실패했어요. 잠시 후 다시 시도해주세요."
     },
     "step6": {
       "photoLabel": "모임 대표 사진",
@@ -213,7 +215,8 @@
     "noApplicants": "신청자가 없어요.",
     "approve": "승인",
     "reject": "거절",
-    "scheduleEditComingSoon": "일정 수정 기능은 준비 중이에요.",
+    "transportRecommend": "혼잡도 · 교통편 분석받기",
+    "transportRecommendError": "교통편 분석에 실패했어요. 잠시 후 다시 시도해주세요.",
     "waitingCount": "대기 {{count}}",
     "approveSelected": "선택한 {{count}}명 승인하기",
     "approveFailed": "승인 처리 중 일부 오류가 발생했습니다. 다시 시도해 주세요.",
@@ -261,7 +264,9 @@
     "errorMsg": "다시 시도해주세요!",
     "mapUnavailable": "지도를 불러올 수 없습니다.",
     "infoLoading": "이용 정보를 불러오는 중이에요...",
-    "infoError": "이용 정보를 불러오지 못했어요."
+    "infoError": "이용 정보를 불러오지 못했어요.",
+    "detailLoading": "관광지 정보를 불러오는 중이에요...",
+    "detailError": "관광지 정보를 불러오지 못했어요."
   },
   "review": {
     "score": "평점", "title": "제목", "content": "후기", "images": "사진 (최대 5장)",
@@ -269,6 +274,14 @@
     "registerTitle": "후기 등록", "moimPrompt": "후기를 작성해주세요, 어떤 여행이었나요?", "moimContentPlaceholder": "다른 사람에게 한마디! 모두 너무 즐거웠어요! 다음에도 또 함께해요!",
     "titleRequired": "제목을 입력해 주세요.", "contentRequired": "후기 내용을 입력해 주세요.", "imageCount": "{{count}}장 선택됨",
     "empty": "아직 등록된 후기가 없어요. 첫 후기를 남겨보세요!"
+  },
+  "transport": {
+    "duration": "{{count}}분",
+    "cost": "{{cost}}원",
+    "transfer": "환승 {{count}}회",
+    "congestion": { "smooth": "원활", "moderate": "보통", "heavy": "혼잡" },
+    "delayWarning": "혼잡 예상 (지연 최대 {{count}}분)",
+    "alternative": "대체 추천"
   },
   "my": {
     "moiming": "진행 중 소모임",

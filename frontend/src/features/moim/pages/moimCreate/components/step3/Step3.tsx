@@ -88,7 +88,11 @@ const Step3 = ({ watch, setValue, itemsByDay, setItemsByDay, onAddDay, onPrev, o
         moimEndDt,
       });
       if (!result.success) {
-        setRecommendError(t("moimCreate.step3.aiRecommendError"));
+        setRecommendError(
+          result.code === "AI_UNAVAILABLE"
+            ? t("common.aiUnavailable")
+            : t("moimCreate.step3.aiRecommendError")
+        );
         return;
       }
 

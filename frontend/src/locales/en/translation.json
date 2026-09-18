@@ -11,7 +11,8 @@
   },
   "notifications": {
     "title": "Notifications",
-    "empty": "No notifications yet."
+    "empty": "No notifications yet.",
+    "loginRequired": "Please log in to see notifications."
   },
   "userProfile": {
     "title": "User Profile",
@@ -24,6 +25,7 @@
     "title": "Chat",
     "me": "Me",
     "subtitle": "Talk with your travel mates",
+    "loginRequired": "Please log in to see your chats.",
     "loadingRooms": "Loading chat rooms…",
     "emptyRooms": "No chat rooms yet.",
     "filterAll": "All",
@@ -71,6 +73,9 @@
   "common": {
     "loading": "Loading…",
     "loadError": "We could not load this information.",
+    "empty": "Nothing to show yet.",
+    "retry": "Try again",
+    "aiUnavailable": "AI features are busy right now. You can continue without them.",
     "submit": "Submit",
     "saving": "Saving…",
     "travelPeriod": "Travel Period",
@@ -137,10 +142,7 @@
       "dayLabel": "DAY {{day}} ({{date}})",
       "editPlan": "Edit plan",
       "transportRecommend": "Get transport suggestions",
-      "transportRecommendError": "Couldn't get transport suggestions. Please try again in a moment.",
-      "transportDuration": "{{count}} min",
-      "transportCost": "₩{{cost}}",
-      "transportTransfer": "{{count}} transfer(s)"
+      "transportRecommendError": "Couldn't get transport suggestions. Please try again in a moment."
     },
     "step6": {
       "photoLabel": "Group cover photo",
@@ -213,7 +215,8 @@
     "noApplicants": "No applicants yet.",
     "approve": "Approve",
     "reject": "Reject",
-    "scheduleEditComingSoon": "Schedule editing is coming soon.",
+    "transportRecommend": "Analyze congestion & transport",
+    "transportRecommendError": "Couldn't analyze transport. Please try again in a moment.",
     "waitingCount": "{{count}} waiting",
     "approveSelected": "Approve {{count}} selected",
     "approveFailed": "Some approvals failed. Please try again.",
@@ -247,6 +250,8 @@
     "mapUnavailable": "The map could not be loaded.",
     "infoLoading": "Loading visit information...",
     "infoError": "Couldn't load visit information.",
+    "detailLoading": "Loading destination info...",
+    "detailError": "Couldn't load destination info.",
     "introduce": "Introduction",
     "info": "Information",
     "review": "Reviews",
@@ -269,6 +274,14 @@
     "registerTitle": "Write a Review", "moimPrompt": "How was your trip? Tell us about it!", "moimContentPlaceholder": "Say a word to others! We all had so much fun, let's do it again!",
     "titleRequired": "Please enter a title.", "contentRequired": "Please enter a review.", "imageCount": "{{count}} image(s) selected",
     "empty": "No reviews yet. Be the first to leave one!"
+  },
+  "transport": {
+    "duration": "{{count}} min",
+    "cost": "₩{{cost}}",
+    "transfer": "{{count}} transfer(s)",
+    "congestion": { "smooth": "Smooth", "moderate": "Moderate", "heavy": "Heavy" },
+    "delayWarning": "Congestion expected (up to {{count}} min delay)",
+    "alternative": "Suggested alternative"
   },
   "my": {
     "moiming": "Ongoing Groups",

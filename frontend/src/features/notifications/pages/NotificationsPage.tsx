@@ -12,8 +12,9 @@ const ICON_BY_TYPE: Record<Notification['typeCd'], string> = {
 const NotificationsPage = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { data: notifications, isLoading, isError } = useNotifications();
+  const { data: notifications, isLoading, isError, error } = useNotifications();
   const markRead = useMarkNotificationRead();
+  const needsLogin = (error as { code?: string } | null)?.code === 'NEED_LOGIN';
 
   const handleClick = (notification: Notification) => {
     if (notification.isRead === 'N') markRead.mutate(notification.notiId);
@@ -24,6 +25,8 @@ const NotificationsPage = () => {
     <div className="notifications-page">
       {isLoading ? (
         <p className="notifications-state">{t('account.loading')}</p>
+      ) : needsLogin ? (
+        <p className="notifications-state">{t('notifications.loginRequired')}</p>
       ) : isError ? (
         <p className="notifications-state">{t('common.loadError')}</p>
       ) : !notifications?.length ? (

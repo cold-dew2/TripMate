@@ -11,6 +11,7 @@ import com.example.backend.trma.dto.response.UnreadCountResponse;
 import com.example.backend.trma.mapper.ChatMapper;
 import com.example.backend.trma.mapper.NotificationMapper;
 import com.example.backend.trma.service.ChatService;
+import com.example.backend.trma.service.NotificationPushService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -25,6 +26,7 @@ public class ChatServiceImpl implements ChatService {
 
     private final ChatMapper chatMapper;
     private final NotificationMapper notificationMapper;
+    private final NotificationPushService notificationPushService;
     private final SimpMessagingTemplate broker;
 
     //내 채팅방 목록 조회
@@ -109,7 +111,18 @@ public class ChatServiceImpl implements ChatService {
 
             ChatMessageData saved = chatMapper.messageDetail(newMessage.getMessageId());
             broker.convertAndSend("/topic/chat/" + roomId, saved);
-            notificationMapper.insertChatNotifications(roomId, userId, saved.getSenderName(), request.getContent());
+            // 알림 등록/실시간 푸시는 부가 기능이라 여기서 실패해도 메시지 전송 자체는
+            // 이미 완료된 것으로 처리해야 하므로, 별도로 감싸서 전송 성공 여부에 영향을 주지 않게 한다.
+            try {
+                notificationMapper.insertChatNotifications(roomId, userId, saved.getSenderName(), request.getContent());
+                for (String memberId : chatMapper.roomMemberIds(roomId)) {
+                    if (!memberId.equals(userId)) {
+                        notificationPushService.pushToUser(memberId);
+                    }
+                }
+            } catch (Exception e) {
+                log.warn("채팅 알림 등록/푸시에 실패했습니다. roomId={}", roomId, e);
+            }
 
             return new SendChatMessageResponse(
                     true,

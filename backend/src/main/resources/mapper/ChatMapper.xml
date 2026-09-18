@@ -53,6 +53,19 @@
     </insert>
 
     <!-- ========================= -->
+    <!-- 채팅방 멤버 계정 목록 조회 -->
+    <!-- ========================= -->
+    <select id="roomMemberIds"
+            parameterType="String"
+            resultType="String">
+
+        SELECT USER_ID
+        FROM TB_TRMA_CHAT_MEMBER
+        WHERE ROOM_ID = #{roomId}
+
+    </select>
+
+    <!-- ========================= -->
     <!-- 내 채팅방 목록 조회 -->
     <!-- ========================= -->
     <select id="chatRooms"

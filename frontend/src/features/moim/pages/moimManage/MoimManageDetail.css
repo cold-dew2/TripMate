@@ -101,10 +101,6 @@
   border-radius: var(--radius-lg);
   overflow: hidden;
 }
-.manage-coming-soon {
-  margin-top: var(--space-lg);
-  padding: var(--space-lg) 0;
-  color: var(--gray-400);
-  font-size: var(--fs-xs);
-  text-align: center;
+.manage-transport-trigger {
+  margin-bottom: var(--space-lg);
 }

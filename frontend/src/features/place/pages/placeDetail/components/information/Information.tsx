@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { usePlaceAIDetail } from '@/features/place/hooks/usePlaceDetail';
+import PageState from '@/shared/components/pageState/PageState';
 import './Information.css'
 
 interface InformationProps {
@@ -17,8 +18,8 @@ const Information = ({ tourId }: InformationProps) => {
         <p>{t("place.info")}</p>
       </div>
 
-      {isLoading && <p className="info-state">{t("place.infoLoading")}</p>}
-      {isError && <p className="info-state">{t("place.infoError")}</p>}
+      {isLoading && <PageState status="loading" message={t("place.infoLoading")} fullScreen={false} />}
+      {isError && <PageState status="error" message={t("place.infoError")} fullScreen={false} />}
 
       {place && (
         <>

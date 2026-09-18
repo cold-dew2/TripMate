@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import FilterTabs from '@/shared/components/filterTabs/FilterTabs';
@@ -6,7 +6,10 @@ import ChatRoom from '@/features/chat/components/ChatRoom';
 import useMoimDetail from '../../hooks/useMoimDetail';
 import useMoimMembers from '../../hooks/useMoimMembers';
 import useUpdateMoimMember from '../../hooks/useUpdateMoimMember';
+import { useTransportRecommend, type TransportLeg } from '../../hooks/useTransportRecommend';
 import DaySchedule from '@/shared/components/daySchedule/DaySchedule';
+import TransportLegView from '@/shared/components/transportLeg/TransportLegView';
+import Button from '@/shared/components/button/Button';
 import './MoimManageDetail.css';
 
 type ManageTab = 'applicants' | 'chat' | 'schedule';
@@ -53,6 +56,28 @@ const MoimManageDetail = () => {
     return acc;
   }, {});
   const days = Object.keys(planByDay).sort();
+
+  const transportRecommend = useTransportRecommend();
+  const legsByKey = useMemo(() => {
+    const map = new Map<string, TransportLeg>();
+    (transportRecommend.data ?? []).forEach((leg) => {
+      map.set(`${leg.day}-${leg.fromTourId}-${leg.toTourId}`, leg);
+    });
+    return map;
+  }, [transportRecommend.data]);
+
+  const handleTransportRecommend = () => {
+    const items = days.flatMap((date, dayIndex) =>
+      planByDay[date].map((item) => ({
+        day: dayIndex + 1,
+        time: item.rmks,
+        tourId: item.tourId,
+        tourNm: item.tourNm,
+        roadAddr: item.roadAddr,
+      }))
+    );
+    transportRecommend.mutate(items);
+  };
 
   return (
     <div className="manage-detail">
@@ -157,16 +182,43 @@ const MoimManageDetail = () => {
           {days.length === 0 ? (
             <p className="manage-loading">{t('moim.step3.emptyView')}</p>
           ) : (
-            days.map((date, index) => (
-              <DaySchedule
-                key={date}
-                day={index + 1}
-                date={date}
-                items={planByDay[date].map((item) => ({ id: `${date}-${item.tourNm}`, time: item.rmks, placeName: item.tourNm }))}
-              />
-            ))
+            <>
+              {plan.length >= 2 && (
+                <div className="manage-transport-trigger">
+                  <Button
+                    text={transportRecommend.isPending ? t('common.saving') : t('moim.transportRecommend')}
+                    onClick={handleTransportRecommend}
+                    disabled={transportRecommend.isPending}
+                  />
+                  {transportRecommend.isError && (
+                    <p className="manage-action-error" role="alert">
+                      {(transportRecommend.error as { code?: string } | null)?.code === 'AI_UNAVAILABLE'
+                        ? t('common.aiUnavailable')
+                        : t('moim.transportRecommendError')}
+                    </p>
+                  )}
+                </div>
+              )}
+              {days.map((date, index) => (
+                <DaySchedule
+                  key={date}
+                  day={index + 1}
+                  date={date}
+                  items={planByDay[date].map((item) => ({
+                    id: `${date}-${item.tourNm}`,
+                    time: item.rmks,
+                    placeName: item.tourNm,
+                    tourId: item.tourId,
+                  }))}
+                  renderBetween={(prev, item) => {
+                    if (!prev.tourId || !item.tourId) return null;
+                    const leg = legsByKey.get(`${index + 1}-${prev.tourId}-${item.tourId}`);
+                    return leg ? <TransportLegView leg={leg} /> : null;
+                  }}
+                />
+              ))}
+            </>
           )}
-          <p className="manage-coming-soon">{t('moim.scheduleEditComingSoon')}</p>
         </section>
       )}
     </div>

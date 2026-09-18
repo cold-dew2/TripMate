@@ -301,6 +301,10 @@ public class GeminiData {
         private Integer durationMinutes;
         private Integer cost;
         private Integer transferCount;
+        private String congestionLevel;
+        private Integer delayRiskMinutes;
+        private String alternativeMode;
+        private String alternativeReason;
 
         public int getDay() {
             return day;
@@ -349,6 +353,34 @@ public class GeminiData {
         }
         public void setTransferCount(Integer transferCount) {
             this.transferCount = transferCount;
+        }
+
+        public String getCongestionLevel() {
+            return congestionLevel;
+        }
+        public void setCongestionLevel(String congestionLevel) {
+            this.congestionLevel = congestionLevel;
+        }
+
+        public Integer getDelayRiskMinutes() {
+            return delayRiskMinutes;
+        }
+        public void setDelayRiskMinutes(Integer delayRiskMinutes) {
+            this.delayRiskMinutes = delayRiskMinutes;
+        }
+
+        public String getAlternativeMode() {
+            return alternativeMode;
+        }
+        public void setAlternativeMode(String alternativeMode) {
+            this.alternativeMode = alternativeMode;
+        }
+
+        public String getAlternativeReason() {
+            return alternativeReason;
+        }
+        public void setAlternativeReason(String alternativeReason) {
+            this.alternativeReason = alternativeReason;
         }
     }
 

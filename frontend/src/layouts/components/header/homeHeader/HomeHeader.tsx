@@ -42,20 +42,22 @@ const HomeHeader = () => {
         </div>
         <div className="buttons">
           <LanguageSwitcher />
-          <span className="notice-btn-wrap">
-            <Button
-              as={Link}
-              to="/notifications"
-              variant="ghost"
-              size="icon"
-              icon
-              text={t("home.notice")}
-              img="/icons/icon-notice.png"
-            />
-            {unreadCount > 0 && (
-              <span className="notice-badge">{unreadCount > 99 ? "99+" : unreadCount}</span>
-            )}
-          </span>
+          {user && (
+            <span className="notice-btn-wrap">
+              <Button
+                as={Link}
+                to="/notifications"
+                variant="ghost"
+                size="icon"
+                icon
+                text={t("home.notice")}
+                img="/icons/icon-notice.png"
+              />
+              {unreadCount > 0 && (
+                <span className="notice-badge">{unreadCount > 99 ? "99+" : unreadCount}</span>
+              )}
+            </span>
+          )}
           <Button
             as={Link}
             to="/my"

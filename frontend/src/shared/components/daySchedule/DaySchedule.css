@@ -22,14 +22,16 @@
   margin-top: var(--space-lg);
 }
 .schedule-items li {
-  display: flex;
-  align-items: center;
-  gap: var(--space-md);
   padding: var(--space-sm) 0;
   border-top: 1px solid var(--white-200);
 }
 .schedule-items li:first-child {
   border-top: 0;
+}
+.schedule-item-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
 }
 .schedule-thumb {
   flex-shrink: 0;

@@ -10,3 +10,7 @@
 .chat-list-page i { color: var(--gray-400); font-size: 22px; font-style: normal; }
 .chat-state { padding: 50px 0; color: var(--gray-500); text-align: center; }
 .chat-state-cta { margin-top: 6px; color: var(--gray-400); font-size: 12px; }
+.chat-guest { display: flex; flex-direction: column; align-items: center; padding-top: 90px; text-align: center; }
+.chat-guest-avatar { display: grid; place-items: center; width: 72px; height: 72px; margin: 0 auto; border-radius: 50%; background: var(--purple-100); font-size: 32px; }
+.chat-guest-desc { margin-top: var(--space-sm); color: var(--gray-500); font-size: var(--fs-sm); }
+.chat-guest-login { display: block; width: 100%; margin-top: var(--space-4xl); padding: var(--space-2xl) 0; border-radius: var(--radius-lg); color: var(--white); background: var(--purple-600); font-size: var(--fs-md); font-weight: var(--fw-bold); text-align: center; }

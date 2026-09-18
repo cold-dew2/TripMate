@@ -6,6 +6,8 @@ import com.example.backend.trma.dto.response.*;
 import com.example.backend.trma.mapper.MoimListMapper;
 import com.example.backend.trma.mapper.NotificationMapper;
 import com.example.backend.trma.service.MoimListService;
+import com.example.backend.trma.service.NotificationPushService;
+import com.example.backend.trma.util.AiErrorUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.NonNull;
@@ -26,6 +28,7 @@ public class MoimListServicelmpl implements MoimListService {
 
     private final MoimListMapper moimListMapper;
     private final NotificationMapper notificationMapper;
+    private final NotificationPushService notificationPushService;
     private final RestClient restClient;
 
     //사용자 정보 조회
@@ -278,7 +281,17 @@ public class MoimListServicelmpl implements MoimListService {
         } catch (Exception e) {
             log.error("처리 중 오류가 발생했습니다.", e);
 
-            e.printStackTrace();
+            if (AiErrorUtil.isAiOverloaded(e)) {
+                return new MoimAiSearchResponse(
+                        false,
+                        503,
+                        AiErrorUtil.CODE,
+                        AiErrorUtil.MESSAGE,
+                        "/moimList/moimAiSearch",
+                        "",
+                        null
+                );
+            }
 
             return new MoimAiSearchResponse(
                     false,
@@ -474,6 +487,14 @@ public class MoimListServicelmpl implements MoimListService {
         try {
             moimListMapper.insertMoimMember(moimId, userId, "M", "N");
             notificationMapper.insertApplyNotification(moimId, userId);
+
+            // 실시간 알림 푸시는 부가 기능이라 여기서 실패해도 신청 자체는 이미
+            // 완료된 것으로 처리해야 하므로, 별도로 감싸서 신청 성공 여부에 영향을 주지 않게 한다.
+            try {
+                notificationPushService.pushToUser(moimListMapper.moimHostUserId(moimId));
+            } catch (Exception e) {
+                log.warn("모임장 실시간 알림 푸시에 실패했습니다. moimId={}", moimId, e);
+            }
 
             return new ApplyMoimResponse(
                     true,
