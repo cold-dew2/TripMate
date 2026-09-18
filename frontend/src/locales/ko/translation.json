@@ -75,8 +75,9 @@
     "loadError": "정보를 불러오지 못했습니다.",
     "empty": "표시할 내용이 없어요.",
     "retry": "다시 시도",
-    "aiUnavailable": "AI 기능이 잠시 붐벼서 사용할 수 없어요. AI 기능 없이 계속 진행하실 수 있어요.",
+    "aiUnavailable": "현재 AI 기능을 사용할 수 없어요. AI 기능 없이 진행해주세요.",
     "submit": "등록",
+    "confirm": "확인",
     "saving": "저장 중…",
     "travelPeriod": "여행 기간",
     "previous": "이전",
@@ -137,7 +138,7 @@
       "save": "저장"
     },
     "step5": {
-      "mapPreview": "지도 · 경로 미리보기",
+      "mapUnavailable": "지도를 표시할 관광지가 없어요.",
       "flowTitle": "{{count}}일 여행 흐름 ({{range}})",
       "dayLabel": "DAY {{day}} ({{date}})",
       "editPlan": "플랜 수정",
@@ -152,7 +153,8 @@
       "nightsLabel": "{{nights}}박 {{count}}일",
       "memberLabel": "모임 인원",
       "register": "등록하기",
-      "registerError": "소모임 등록에 실패했어요. 잠시 후 다시 시도해주세요."
+      "registerError": "소모임 등록에 실패했어요. 잠시 후 다시 시도해주세요.",
+      "needLogin": "로그인이 필요해요. 로그인 후 다시 등록해주세요."
     },
     "step7": {
       "title": "소모임이 등록되었습니다!",

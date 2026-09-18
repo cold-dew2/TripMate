@@ -1,12 +1,6 @@
 .moim-detail {
   padding: 0 var(--space-2xl) var(--space-3xl);
 }
-.moim-detail-status {
-  padding: var(--space-3xl) 0;
-  color: var(--gray-400);
-  font-size: var(--fs-sm);
-  text-align: center;
-}
 .moim-detail-host {
   display: flex;
   align-items: center;

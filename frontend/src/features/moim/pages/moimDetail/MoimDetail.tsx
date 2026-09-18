@@ -6,18 +6,21 @@ import useMoimReviews from '../../hooks/useMoimReviews';
 import Header from './components/header/Header';
 import DaySchedule from '@/shared/components/daySchedule/DaySchedule';
 import Button from '@/shared/components/button/Button';
+import PageState from '@/shared/components/pageState/PageState';
+import { useAlert } from '@/shared/contexts/AlertContext';
 import { resolveImageUrl } from '@/shared/utils/url';
 import './MoimDetail.css';
 
 const MoimDetail = () => {
   const { t } = useTranslation();
   const { moimId } = useParams<{ moimId: string }>();
-  const { data: result, isLoading, isError } = useMoimDetail(moimId!);
+  const { data: result, isLoading, isError, refetch } = useMoimDetail(moimId!);
   const applyMoim = useApplyMoim(moimId!);
   const { data: reviews } = useMoimReviews(moimId!);
+  const { showAlert } = useAlert();
 
-  if (isLoading) return <p className="moim-detail-status">{t('account.loading')}</p>;
-  if (isError || !result) return <p className="moim-detail-status">{t('common.loadError')}</p>;
+  if (isLoading) return <PageState status="loading" />;
+  if (isError || !result) return <PageState status="error" onRetry={() => refetch()} />;
 
   const moim = result.data;
   const cate = result.cate ?? [];
@@ -44,9 +47,9 @@ const MoimDetail = () => {
     }
     try {
       await navigator.clipboard.writeText(url);
-      window.alert(t('moim.shareCopied'));
+      showAlert(t('moim.shareCopied'));
     } catch {
-      window.alert(url);
+      showAlert(url);
     }
   };
 
@@ -117,7 +120,7 @@ const MoimDetail = () => {
           <Button
             text={applyMoim.isPending ? t('common.saving') : t('moim.applyBtn')}
             onClick={() => applyMoim.mutate(undefined, {
-              onError: () => window.alert(t('moim.applyError')),
+              onError: () => showAlert(t('moim.applyError')),
             })}
             disabled={applyMoim.isPending}
           />

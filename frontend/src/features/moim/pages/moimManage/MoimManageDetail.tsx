@@ -10,12 +10,14 @@ import { useTransportRecommend, type TransportLeg } from '../../hooks/useTranspo
 import DaySchedule from '@/shared/components/daySchedule/DaySchedule';
 import TransportLegView from '@/shared/components/transportLeg/TransportLegView';
 import Button from '@/shared/components/button/Button';
+import { useAlert } from '@/shared/contexts/AlertContext';
 import './MoimManageDetail.css';
 
 type ManageTab = 'applicants' | 'chat' | 'schedule';
 
 const MoimManageDetail = () => {
   const { t } = useTranslation();
+  const { showAlert } = useAlert();
   const { moimId } = useParams<{ moimId: string }>();
   const [tab, setTab] = useState<ManageTab>('applicants');
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -76,7 +78,13 @@ const MoimManageDetail = () => {
         roadAddr: item.roadAddr,
       }))
     );
-    transportRecommend.mutate(items);
+    transportRecommend.mutate(items, {
+      onError: (error) => {
+        if ((error as { code?: string } | null)?.code === 'AI_UNAVAILABLE') {
+          showAlert(t('common.aiUnavailable'));
+        }
+      },
+    });
   };
 
   return (

@@ -79,8 +79,9 @@
     "loadError": "情報を読み込めませんでした。",
     "empty": "表示できる内容がありません。",
     "retry": "再試行",
-    "aiUnavailable": "AI機能が現在混雑していて使用できません。AI機能なしで続行できます。",
+    "aiUnavailable": "現在AI機能を利用できません。AI機能なしで進めてください。",
     "submit": "登録",
+    "confirm": "確認",
     "saving": "保存中…",
     "travelPeriod": "旅行期間",
     "previous": "前へ",
@@ -141,7 +142,7 @@
       "save": "保存"
     },
     "step5": {
-      "mapPreview": "地図・ルートプレビュー",
+      "mapUnavailable": "地図に表示する観光地がありません。",
       "flowTitle": "{{count}}日間の旅程（{{range}}）",
       "dayLabel": "DAY {{day}} ({{date}})",
       "editPlan": "プラン修正",
@@ -156,7 +157,8 @@
       "nightsLabel": "{{nights}}泊{{count}}日",
       "memberLabel": "参加人数",
       "register": "登録する",
-      "registerError": "グループの登録に失敗しました。しばらくしてからもう一度お試しください。"
+      "registerError": "グループの登録に失敗しました。しばらくしてからもう一度お試しください。",
+      "needLogin": "ログインが必要です。ログイン後に再度登録してください。"
     },
     "step7": {
       "title": "グループが登録されました！",

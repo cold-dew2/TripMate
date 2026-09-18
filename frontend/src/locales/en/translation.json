@@ -75,8 +75,9 @@
     "loadError": "We could not load this information.",
     "empty": "Nothing to show yet.",
     "retry": "Try again",
-    "aiUnavailable": "AI features are busy right now. You can continue without them.",
+    "aiUnavailable": "AI features aren't available right now. Please continue without them.",
     "submit": "Submit",
+    "confirm": "OK",
     "saving": "Saving…",
     "travelPeriod": "Travel Period",
     "previous": "Previous",
@@ -137,7 +138,7 @@
       "save": "Save"
     },
     "step5": {
-      "mapPreview": "Map · Route preview",
+      "mapUnavailable": "No destinations to show on the map yet.",
       "flowTitle": "{{count}}-day itinerary ({{range}})",
       "dayLabel": "DAY {{day}} ({{date}})",
       "editPlan": "Edit plan",
@@ -152,7 +153,8 @@
       "nightsLabel": "{{nights}}N {{count}}D",
       "memberLabel": "Members",
       "register": "Create group",
-      "registerError": "Couldn't create the group. Please try again in a moment."
+      "registerError": "Couldn't create the group. Please try again in a moment.",
+      "needLogin": "Please log in and try creating the group again."
     },
     "step7": {
       "title": "Your group has been created!",

@@ -9,6 +9,7 @@ import type { MoimCreateForm } from "@/types/moim";
 import type { PlanItem } from "../../MoimCreate";
 import type { UseFormSetValue, UseFormWatch } from "react-hook-form";
 import { useTranslation } from "react-i18next";
+import { useAlert } from "@/shared/contexts/AlertContext";
 import "./Step3.css";
 
 interface Step3Props {
@@ -32,6 +33,7 @@ interface AiScheduleItem {
 
 const Step3 = ({ watch, setValue, itemsByDay, setItemsByDay, onAddDay, onPrev, onNext }: Step3Props) => {
   const { t } = useTranslation();
+  const { showAlert } = useAlert();
   const moimStartDt = watch("moimStartDt");
   const moimEndDt = watch("moimEndDt");
   const moimCateData = watch("moimCateData");
@@ -88,6 +90,9 @@ const Step3 = ({ watch, setValue, itemsByDay, setItemsByDay, onAddDay, onPrev, o
         moimEndDt,
       });
       if (!result.success) {
+        if (result.code === "AI_UNAVAILABLE") {
+          showAlert(t("common.aiUnavailable"));
+        }
         setRecommendError(
           result.code === "AI_UNAVAILABLE"
             ? t("common.aiUnavailable")

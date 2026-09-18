@@ -2,11 +2,13 @@ import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import Button from "@/shared/components/button/Button";
 import TransportLegView from "@/shared/components/transportLeg/TransportLegView";
+import ItineraryMap from "@/shared/components/itineraryMap/ItineraryMap";
 import { addDays, formatMonthDay } from "@/shared/utils/date";
 import { useTransportRecommend, toTransportStops, type TransportLeg } from "../../../../hooks/useTransportRecommend";
 import type { MoimCreateForm } from "@/types/moim";
 import type { PlanItem } from "../../MoimCreate";
 import type { UseFormWatch } from "react-hook-form";
+import { useAlert } from "@/shared/contexts/AlertContext";
 import "./Step5.css";
 
 interface Step5Props {
@@ -18,6 +20,7 @@ interface Step5Props {
 
 const Step5 = ({ watch, itemsByDay, onEditPlan, onNext }: Step5Props) => {
   const { t } = useTranslation();
+  const { showAlert } = useAlert();
   const moimStartDt = watch("moimStartDt");
   const moimEndDt = watch("moimEndDt");
   const dayCount = watch("dayCount") ?? Object.keys(itemsByDay).length ?? 1;
@@ -39,11 +42,12 @@ const Step5 = ({ watch, itemsByDay, onEditPlan, onNext }: Step5Props) => {
   }, [transportRecommend.data]);
 
   const totalStops = days.reduce((sum, day) => sum + (itemsByDay[day]?.length ?? 0), 0);
+  const mapStops = days.flatMap((day) => itemsByDay[day] ?? []);
 
   return (
     <div className="create-content step5-content">
       <div className="step5-map">
-        <span>{t("moimCreate.step5.mapPreview")}</span>
+        <ItineraryMap stops={mapStops} />
       </div>
 
       <p className="step5-flow-title">
@@ -55,7 +59,13 @@ const Step5 = ({ watch, itemsByDay, onEditPlan, onNext }: Step5Props) => {
           <Button
             text={transportRecommend.isPending ? t("common.saving") : t("moimCreate.step5.transportRecommend")}
             variant="secondary"
-            onClick={() => transportRecommend.mutate(toTransportStops(itemsByDay))}
+            onClick={() => transportRecommend.mutate(toTransportStops(itemsByDay), {
+              onError: (error) => {
+                if ((error as { code?: string } | null)?.code === "AI_UNAVAILABLE") {
+                  showAlert(t("common.aiUnavailable"));
+                }
+              },
+            })}
             disabled={transportRecommend.isPending}
           />
           {transportRecommend.isError && (
