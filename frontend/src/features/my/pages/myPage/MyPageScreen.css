@@ -110,12 +110,6 @@
   font-weight: var(--fw-bold);
 }
 
-.mypage-loading {
-  margin-top: var(--space-2xl);
-  color: var(--gray-500);
-  font-size: var(--fs-sm);
-}
-
 .mypage-name {
   margin-top: var(--space-2xl);
   color: var(--gray-900);

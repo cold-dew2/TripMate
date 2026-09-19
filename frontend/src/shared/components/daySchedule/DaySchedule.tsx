@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import "./DaySchedule.css";
 
@@ -6,6 +7,7 @@ export interface ScheduleItem {
   time: string;
   placeName: string;
   imageUrl?: string;
+  tourId?: string;
 }
 
 interface DayScheduleProps {
@@ -16,6 +18,8 @@ interface DayScheduleProps {
   onRemove?: (id: string) => void;
   onAddClick?: () => void;
   onTimeChange?: (id: string, time: string) => void;
+  // 연속된 두 일정 사이(예: 교통편 정보)를 그려 넣고 싶을 때 사용한다.
+  renderBetween?: (prevItem: ScheduleItem, item: ScheduleItem) => ReactNode;
 }
 
 const HOURS = Array.from({ length: 24 }, (_, hour) => String(hour).padStart(2, "0"));
@@ -59,7 +63,7 @@ const TimeSelect = ({ time, placeName, onChange }: TimeSelectProps) => {
   );
 };
 
-const DaySchedule = ({ day, date, items = [], mode = "view", onRemove, onAddClick, onTimeChange }: DayScheduleProps) => {
+const DaySchedule = ({ day, date, items = [], mode = "view", onRemove, onAddClick, onTimeChange, renderBetween }: DayScheduleProps) => {
   const { t } = useTranslation();
 
   return (
@@ -72,26 +76,29 @@ const DaySchedule = ({ day, date, items = [], mode = "view", onRemove, onAddClic
         </div>
       ) : (
         <ul className="schedule-items">
-          {items.map((item) => (
+          {items.map((item, index) => (
             <li key={item.id}>
-              <span className="schedule-thumb" aria-hidden="true">
-                {item.imageUrl && <img src={item.imageUrl} alt="" />}
-              </span>
-              {mode === "edit" && onTimeChange ? (
-                <TimeSelect
-                  time={item.time}
-                  placeName={item.placeName}
-                  onChange={(time) => onTimeChange(item.id, time)}
-                />
-              ) : (
-                <span className="schedule-time">{item.time}</span>
-              )}
-              <span className="schedule-place">{item.placeName}</span>
-              {mode === "edit" && onRemove && (
-                <button type="button" className="schedule-remove" onClick={() => onRemove(item.id)} aria-label={t("common.remove")}>
-                  ✕
-                </button>
-              )}
+              {index > 0 && renderBetween?.(items[index - 1], item)}
+              <div className="schedule-item-row">
+                <span className="schedule-thumb" aria-hidden="true">
+                  {item.imageUrl && <img src={item.imageUrl} alt="" />}
+                </span>
+                {mode === "edit" && onTimeChange ? (
+                  <TimeSelect
+                    time={item.time}
+                    placeName={item.placeName}
+                    onChange={(time) => onTimeChange(item.id, time)}
+                  />
+                ) : (
+                  <span className="schedule-time">{item.time}</span>
+                )}
+                <span className="schedule-place">{item.placeName}</span>
+                {mode === "edit" && onRemove && (
+                  <button type="button" className="schedule-remove" onClick={() => onRemove(item.id)} aria-label={t("common.remove")}>
+                    ✕
+                  </button>
+                )}
+              </div>
             </li>
           ))}
         </ul>

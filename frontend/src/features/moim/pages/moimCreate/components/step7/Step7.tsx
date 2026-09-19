@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import Button from "@/shared/components/button/Button";
+import { useAlert } from "@/shared/contexts/AlertContext";
 import "./Step7.css";
 
 interface Step7Props {
@@ -10,6 +11,7 @@ interface Step7Props {
 const Step7 = ({ moimId }: Step7Props) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const { showAlert } = useAlert();
 
   const handleShare = async () => {
     const url = moimId ? `${window.location.origin}/moim/${moimId}` : window.location.origin;
@@ -22,7 +24,7 @@ const Step7 = ({ moimId }: Step7Props) => {
       }
     }
     await navigator.clipboard.writeText(url);
-    window.alert(t("moimCreate.step7.shareCopied"));
+    showAlert(t("moimCreate.step7.shareCopied"));
   };
 
   return (

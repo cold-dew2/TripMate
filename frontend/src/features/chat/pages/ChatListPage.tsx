@@ -3,7 +3,9 @@ import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { apiClient } from '@/shared/api/client';
+import useUser from '@/shared/hooks/useUser';
 import FilterTabs from '@/shared/components/filterTabs/FilterTabs';
+import PageState from '@/shared/components/pageState/PageState';
 import './ChatListPage.css';
 
 interface Room {
@@ -18,6 +20,9 @@ type RoomFilter = 'all' | 'unread';
 export default function ChatListPage() {
   const { t } = useTranslation();
   const [filter, setFilter] = useState<RoomFilter>('all');
+  const { data: user, isLoading: userLoading } = useUser();
+  const isLoggedIn = !!user;
+
   const rooms = useQuery({
     queryKey: ['chatRooms'],
     queryFn: async () => {
@@ -26,9 +31,24 @@ export default function ChatListPage() {
       return r.data.data;
     },
     retry: 1,
+    enabled: isLoggedIn,
   });
 
   const visibleRooms = (rooms.data ?? []).filter((room) => filter === 'all' || room.unreadCount > 0);
+
+  if (userLoading) return <PageState status="loading" />;
+
+  if (!isLoggedIn) {
+    return (
+      <div className="chat-list-page">
+        <section className="chat-guest">
+          <div className="chat-guest-avatar" aria-hidden="true">💬</div>
+          <p className="chat-guest-desc">{t('chat.loginRequired')}</p>
+          <Link to="/auth" className="chat-guest-login">{t('account.login')}</Link>
+        </section>
+      </div>
+    );
+  }
 
   return (
     <div className="chat-list-page">
@@ -44,9 +64,9 @@ export default function ChatListPage() {
       />
 
       {rooms.isLoading ? (
-        <p className="chat-state">{t('chat.loadingRooms')}</p>
+        <PageState status="loading" message={t('chat.loadingRooms')} />
       ) : rooms.isError ? (
-        <p className="chat-state">{t('common.loadError')}</p>
+        <PageState status="error" onRetry={() => rooms.refetch()} />
       ) : visibleRooms.length === 0 ? (
         filter === 'unread' ? (
           <p className="chat-state">{t('chat.emptyUnread')}</p>

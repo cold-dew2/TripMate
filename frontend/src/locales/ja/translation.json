@@ -11,7 +11,8 @@
   },
   "notifications": {
     "title": "お知らせ",
-    "empty": "まだお知らせがありません。"
+    "empty": "まだお知らせがありません。",
+    "loginRequired": "お知らせを見るにはログインが必要です。"
   },
   "userProfile": {
     "title": "ユーザー情報",
@@ -24,6 +25,7 @@
     "title": "チャット",
     "me": "自分",
     "subtitle": "旅行メイトと話しましょう",
+    "loginRequired": "チャット一覧を見るにはログインが必要です。",
     "loadingRooms": "チャットルームを読み込み中です。",
     "emptyRooms": "まだチャットルームがありません。",
     "filterAll": "すべて",
@@ -75,7 +77,11 @@
   "common": {
     "loading": "読み込み中…",
     "loadError": "情報を読み込めませんでした。",
+    "empty": "表示できる内容がありません。",
+    "retry": "再試行",
+    "aiUnavailable": "現在AI機能を利用できません。AI機能なしで進めてください。",
     "submit": "登録",
+    "confirm": "確認",
     "saving": "保存中…",
     "travelPeriod": "旅行期間",
     "previous": "前へ",
@@ -136,15 +142,12 @@
       "save": "保存"
     },
     "step5": {
-      "mapPreview": "地図・ルートプレビュー",
+      "mapUnavailable": "地図に表示する観光地がありません。",
       "flowTitle": "{{count}}日間の旅程（{{range}}）",
       "dayLabel": "DAY {{day}} ({{date}})",
       "editPlan": "プラン修正",
       "transportRecommend": "交通手段を提案してもらう",
-      "transportRecommendError": "交通手段の提案取得に失敗しました。しばらくしてからもう一度お試しください。",
-      "transportDuration": "{{count}}分",
-      "transportCost": "{{cost}}ウォン",
-      "transportTransfer": "乗り換え{{count}}回"
+      "transportRecommendError": "交通手段の提案取得に失敗しました。しばらくしてからもう一度お試しください。"
     },
     "step6": {
       "photoLabel": "グループ代表写真",
@@ -154,7 +157,8 @@
       "nightsLabel": "{{nights}}泊{{count}}日",
       "memberLabel": "参加人数",
       "register": "登録する",
-      "registerError": "グループの登録に失敗しました。しばらくしてからもう一度お試しください。"
+      "registerError": "グループの登録に失敗しました。しばらくしてからもう一度お試しください。",
+      "needLogin": "ログインが必要です。ログイン後に再度登録してください。"
     },
     "step7": {
       "title": "グループが登録されました！",
@@ -217,7 +221,8 @@
     "noApplicants": "申込者がいません。",
     "approve": "承認",
     "reject": "拒否",
-    "scheduleEditComingSoon": "日程編集機能は準備中です。",
+    "transportRecommend": "混雑度・交通手段を分析",
+    "transportRecommendError": "交通分析に失敗しました。しばらくしてからもう一度お試しください。",
     "waitingCount": "待機 {{count}}",
     "approveSelected": "選択した{{count}}人を承認",
     "approveFailed": "一部の承認処理に失敗しました。もう一度お試しください。",
@@ -265,7 +270,9 @@
     "errorMsg": "もう一度お試しください！",
     "mapUnavailable": "地図を読み込めませんでした。",
     "infoLoading": "利用案内を読み込んでいます...",
-    "infoError": "利用案内を読み込めませんでした。"
+    "infoError": "利用案内を読み込めませんでした。",
+    "detailLoading": "観光地情報を読み込んでいます...",
+    "detailError": "観光地情報を読み込めませんでした。"
   },
   "review": {
     "score": "評価",
@@ -278,6 +285,14 @@
     "contentRequired": "内容を入力してください。",
     "imageCount": "{{count}}枚を選択",
     "empty": "まだレビューがありません。最初のレビューを書いてみましょう！"
+  },
+  "transport": {
+    "duration": "{{count}}分",
+    "cost": "{{cost}}ウォン",
+    "transfer": "乗り換え{{count}}回",
+    "congestion": { "smooth": "スムーズ", "moderate": "普通", "heavy": "混雑" },
+    "delayWarning": "混雑予想（最大{{count}}分遅延）",
+    "alternative": "代替案"
   },
   "my": {
     "moiming": "進行中のグループ",

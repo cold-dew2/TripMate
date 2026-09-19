@@ -1,0 +1,61 @@
+.transport-leg {
+  margin: var(--space-2xs) 0 var(--space-2xs) 40px;
+}
+.transport-leg-main {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+  color: var(--gray-500);
+  font-size: var(--fs-xs);
+}
+.transport-congestion-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  font-weight: var(--fw-bold);
+  font-size: var(--fs-xxs);
+}
+.transport-congestion-smooth {
+  background: var(--green-100);
+  color: var(--green-700);
+}
+.transport-congestion-moderate {
+  background: var(--yellow-100);
+  color: var(--yellow-700);
+}
+.transport-congestion-heavy {
+  background: var(--red-100);
+  color: var(--red-700);
+  animation: transport-pulse 1.4s ease-in-out infinite;
+}
+.transport-alert {
+  margin-top: var(--space-xs);
+  padding: var(--space-sm) var(--space-md);
+  border: 1.5px solid var(--red-400);
+  border-radius: var(--radius-md);
+  background: var(--red-50);
+}
+.transport-alert-title {
+  color: var(--red-700);
+  font-weight: var(--fw-bold);
+  font-size: var(--fs-sm);
+}
+.transport-alert-alt {
+  margin-top: var(--space-2xs);
+  color: var(--gray-700);
+  font-size: var(--fs-xs);
+}
+
+@keyframes transport-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .transport-congestion-heavy {
+    animation: none;
+  }
+}

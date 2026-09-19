@@ -11,7 +11,8 @@
   },
   "notifications": {
     "title": "Notifications",
-    "empty": "No notifications yet."
+    "empty": "No notifications yet.",
+    "loginRequired": "Please log in to see notifications."
   },
   "userProfile": {
     "title": "User Profile",
@@ -24,6 +25,7 @@
     "title": "Chat",
     "me": "Me",
     "subtitle": "Talk with your travel mates",
+    "loginRequired": "Please log in to see your chats.",
     "loadingRooms": "Loading chat rooms…",
     "emptyRooms": "No chat rooms yet.",
     "filterAll": "All",
@@ -71,7 +73,11 @@
   "common": {
     "loading": "Loading…",
     "loadError": "We could not load this information.",
+    "empty": "Nothing to show yet.",
+    "retry": "Try again",
+    "aiUnavailable": "AI features aren't available right now. Please continue without them.",
     "submit": "Submit",
+    "confirm": "OK",
     "saving": "Saving…",
     "travelPeriod": "Travel Period",
     "previous": "Previous",
@@ -132,15 +138,12 @@
       "save": "Save"
     },
     "step5": {
-      "mapPreview": "Map · Route preview",
+      "mapUnavailable": "No destinations to show on the map yet.",
       "flowTitle": "{{count}}-day itinerary ({{range}})",
       "dayLabel": "DAY {{day}} ({{date}})",
       "editPlan": "Edit plan",
       "transportRecommend": "Get transport suggestions",
-      "transportRecommendError": "Couldn't get transport suggestions. Please try again in a moment.",
-      "transportDuration": "{{count}} min",
-      "transportCost": "₩{{cost}}",
-      "transportTransfer": "{{count}} transfer(s)"
+      "transportRecommendError": "Couldn't get transport suggestions. Please try again in a moment."
     },
     "step6": {
       "photoLabel": "Group cover photo",
@@ -150,7 +153,8 @@
       "nightsLabel": "{{nights}}N {{count}}D",
       "memberLabel": "Members",
       "register": "Create group",
-      "registerError": "Couldn't create the group. Please try again in a moment."
+      "registerError": "Couldn't create the group. Please try again in a moment.",
+      "needLogin": "Please log in and try creating the group again."
     },
     "step7": {
       "title": "Your group has been created!",
@@ -213,7 +217,8 @@
     "noApplicants": "No applicants yet.",
     "approve": "Approve",
     "reject": "Reject",
-    "scheduleEditComingSoon": "Schedule editing is coming soon.",
+    "transportRecommend": "Analyze congestion & transport",
+    "transportRecommendError": "Couldn't analyze transport. Please try again in a moment.",
     "waitingCount": "{{count}} waiting",
     "approveSelected": "Approve {{count}} selected",
     "approveFailed": "Some approvals failed. Please try again.",
@@ -247,6 +252,8 @@
     "mapUnavailable": "The map could not be loaded.",
     "infoLoading": "Loading visit information...",
     "infoError": "Couldn't load visit information.",
+    "detailLoading": "Loading destination info...",
+    "detailError": "Couldn't load destination info.",
     "introduce": "Introduction",
     "info": "Information",
     "review": "Reviews",
@@ -269,6 +276,14 @@
     "registerTitle": "Write a Review", "moimPrompt": "How was your trip? Tell us about it!", "moimContentPlaceholder": "Say a word to others! We all had so much fun, let's do it again!",
     "titleRequired": "Please enter a title.", "contentRequired": "Please enter a review.", "imageCount": "{{count}} image(s) selected",
     "empty": "No reviews yet. Be the first to leave one!"
+  },
+  "transport": {
+    "duration": "{{count}} min",
+    "cost": "₩{{cost}}",
+    "transfer": "{{count}} transfer(s)",
+    "congestion": { "smooth": "Smooth", "moderate": "Moderate", "heavy": "Heavy" },
+    "delayWarning": "Congestion expected (up to {{count}} min delay)",
+    "alternative": "Suggested alternative"
   },
   "my": {
     "moiming": "Ongoing Groups",

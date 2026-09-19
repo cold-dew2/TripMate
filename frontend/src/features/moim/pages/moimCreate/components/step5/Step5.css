@@ -2,15 +2,11 @@
   padding-top: var(--space-2xl);
 }
 .step5-map {
-  display: flex;
-  align-items: center;
-  justify-content: center;
   height: 150px;
   margin-bottom: var(--space-2xl);
   border-radius: var(--radius-md);
   background: var(--purple-100);
-  color: var(--gray-500);
-  font-size: var(--fs-sm);
+  overflow: hidden;
 }
 .step5-flow-title {
   margin-bottom: var(--space-lg);
@@ -55,12 +51,4 @@
   margin-top: var(--space-xs);
   color: var(--red-700);
   font-size: var(--fs-sm);
-}
-.step5-transport-leg {
-  display: flex;
-  align-items: center;
-  gap: var(--space-xs);
-  margin: var(--space-2xs) 0 var(--space-2xs) 40px;
-  color: var(--gray-500);
-  font-size: var(--fs-xs);
 }

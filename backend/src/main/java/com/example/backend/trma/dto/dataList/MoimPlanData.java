@@ -10,7 +10,9 @@ import lombok.Setter;
 public class MoimPlanData {
     private String startDt;
     private String rmks;
+    private String tourId;
     private String tourNm;
+    private String roadAddr;
     private String cateCd;
     private String cateNm;
 }

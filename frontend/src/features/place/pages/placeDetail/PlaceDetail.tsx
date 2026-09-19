@@ -7,13 +7,14 @@ import Information from './components/information/Information';
 import Header from './components/header/Header';
 import useReview from '../../hooks/useReveiws';
 import Reviews from './components/reviews/Reviews';
+import PageState from '@/shared/components/pageState/PageState';
 import './PlaceDetail.css';
 
 
 const PlaceDetail = () => {
   const { t } = useTranslation();
   const { tourId } = useParams<{ tourId: string }>();
-  const { data: place, isLoading, isError } = usePlaceDetail(tourId ?? "");
+  const { data: place, isLoading, isError, refetch } = usePlaceDetail(tourId ?? "");
   // 관광지 상세(이름/주소/개요 등)만으로 화면을 그리고, 이용 정보(운영시간 등)는
   // Information에서 각자 별도로 불러온다(느린 AI 호출이 전체 화면을 막지 않도록).
   const {
@@ -23,8 +24,8 @@ const PlaceDetail = () => {
   } = useReview(tourId ?? "");
   const reviews = reviewPages?.pages.flat();
 
-  if (isLoading) return <div>{tourId}로딩</div>;
-  if (isError || !place) return <div>{tourId}nodata</div>;
+  if (isLoading) return <PageState status="loading" message={t('place.detailLoading')} />;
+  if (isError || !place) return <PageState status="error" message={t('place.detailError')} onRetry={() => refetch()} />;
 
   const tabs = [
     { id: "tab1", label: t("place.introduce") },
@@ -47,9 +48,9 @@ const PlaceDetail = () => {
             <Information tourId={tourId ?? ""} />
           </div>
           <div className="tab-content" id="tab3" tabIndex={-1}>
-            {reviewIsLoading && <p>리뷰 불러오는 중...</p>}
+            {reviewIsLoading && <PageState status="loading" fullScreen={false} />}
 
-            {reviewIsError && <p>리뷰를 불러오지 못했습니다.</p>}
+            {reviewIsError && <PageState status="error" fullScreen={false} />}
 
             {!reviewIsLoading && !reviewIsError && reviews && (
               <Reviews reviews={reviews} tourId={tourId ?? ""} />

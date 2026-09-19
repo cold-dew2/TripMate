@@ -27,6 +27,7 @@ const REGION_OPTIONS = [
 const Step2 = ({ setValue, onNext, onPrev, defaultTitle, defaultDscr }: Step2Props) => {
   const { t } = useTranslation();
   const [title, setTitle] = useState(defaultTitle ?? '');
+  const [dscr, setDscr] = useState(defaultDscr ?? '');
   const [dateRange, setDateRange] = useState({ start: '', end: '' });
   const [region, setRegion] = useState('');
 
@@ -36,7 +37,7 @@ const Step2 = ({ setValue, onNext, onPrev, defaultTitle, defaultDscr }: Step2Pro
     setDateRange({ start: startDate, end: endDate });
   };
 
-  const canProceed = title.trim() !== '' && !!dateRange.start && !!dateRange.end && !!region;
+  const canProceed = title.trim() !== '' && dscr.trim() !== '' && !!dateRange.start && !!dateRange.end && !!region;
 
   return (
     <>

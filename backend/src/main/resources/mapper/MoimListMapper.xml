@@ -76,6 +76,19 @@
     </select>
 
     <!-- ========================= -->
+    <!-- 모임장(생성자) 계정 조회 -->
+    <!-- ========================= -->
+    <select id="moimHostUserId"
+            parameterType="String"
+            resultType="String">
+
+        SELECT CREATE_USER
+        FROM TB_TRMA_MOIM_LIST
+        WHERE MOIM_ID = #{moimId}
+
+    </select>
+
+    <!-- ========================= -->
     <!-- 소모임 상세 -->
     <!-- ========================= -->
     <select id="moimInfo"
@@ -196,11 +209,13 @@
         SELECT
             a.START_DT
             ,a.RMKS
+            ,a.TOUR_ID
             <choose>
                 <when test="lang == 'en'">,COALESCE(NULLIF(b.TOUR_NM_EN, ''), b.TOUR_NM) AS TOUR_NM</when>
                 <when test="lang == 'ja'">,COALESCE(NULLIF(b.TOUR_NM_JA, ''), b.TOUR_NM) AS TOUR_NM</when>
                 <otherwise>,b.TOUR_NM</otherwise>
             </choose>
+            ,b.ROAD_ADDR
             ,d.CMM_CDV AS CATE_CD
             ,d.CMM_CM_NM AS CATE_NM
         FROM TB_TRMA_MOIM_CALENDAR a

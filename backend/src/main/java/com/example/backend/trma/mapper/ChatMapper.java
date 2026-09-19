@@ -22,6 +22,9 @@ public interface ChatMapper {
     //내 채팅방 목록 조회
     List<ChatRoomData> chatRooms(String userId);
 
+    //채팅방 멤버 계정 목록 조회
+    List<String> roomMemberIds(String roomId);
+
     //채팅 메시지 목록 조회
     List<ChatMessageData> chatMessages(String roomId);
 

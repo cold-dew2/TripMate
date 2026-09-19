@@ -66,8 +66,14 @@ public class SecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
 
         // React 개발 서버 주소 허용
+        // localhost와 127.0.0.1은 브라우저 입장에서 완전히 다른 사이트로 취급되어
+        // 쿠키(SameSite)가 서로 넘어가지 않는다. 프론트를 어느 쪽으로 열어도(포트가
+        // 바뀌어도) 로그인 쿠키가 막히지 않도록 개발용 origin을 넉넉히 허용해둔다.
         configuration.setAllowedOrigins(List.of(
                 "http://localhost:5173",
+                "http://localhost:5174",
+                "http://127.0.0.1:5173",
+                "http://127.0.0.1:5174",
                 "http://localhost:3000"
         ));
 

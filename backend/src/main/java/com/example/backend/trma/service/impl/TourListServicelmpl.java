@@ -5,6 +5,7 @@ import com.example.backend.trma.dto.request.*;
 import com.example.backend.trma.dto.response.*;
 import com.example.backend.trma.mapper.TourListMapper;
 import com.example.backend.trma.service.TourListService;
+import com.example.backend.trma.util.AiErrorUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -288,7 +289,17 @@ public class TourListServicelmpl implements TourListService {
         } catch (Exception e) {
             log.error("처리 중 오류가 발생했습니다.", e);
 
-            e.printStackTrace();
+            if (AiErrorUtil.isAiOverloaded(e)) {
+                return new TourAiSearchResponse(
+                        false,
+                        503,
+                        AiErrorUtil.CODE,
+                        AiErrorUtil.MESSAGE,
+                        "/tourList/tourAiSearch",
+                        "",
+                        null
+                );
+            }
 
             return new TourAiSearchResponse(
                     false,
@@ -430,6 +441,19 @@ public class TourListServicelmpl implements TourListService {
             );
         } catch (Exception e) {
             log.error("처리 중 오류가 발생했습니다.", e);
+
+            if (AiErrorUtil.isAiOverloaded(e)) {
+                return new TourAiDetailResponse(
+                        false,
+                        503,
+                        AiErrorUtil.CODE,
+                        AiErrorUtil.MESSAGE,
+                        "/tourList/tourAiDetail",
+                        "",
+                        null
+                );
+            }
+
             return new TourAiDetailResponse(
                     false,
                     500,
@@ -608,7 +632,19 @@ public class TourListServicelmpl implements TourListService {
             );
         } catch (Exception e) {
             log.error("처리 중 오류가 발생했습니다.", e);
-            e.printStackTrace();
+
+            if (AiErrorUtil.isAiOverloaded(e)) {
+                return new AiScheduleResponse(
+                        false,
+                        503,
+                        AiErrorUtil.CODE,
+                        AiErrorUtil.MESSAGE,
+                        "/tourList/aiSchedule",
+                        "",
+                        null
+                );
+            }
+
             return new AiScheduleResponse(
                     false,
                     500,
@@ -721,18 +757,24 @@ public class TourListServicelmpl implements TourListService {
                 );
             }
 
-            String prompt = "당신은 대한민국 대중교통에 정통한 여행 이동 전문가입니다.\n"
+            String prompt = "당신은 대한민국 대중교통과 도로 혼잡 패턴에 정통한 여행 이동 전문가입니다.\n"
                     + "다음은 하루 일정 안에서 연속으로 방문하는 관광지 구간 목록입니다.\n"
-                    + "각 구간마다 두 관광지의 주소를 바탕으로 가장 적절한 이동수단과 예상 소요시간(분), "
-                    + "예상 비용(원), 환승 횟수를 추천해주세요.\n"
+                    + "각 구간마다 두 관광지의 주소와 방문 시각을 바탕으로 가장 적절한 이동수단, 예상 소요시간(분), "
+                    + "예상 비용(원), 환승 횟수를 추천하고, 해당 시각대의 예상 혼잡도와 지연 위험, "
+                    + "혼잡할 경우의 대체 이동수단까지 함께 제시해주세요.\n"
                     + "[규칙]\n"
                     + "1. 이동수단은 지하철, 버스, 도보, 택시, 자가용/렌터카 중 실제 거리에 맞는 것으로 고르세요.\n"
                     + "2. 도보로 15분 이내인 거리는 도보를 우선 추천하세요.\n"
-                    + "3. 정확한 수치를 모르더라도 주소 간 거리를 바탕으로 합리적인 추정치를 제시하세요.\n"
-                    + "4. 반드시 JSON 형식으로만 응답하고, 요청받은 day와 관광지ID를 그대로 포함해서 응답하세요.\n"
+                    + "3. 정확한 수치를 모르더라도 주소 간 거리와 방문 시각(출퇴근 시간대, 주말 등)을 바탕으로 합리적인 추정치를 제시하세요.\n"
+                    + "4. congestionLevel은 \"원활\", \"보통\", \"혼잡\" 중 하나로 답하세요.\n"
+                    + "5. congestionLevel이 \"혼잡\"일 때만 delayRiskMinutes(예상 지연 분)와 alternativeMode(대체 이동수단), "
+                    + "alternativeReason(대체를 추천하는 이유, 한 문장)을 채우고, 그 외에는 모두 null로 두세요.\n"
+                    + "6. 반드시 JSON 형식으로만 응답하고, 요청받은 day와 관광지ID를 그대로 포함해서 응답하세요.\n"
                     + "[응답 형식]\n"
                     + "{\"transportLegs\":[{\"day\":1,\"fromTourId\":\"T0001\",\"toTourId\":\"T0002\","
-                    + "\"mode\":\"지하철\",\"durationMinutes\":20,\"cost\":1500,\"transferCount\":0}]}\n"
+                    + "\"mode\":\"지하철\",\"durationMinutes\":20,\"cost\":1500,\"transferCount\":0,"
+                    + "\"congestionLevel\":\"혼잡\",\"delayRiskMinutes\":15,\"alternativeMode\":\"택시\","
+                    + "\"alternativeReason\":\"퇴근시간대 지하철 혼잡으로 택시가 더 빠릅니다.\"}]}\n"
                     + "[이동 구간 목록]\n" + legPrompt;
 
             GeminiRequest geminiRequest = new GeminiRequest(List.of(new GeminiRequest.Content(List.of(new GeminiRequest.Part(prompt)))));
@@ -774,6 +816,10 @@ public class TourListServicelmpl implements TourListService {
                     leg.setDurationMinutes(item.getDurationMinutes());
                     leg.setCost(item.getCost());
                     leg.setTransferCount(item.getTransferCount());
+                    leg.setCongestionLevel(item.getCongestionLevel());
+                    leg.setDelayRiskMinutes(item.getDelayRiskMinutes());
+                    leg.setAlternativeMode(item.getAlternativeMode());
+                    leg.setAlternativeReason(item.getAlternativeReason());
                     legs.add(leg);
                 }
             }
@@ -789,6 +835,19 @@ public class TourListServicelmpl implements TourListService {
             );
         } catch (Exception e) {
             log.error("처리 중 오류가 발생했습니다.", e);
+
+            if (AiErrorUtil.isAiOverloaded(e)) {
+                return new TransportRecommendResponse(
+                        false,
+                        503,
+                        AiErrorUtil.CODE,
+                        AiErrorUtil.MESSAGE,
+                        "/tourList/transportRecommend",
+                        "",
+                        null
+                );
+            }
+
             return new TransportRecommendResponse(
                     false,
                     500,

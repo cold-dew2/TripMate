@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { apiClient } from '@/shared/api/client';
 import { resolveImageUrl } from '@/shared/utils/url';
+import PageState from '@/shared/components/pageState/PageState';
 import './MyPageScreen.css';
 
 interface LanguageCard {
@@ -75,7 +76,21 @@ const MyPageScreen = () => {
   };
 
   if (profile.isLoading) {
-    return null;
+    return (
+      <main className="mypage-screen">
+        <PageState status="loading" />
+      </main>
+    );
+  }
+
+  const needsLogin = (profile.error as { code?: string } | null)?.code === 'NEED_LOGIN';
+
+  if (profile.isError && !needsLogin) {
+    return (
+      <main className="mypage-screen">
+        <PageState status="error" onRetry={() => profile.refetch()} />
+      </main>
+    );
   }
 
   if (!profile.data) {
@@ -121,20 +136,14 @@ const MyPageScreen = () => {
           <Link to="/my/edit" className="mypage-edit-btn">{t('account.edit')}</Link>
         </div>
 
-        {profile.isLoading ? (
-          <p className="mypage-loading">{t('account.loading')}</p>
-        ) : (
-          <>
-            <h1 className="mypage-name">{p?.userNm}</h1>
-            <p className="mypage-meta">{[p?.areaNm, langSummary].filter(Boolean).join(' · ')}</p>
-            <p className="mypage-rating">
-              <span className="stars" aria-hidden="true">{'★'.repeat(Math.round(p?.rating ?? 0))}</span>
-              <strong>{(p?.rating ?? 0).toFixed(1)}</strong>
-              <span className="count">({p?.reviewCount ?? 0})</span>
-            </p>
-            {p?.description && <p className="mypage-desc">{p.description}</p>}
-          </>
-        )}
+        <h1 className="mypage-name">{p?.userNm}</h1>
+        <p className="mypage-meta">{[p?.areaNm, langSummary].filter(Boolean).join(' · ')}</p>
+        <p className="mypage-rating">
+          <span className="stars" aria-hidden="true">{'★'.repeat(Math.round(p?.rating ?? 0))}</span>
+          <strong>{(p?.rating ?? 0).toFixed(1)}</strong>
+          <span className="count">({p?.reviewCount ?? 0})</span>
+        </p>
+        {p?.description && <p className="mypage-desc">{p.description}</p>}
 
         <div className="mypage-stats">
           <div>
