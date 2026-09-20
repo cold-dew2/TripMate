@@ -14,18 +14,34 @@ public interface TourAPIMapper {
 
     ///한국관광공사_관광정보 동기화 목록 조회
     void areaBasedList2(AreaBasedListData data);
+    ///한국관광공사_관광정보 동기화 목록 조회
+    void areaBasedList2_jp(AreaBasedListData data);
+    ///한국관광공사_관광정보 동기화 목록 조회
+    void areaBasedList2_en(AreaBasedListData data);
 
     ///한국관광공사 ContentId PK 조회
     List<TourAPIPKData> tourAPIPK();
 
     ///한국관광공사_관광정보 동기화 목록 조회
     void detailCommon2(TourCmmData data);
+    ///한국관광공사_관광정보 동기화 목록 조회
+    void detailCommon2_jp(TourCmmData data);
+    ///한국관광공사_관광정보 동기화 목록 조회
+    void detailCommon2_en(TourCmmData data);
 
     ///한국관광공사_행사 정보 조회
     void searchFestival2(FastivalData data);
+    ///한국관광공사_행사 정보 조회
+    void searchFestival2_jp(FastivalData data);
+    ///한국관광공사_행사 정보 조회
+    void searchFestival2_en(FastivalData data);
 
     ///한국관광공사_관광 데이터 마스터
     void tourMaster();
+    ///한국관광공사_관광 데이터 마스터
+    void tourMaster_jp();
+    ///한국관광공사_관광 데이터 마스터
+    void tourMaster_en();
 
     ///한국관광공사_관광 카테고리 마스터
     void tourCateMaster();
