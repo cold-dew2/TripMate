@@ -81,8 +81,8 @@ public class UserController {
 
             ResponseCookie cookie = ResponseCookie.from(COOKIE_NAME, result.getToken())
                     .httpOnly(true)
-                    .secure(false) // 운영 배포(HTTPS) 시 true로 변경 필요
-                    .sameSite("Lax")
+                    .secure(true)
+                    .sameSite("None")
                     .path("/")
                     .maxAge(Duration.ofMillis(maxAgeMillis))
                     .build();
