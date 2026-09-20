@@ -21,7 +21,7 @@ import com.example.backend.trma.mapper.NotificationMapper;
 import com.example.backend.trma.service.ChatService;
 import com.example.backend.trma.service.NotificationPushService;
 import com.example.backend.trma.util.AiJsonUtil;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -418,6 +418,10 @@ public class ChatServiceImpl implements ChatService {
     private void backfillRecentChatTranslations(List<ChatMessageData> messages) {
         if (messages == null || messages.isEmpty()) return;
 
+        // 채팅방을 여는 요청 자체를 느리게 만들면 안 되므로, 번역 재시도는 전송 시점과
+        // 동일하게 백그라운드에서 처리하고(translateAndBroadcastChatMessage) 끝나면
+        // /translated 채널로 결과만 알린다. 조회 응답에는 지금 캐시된 값(원문 포함)만
+        // 그대로 실어 보낸다.
         int checked = 0;
         for (int i = messages.size() - 1; i >= 0 && checked < CHAT_BACKFILL_LIMIT; i--) {
             ChatMessageData message = messages.get(i);
@@ -425,17 +429,7 @@ public class ChatServiceImpl implements ChatService {
                     || (message.getContentJa() == null || message.getContentJa().isBlank());
             if (!missing) continue;
             checked++;
-
-            try {
-                GeminiData.ChatTranslationItem item = callGeminiForChatTranslation(message.getContent());
-                if (item == null) continue;
-
-                chatMapper.updateMessageTranslation(Long.parseLong(message.getMessageId()), item.getContentEn(), item.getContentJa());
-                if (item.getContentEn() != null && !item.getContentEn().isBlank()) message.setContentEn(item.getContentEn());
-                if (item.getContentJa() != null && !item.getContentJa().isBlank()) message.setContentJa(item.getContentJa());
-            } catch (Exception e) {
-                log.warn("채팅 메시지 번역 백필에 실패했습니다. messageId={}", message.getMessageId(), e);
-            }
+            translateAndBroadcastChatMessage(message);
         }
     }
 }

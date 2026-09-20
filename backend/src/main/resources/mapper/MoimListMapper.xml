@@ -26,6 +26,12 @@
             ,c.CATE_CD
             ,c.CATE_NM
             ,e.AVG_SCORE
+            <!-- 대표 이미지 = 일정 중 가장 이른(날짜+순서) 관광지의 이미지를 그대로 쓴다.
+                 한때 "이미지 있는 일정으로 건너뛰기"를 시도했는데, 1번 일정이 사용자가
+                 직접 등록한 관광지(이미지 없음)인 경우 스케줄 뒤쪽의 전혀 상관없는
+                 관광지 사진이 대표이미지로 뽑히는 부작용이 있어(예: 세종호수공원 일정인데
+                 표지는 딴 지역 옷가게 사진) 되돌렸다. "1번 일정 그대로, 없으면 노이미지"가
+                 사용자가 기대하는 동작이다. -->
             ,(SELECT t1.FIRST_IMAGE
               FROM TB_TRMA_MOIM_CALENDAR cal
               LEFT JOIN TB_TRMA_TOUR_LIST t1 ON cal.TOUR_ID = t1.TOUR_ID
@@ -161,7 +167,10 @@
                  그때그때 실제로 조회해서 쓴다. 저장해둔 MOIM_IMG_URL에 의존하면 일정이
                  바뀔 때마다 갱신을 깜빡할 위험이 있어, 목록/상세 화면이 항상 같은 값을
                  보게 라이브로 계산한다. GROUP BY 안에서 써야 해서 MAX로 감싼다(모임당
-                 값이 하나뿐이라 집계 의미는 없고 문법상으로만 필요). -->
+                 값이 하나뿐이라 집계 의미는 없고 문법상으로만 필요).
+                 (참고: 1번 일정에 이미지가 없을 때 뒤 일정 중 이미지 있는 걸로 건너뛰는
+                 방식을 시도했었는데, 1번 일정과 전혀 상관없는 곳의 사진이 대표이미지로
+                 뽑히는 부작용이 있어 되돌렸다.) -->
             ,MAX((SELECT t1.FIRST_IMAGE
                   FROM TB_TRMA_MOIM_CALENDAR cal
                   LEFT JOIN TB_TRMA_TOUR_LIST t1 ON cal.TOUR_ID = t1.TOUR_ID
@@ -172,19 +181,19 @@
             ,a.CREATE_USER AS USER_ID
             ,b.USER_NM
             <!-- 이 모임만의 후기 평균이 아니라, 생성자(호스트)가 지금까지 개설한 모든
-                 모임에서 받은 후기 + 본인이 직접 남긴 후기(자기 모임 자체 리뷰 포함, 중복은
-                 UNION으로 제거)를 합쳐 계산한 별점이다. 마이페이지 프로필의 RATING 계산과
-                 동일한 기준으로 맞춰서, 소모임 상세에서도 "이 사람의 평점"을 보여준다. -->
-            ,(SELECT AVG(rs.REVIEW_SCORE) FROM (
-                SELECT r1.REVIEW_ID, r1.REVIEW_SCORE
-                FROM TB_TRMA_MOIM_REVIEW r1
-                LEFT JOIN TB_TRMA_MOIM_LIST r2 ON r1.MOIM_ID = r2.MOIM_ID
-                WHERE r1.REVIEW_TYPE_CD = 'O' AND r2.CREATE_USER = a.CREATE_USER
-                UNION
-                SELECT r1.REVIEW_ID, r1.REVIEW_SCORE
-                FROM TB_TRMA_MOIM_REVIEW r1
-                WHERE r1.REVIEW_TYPE_CD = 'O' AND r1.CREATE_USER = a.CREATE_USER
-              ) rs) AS REVIEW_SCORE
+                 모임에서 받은 후기 + 본인이 직접 남긴 후기(자기 모임 자체 리뷰 포함)를 합쳐
+                 계산한 별점이다. 마이페이지 프로필의 RATING 계산과 동일한 기준으로 맞춰서,
+                 소모임 상세에서도 "이 사람의 평점"을 보여준다.
+                 (참고: 이 조건을 UNION으로 묶은 서브쿼리를 FROM절 파생테이블로 쓰면
+                 MariaDB에서 "Unknown column 'a.CREATE_USER'" 오류가 난다 — 파생테이블은
+                 바깥 쿼리 컬럼과 상관될 수 없기 때문. r1-r2가 MOIM_ID로 1:1 매칭되므로
+                 OR 조건으로 합쳐도 행이 중복되지 않아 동일한 결과를 낸다.) -->
+            ,(SELECT AVG(r1.REVIEW_SCORE)
+              FROM TB_TRMA_MOIM_REVIEW r1
+              LEFT JOIN TB_TRMA_MOIM_LIST r2 ON r1.MOIM_ID = r2.MOIM_ID
+              WHERE r1.REVIEW_TYPE_CD = 'O'
+                AND (r2.CREATE_USER = a.CREATE_USER OR r1.CREATE_USER = a.CREATE_USER)
+             ) AS REVIEW_SCORE
         FROM TB_TRMA_MOIM_LIST a
         LEFT JOIN TB_TRMA_USER_INFO b ON a.CREATE_USER = b.USER_ID
         LEFT JOIN TB_TRMA_MOIM_MEMBER c ON a.MOIM_ID = c.MOIM_ID AND c.ROLE_CD = 'A'
@@ -229,18 +238,27 @@
             a.START_DT
             ,a.RMKS
             ,a.TOUR_ID
+            <!-- 한국관광공사 공식 일어/영어 데이터(TB_TRMA_TOUR_JP_LIST/EN_LIST) > Gemini
+                 번역 캐시(TOUR_NM_EN 등) > 한국어 원문 순으로 우선순위를 둔다. -->
             <choose>
-                <when test="lang == 'en'">,COALESCE(NULLIF(b.TOUR_NM_EN, ''), b.TOUR_NM) AS TOUR_NM</when>
-                <when test="lang == 'ja'">,COALESCE(NULLIF(b.TOUR_NM_JA, ''), b.TOUR_NM) AS TOUR_NM</when>
+                <when test="lang == 'en'">,COALESCE(NULLIF(en.TOUR_NM, ''), NULLIF(b.TOUR_NM_EN, ''), b.TOUR_NM) AS TOUR_NM</when>
+                <when test="lang == 'ja'">,COALESCE(NULLIF(jp.TOUR_NM, ''), NULLIF(b.TOUR_NM_JA, ''), b.TOUR_NM) AS TOUR_NM</when>
                 <otherwise>,b.TOUR_NM</otherwise>
             </choose>
             ,b.ROAD_ADDR
             ,d.CMM_CDV AS CATE_CD
             ,d.CMM_CM_NM AS CATE_NM
+            <choose>
+                <when test="lang == 'en'">,(CASE WHEN en.TOUR_ID IS NOT NULL OR NULLIF(b.TOUR_NM_EN, '') IS NOT NULL THEN 'Y' ELSE 'N' END) AS NATIVE_MATCH_YN</when>
+                <when test="lang == 'ja'">,(CASE WHEN jp.TOUR_ID IS NOT NULL OR NULLIF(b.TOUR_NM_JA, '') IS NOT NULL THEN 'Y' ELSE 'N' END) AS NATIVE_MATCH_YN</when>
+                <otherwise>,'N' AS NATIVE_MATCH_YN</otherwise>
+            </choose>
         FROM TB_TRMA_MOIM_CALENDAR a
         LEFT JOIN TB_TRMA_TOUR_LIST b ON a.TOUR_ID = b.TOUR_ID
         LEFT JOIN TB_TRMA_TOUR_CATE c ON b.TOUR_ID = c.TOUR_ID AND c.USE_YN = 'Y'
         LEFT JOIN TB_TRMA_CMM_CD_D d ON c.CATE_CD = d.CMM_CDV AND d.CMM_CD_ID = 'TOUR_LCLS_CD'
+        <if test="lang == 'en'">LEFT JOIN TB_TRMA_TOUR_EN_LIST en ON a.TOUR_ID = en.TOUR_ID</if>
+        <if test="lang == 'ja'">LEFT JOIN TB_TRMA_TOUR_JP_LIST jp ON a.TOUR_ID = jp.TOUR_ID</if>
         WHERE a.MOIM_ID = #{moimId}
         ORDER BY a.RMKS
 

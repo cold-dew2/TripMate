@@ -12,6 +12,7 @@ import com.example.backend.trma.dto.request.*;
 import com.example.backend.trma.dto.response.*;
 import com.example.backend.trma.mapper.MoimListMapper;
 import com.example.backend.trma.mapper.UserMapper;
+import com.example.backend.trma.service.TourListService;
 import com.example.backend.trma.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,8 +21,10 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 @Service
@@ -31,6 +34,7 @@ public class UserServiceImpl implements UserService {
 
     private final UserMapper userMapper;
     private final MoimListMapper moimListMapper;
+    private final TourListService tourListService;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
 
@@ -382,12 +386,13 @@ public class UserServiceImpl implements UserService {
 
     //마이페이지_프로필 조회
     @Override
-    public MyProfileResponse myProfile(String userId) {
+    public MyProfileResponse myProfile(String userId, String lang) {
 
         try {
             UserDetailRequest detailRequest = new UserDetailRequest();
             detailRequest.setUserId(userId);
             UserDetailData userDetail = userMapper.userDetail(detailRequest);
+            applyProfileTranslation(userDetail, userId, lang);
 
             UserReviewRequest reviewRequest = new UserReviewRequest();
             reviewRequest.setUserId(userId);
@@ -467,7 +472,7 @@ public class UserServiceImpl implements UserService {
                 }
             }
 
-            return toUpdateProfileResponse(myProfile(userId));
+            return toUpdateProfileResponse(myProfile(userId, null));
         } catch (Exception e) {
             log.error("처리 중 오류가 발생했습니다.", e);
             return new UpdateProfileResponse(
@@ -494,14 +499,60 @@ public class UserServiceImpl implements UserService {
         );
     }
 
+    // 관광지명/모임 제목과 동일한 방식(최초 조회 시 번역해 캐시)으로 지역/소개글을
+    // 번역한다. 본인이 프로필을 수정하면 updateProfile에서 캐시를 지워버리므로 다음
+    // 조회 때 여기서 다시 번역된다.
+    private void applyProfileTranslation(UserDetailData userDetail, String userId, String lang) {
+        if (userDetail == null) return;
+        if (!"en".equals(lang) && !"ja".equals(lang)) return;
+
+        String cachedArea = "en".equals(lang) ? userDetail.getAreaNmEn() : userDetail.getAreaNmJa();
+        String cachedDesc = "en".equals(lang) ? userDetail.getDescriptionEn() : userDetail.getDescriptionJa();
+
+        Map<String, String> needsTranslation = new HashMap<>();
+        boolean areaCached = cachedArea != null && !cachedArea.isBlank();
+        boolean descCached = cachedDesc != null && !cachedDesc.isBlank();
+        if (areaCached) {
+            userDetail.setAreaNm(cachedArea);
+        } else if (userDetail.getAreaNm() != null && !userDetail.getAreaNm().isBlank()) {
+            needsTranslation.put("areaNm", userDetail.getAreaNm());
+        }
+        if (descCached) {
+            userDetail.setDescription(cachedDesc);
+        } else if (userDetail.getDescription() != null && !userDetail.getDescription().isBlank()) {
+            needsTranslation.put("description", userDetail.getDescription());
+        }
+        if (needsTranslation.isEmpty()) return;
+
+        try {
+            Map<String, String> translated = tourListService.translateFreeTexts(needsTranslation, lang);
+            String translatedArea = translated.get("areaNm");
+            String translatedDesc = translated.get("description");
+            if (translatedArea == null && translatedDesc == null) return;
+
+            userMapper.updateProfileTranslation(
+                    userId,
+                    "en".equals(lang) ? translatedArea : null,
+                    "ja".equals(lang) ? translatedArea : null,
+                    "en".equals(lang) ? translatedDesc : null,
+                    "ja".equals(lang) ? translatedDesc : null
+            );
+            if (translatedArea != null) userDetail.setAreaNm(translatedArea);
+            if (translatedDesc != null) userDetail.setDescription(translatedDesc);
+        } catch (Exception e) {
+            log.warn("프로필 번역에 실패해 한국어로 표시합니다. userId={}, lang={}", userId, lang, e);
+        }
+    }
+
     //공개 사용자 프로필 조회
     @Override
-    public PublicProfileResponse publicProfile(String targetUserId) {
+    public PublicProfileResponse publicProfile(String targetUserId, String lang) {
 
         try {
             UserDetailRequest detailRequest = new UserDetailRequest();
             detailRequest.setUserId(targetUserId);
             UserDetailData userDetail = userMapper.userDetail(detailRequest);
+            applyProfileTranslation(userDetail, targetUserId, lang);
 
             List<LanguageCardData> languages = userMapper.userLanguages(targetUserId);
 

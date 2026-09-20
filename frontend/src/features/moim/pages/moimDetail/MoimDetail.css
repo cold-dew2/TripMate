@@ -1,5 +1,5 @@
 .moim-detail {
-  padding: 0 var(--space-2xl) var(--space-3xl);
+  padding: 0 0 var(--space-3xl);
 }
 .moim-detail-host {
   display: flex;

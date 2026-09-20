@@ -18,7 +18,7 @@ public class MyPageController {
 
     //마이페이지_프로필 조회
     @GetMapping("/profile")
-    public MyProfileResponse profile(Authentication authentication) {
+    public MyProfileResponse profile(@RequestParam(required = false) String lang, Authentication authentication) {
 
         if (authentication == null || !authentication.isAuthenticated()
                 || "anonymousUser".equals(authentication.getName())) {
@@ -35,7 +35,7 @@ public class MyPageController {
         }
 
         String userId = authentication.getName();
-        return userService.myProfile(userId);
+        return userService.myProfile(userId, lang);
     }
 
     //마이페이지_프로필 수정

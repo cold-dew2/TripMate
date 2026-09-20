@@ -32,4 +32,7 @@ public class TourDetailData {
     private String roadAddrJa;
     private String detailAddrEn;
     private String detailAddrJa;
+    // 한국관광공사 공식 일어/영어 데이터(TB_TRMA_TOUR_JP_LIST/EN_LIST)로 이미 채워졌으면 'Y'.
+    // 이 경우 서비스 계층에서 Gemini 번역을 다시 시도하지 않는다.
+    private String nativeMatchYn;
 }

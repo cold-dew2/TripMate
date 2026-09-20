@@ -3,13 +3,6 @@
   gap: var(--space-3xl);
   margin-bottom: 40px;
 }
-.schedule-empty {
-  padding: 60px 0;
-  color: var(--gray-400);
-  font-size: var(--fs-sm);
-  text-align: center;
-}
-
 .schedule-card {
   border: 1px solid var(--gray-100);
   border-radius: var(--radius-xl);
@@ -93,4 +86,15 @@
 .schedule-review-done {
   color: var(--gray-400);
   background: var(--white-300);
+}
+
+@media screen and (max-width: 440px) {
+  .schedule-card-row {
+    flex-direction: column;
+    align-items: start;
+  }
+  .schedule-card-side {
+    width: 100%;
+    justify-content: flex-end;
+  }
 }

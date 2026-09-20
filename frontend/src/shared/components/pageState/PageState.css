@@ -5,7 +5,10 @@
   justify-content: center;
   gap: var(--space-md);
   width: 100%;
-  padding: var(--space-6xl) var(--space-xl);
+  padding: var(--space-4xl) var(--space-xl);
+  border: 1px solid var(--gray-100);
+  border-radius: var(--radius-lg);
+  background: var(--white-200);
   color: var(--gray-500);
   font-size: var(--fs-sm);
   text-align: center;
@@ -16,18 +19,19 @@
   min-height: 60vh;
 }
 
+/* 로딩 중엔 박스 없이 스피너만 떠 있으면 된다. */
+.page-state-loading {
+  border: none;
+  background: none;
+}
+
 .page-state-spinner {
-  width: 32px;
-  height: 32px;
+  width: 28px;
+  height: 28px;
   border: 3px solid var(--purple-100);
   border-top-color: var(--purple-600);
   border-radius: 50%;
   animation: page-state-spin 0.8s linear infinite;
-}
-
-.page-state-icon {
-  font-size: 28px;
-  line-height: 1;
 }
 
 .page-state-error p {

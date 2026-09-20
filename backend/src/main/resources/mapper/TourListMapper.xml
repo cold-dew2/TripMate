@@ -15,18 +15,43 @@
 
         SELECT
             b.TOUR_ID,
-            b.TOUR_NM,
+            <choose>
+                <when test="lang == 'en'">COALESCE(NULLIF(en.TOUR_NM, ''), b.TOUR_NM) AS TOUR_NM,</when>
+                <when test="lang == 'ja'">COALESCE(NULLIF(jp.TOUR_NM, ''), b.TOUR_NM) AS TOUR_NM,</when>
+                <otherwise>b.TOUR_NM,</otherwise>
+            </choose>
             c1.CMM_CM_NM AS SIDO_NM,
             c2.CMM_CM_NM AS SGG_NM,
-            b.ROAD_ADDR,
-            b.DETAIL_ADDR,
+            <choose>
+                <when test="lang == 'en'">
+                    COALESCE(NULLIF(en.ROAD_ADDR, ''), b.ROAD_ADDR) AS ROAD_ADDR,
+                    COALESCE(NULLIF(en.DETAIL_ADDR, ''), b.DETAIL_ADDR) AS DETAIL_ADDR,
+                </when>
+                <when test="lang == 'ja'">
+                    COALESCE(NULLIF(jp.ROAD_ADDR, ''), b.ROAD_ADDR) AS ROAD_ADDR,
+                    COALESCE(NULLIF(jp.DETAIL_ADDR, ''), b.DETAIL_ADDR) AS DETAIL_ADDR,
+                </when>
+                <otherwise>
+                    b.ROAD_ADDR,
+                    b.DETAIL_ADDR,
+                </otherwise>
+            </choose>
             b.ZIP_CD,
             d.CATE_CD,
             d.CATE_NM,
             IFNULL(a.AVG_SCORE,0) AS AVG_SCORE,
-            b.FIRST_IMAGE,
+            <choose>
+                <when test="lang == 'en'">COALESCE(NULLIF(en.FIRST_IMAGE, ''), b.FIRST_IMAGE) AS FIRST_IMAGE,</when>
+                <when test="lang == 'ja'">COALESCE(NULLIF(jp.FIRST_IMAGE, ''), b.FIRST_IMAGE) AS FIRST_IMAGE,</when>
+                <otherwise>b.FIRST_IMAGE,</otherwise>
+            </choose>
             b.TOUR_NM_EN,
-            b.TOUR_NM_JA
+            b.TOUR_NM_JA,
+            <choose>
+                <when test="lang == 'en'">(CASE WHEN en.TOUR_ID IS NOT NULL THEN 'Y' ELSE 'N' END) AS NATIVE_MATCH_YN</when>
+                <when test="lang == 'ja'">(CASE WHEN jp.TOUR_ID IS NOT NULL THEN 'Y' ELSE 'N' END) AS NATIVE_MATCH_YN</when>
+                <otherwise>'N' AS NATIVE_MATCH_YN</otherwise>
+            </choose>
         FROM TB_TRMA_TOUR_LIST b
             LEFT JOIN (
                 SELECT
@@ -48,6 +73,8 @@
             ) d ON b.TOUR_ID = d.TOUR_ID
             LEFT JOIN TB_TRMA_CMM_CD_D c1 ON CONCAT(b.SIDO_CD,'00000000') = c1.CMM_CDV AND c1.CMM_CD_ID = 'SIDO_CD'
             LEFT JOIN TB_TRMA_CMM_CD_D c2 ON CONCAT(b.SIDO_CD,b.SGG_CD,'00000') = c2.CMM_CDV AND c2.CMM_CD_ID = 'SGG_CD'
+            <if test="lang == 'en'">LEFT JOIN TB_TRMA_TOUR_EN_LIST en ON b.TOUR_ID = en.TOUR_ID</if>
+            <if test="lang == 'ja'">LEFT JOIN TB_TRMA_TOUR_JP_LIST jp ON b.TOUR_ID = jp.TOUR_ID</if>
         WHERE b.USE_YN='Y'
         <if test="keyword != null and keyword != ''">
             AND (
@@ -61,6 +88,18 @@
         <if test="cateCd != null and cateCd != ''">
             AND d.CATE_CD = #{cateCd}
         </if>
+        <!-- 같은 주소로 여러 번 등록된 관광지(주로 사용자가 직접 입력한 UGC 관광지가
+             중복 등록된 경우)는 주소당 하나만 보여준다. 대표로는 그 주소를 쓰는
+             관광지 중 TOUR_ID가 가장 작은(=가장 먼저 등록된) 것을 고른다. -->
+        AND (
+            b.ROAD_ADDR IS NULL
+            OR b.TOUR_ID = (
+                SELECT MIN(b2.TOUR_ID)
+                FROM TB_TRMA_TOUR_LIST b2
+                WHERE b2.ROAD_ADDR = b.ROAD_ADDR
+                    AND b2.USE_YN = 'Y'
+            )
+        )
         ORDER BY AVG_SCORE DESC
         LIMIT 10 OFFSET #{offset}
 
@@ -108,14 +147,37 @@
     <!-- 관광지 상세조회(기본) -->
     <!-- ========================= -->
     <select id="tourDetail"
-            parameterType="String"
             resultType="com.example.backend.trma.dto.dataList.TourDetailData">
         SELECT
             a.TOUR_ID,
-            a.FIRST_IMAGE,
-            a.TOUR_NM,
-            a.TOUR_CONTENT,
-            a.TOUR_CONTENT AS OVERVIEW,
+            <!-- 한국관광공사가 일본어/영어 데이터를 별도 테이블(TB_TRMA_TOUR_JP_LIST /
+                 TB_TRMA_TOUR_EN_LIST, TOUR_ID로 동일)로 제공하기 시작해서, 그 언어로 볼
+                 때는 Gemini 번역 캐시(TOUR_NM_EN 등)보다 이 공식 데이터를 우선 쓴다.
+                 해당 언어 데이터가 없는 관광지는 한국어로 폴백한다. -->
+            <choose>
+                <when test="lang == 'en'">COALESCE(NULLIF(en.FIRST_IMAGE, ''), a.FIRST_IMAGE) AS FIRST_IMAGE,</when>
+                <when test="lang == 'ja'">COALESCE(NULLIF(jp.FIRST_IMAGE, ''), a.FIRST_IMAGE) AS FIRST_IMAGE,</when>
+                <otherwise>a.FIRST_IMAGE,</otherwise>
+            </choose>
+            <choose>
+                <when test="lang == 'en'">COALESCE(NULLIF(en.TOUR_NM, ''), a.TOUR_NM) AS TOUR_NM,</when>
+                <when test="lang == 'ja'">COALESCE(NULLIF(jp.TOUR_NM, ''), a.TOUR_NM) AS TOUR_NM,</when>
+                <otherwise>a.TOUR_NM,</otherwise>
+            </choose>
+            <choose>
+                <when test="lang == 'en'">
+                    COALESCE(NULLIF(en.TOUR_CONTENT, ''), a.TOUR_CONTENT) AS TOUR_CONTENT,
+                    COALESCE(NULLIF(en.TOUR_CONTENT, ''), a.TOUR_CONTENT) AS OVERVIEW,
+                </when>
+                <when test="lang == 'ja'">
+                    COALESCE(NULLIF(jp.TOUR_CONTENT, ''), a.TOUR_CONTENT) AS TOUR_CONTENT,
+                    COALESCE(NULLIF(jp.TOUR_CONTENT, ''), a.TOUR_CONTENT) AS OVERVIEW,
+                </when>
+                <otherwise>
+                    a.TOUR_CONTENT,
+                    a.TOUR_CONTENT AS OVERVIEW,
+                </otherwise>
+            </choose>
             a.MAP_Y AS LATITUDE,
             a.MAP_X AS LONGITUDE,
             a.TOUR_NM_EN,
@@ -126,8 +188,20 @@
             b1.CMM_CM_NM AS SIDO_NM,
             b2.CMM_CDV AS SGG_CD,
             b2.CMM_CM_NM AS SGG_NM,
-            a.ROAD_ADDR,
-            a.DETAIL_ADDR,
+            <choose>
+                <when test="lang == 'en'">
+                    COALESCE(NULLIF(en.ROAD_ADDR, ''), a.ROAD_ADDR) AS ROAD_ADDR,
+                    COALESCE(NULLIF(en.DETAIL_ADDR, ''), a.DETAIL_ADDR) AS DETAIL_ADDR,
+                </when>
+                <when test="lang == 'ja'">
+                    COALESCE(NULLIF(jp.ROAD_ADDR, ''), a.ROAD_ADDR) AS ROAD_ADDR,
+                    COALESCE(NULLIF(jp.DETAIL_ADDR, ''), a.DETAIL_ADDR) AS DETAIL_ADDR,
+                </when>
+                <otherwise>
+                    a.ROAD_ADDR,
+                    a.DETAIL_ADDR,
+                </otherwise>
+            </choose>
             a.ROAD_ADDR_EN,
             a.ROAD_ADDR_JA,
             a.DETAIL_ADDR_EN,
@@ -147,7 +221,14 @@
                 JOIN TB_TRMA_CMM_CD_D d ON c.CATE_CD = d.CMM_CDV AND d.CMM_CD_ID = 'TOUR_LCLS_CD'
                 WHERE c.TOUR_ID = a.TOUR_ID
             ) AS CATE_NM,
-            IFNULL(c.AVG_SCORE,0) AS AVG_SCORE
+            IFNULL(c.AVG_SCORE,0) AS AVG_SCORE,
+            <!-- 위에서 공식 일어/영어 데이터를 이미 썼으면(NATIVE_MATCH_YN='Y') 서비스
+                 계층에서 Gemini 번역을 다시 시도하지 않고 그대로 둔다. -->
+            <choose>
+                <when test="lang == 'en'">(CASE WHEN en.TOUR_ID IS NOT NULL THEN 'Y' ELSE 'N' END) AS NATIVE_MATCH_YN</when>
+                <when test="lang == 'ja'">(CASE WHEN jp.TOUR_ID IS NOT NULL THEN 'Y' ELSE 'N' END) AS NATIVE_MATCH_YN</when>
+                <otherwise>'N' AS NATIVE_MATCH_YN</otherwise>
+            </choose>
         FROM TB_TRMA_TOUR_LIST a
         LEFT JOIN TB_TRMA_CMM_CD_D b1 ON CONCAT(a.SIDO_CD,'00000000') = b1.CMM_CDV AND b1.CMM_CD_ID = 'SIDO_CD'
         LEFT JOIN TB_TRMA_CMM_CD_D b2 ON CONCAT(a.SIDO_CD,a.SGG_CD,'00000') = b2.CMM_CDV AND b2.CMM_CD_ID = 'SGG_CD'
@@ -158,8 +239,38 @@
             FROM TB_TRMA_MOIM_REVIEW
             GROUP BY TOUR_ID
         ) c ON a.TOUR_ID = c.TOUR_ID
+        <if test="lang == 'en'">LEFT JOIN TB_TRMA_TOUR_EN_LIST en ON a.TOUR_ID = en.TOUR_ID</if>
+        <if test="lang == 'ja'">LEFT JOIN TB_TRMA_TOUR_JP_LIST jp ON a.TOUR_ID = jp.TOUR_ID</if>
         WHERE 1=1
         	AND a.TOUR_ID = #{tourId}
+    </select>
+
+    <!-- ========================= -->
+    <!-- 관광지 이름 일괄 조회(번역 캐시 확인용) -->
+    <!-- ========================= -->
+    <select id="tourByIds"
+            resultType="com.example.backend.trma.dto.dataList.TourSearchData">
+        SELECT
+            b.TOUR_ID
+            <choose>
+                <when test="lang == 'en'">,COALESCE(NULLIF(en.TOUR_NM, ''), b.TOUR_NM) AS TOUR_NM</when>
+                <when test="lang == 'ja'">,COALESCE(NULLIF(jp.TOUR_NM, ''), b.TOUR_NM) AS TOUR_NM</when>
+                <otherwise>,b.TOUR_NM</otherwise>
+            </choose>
+            ,b.TOUR_NM_EN
+            ,b.TOUR_NM_JA
+            <choose>
+                <when test="lang == 'en'">,(CASE WHEN en.TOUR_ID IS NOT NULL THEN 'Y' ELSE 'N' END) AS NATIVE_MATCH_YN</when>
+                <when test="lang == 'ja'">,(CASE WHEN jp.TOUR_ID IS NOT NULL THEN 'Y' ELSE 'N' END) AS NATIVE_MATCH_YN</when>
+                <otherwise>,'N' AS NATIVE_MATCH_YN</otherwise>
+            </choose>
+        FROM TB_TRMA_TOUR_LIST b
+        <if test="lang == 'en'">LEFT JOIN TB_TRMA_TOUR_EN_LIST en ON b.TOUR_ID = en.TOUR_ID</if>
+        <if test="lang == 'ja'">LEFT JOIN TB_TRMA_TOUR_JP_LIST jp ON b.TOUR_ID = jp.TOUR_ID</if>
+        WHERE b.TOUR_ID IN
+        <foreach collection="tourIds" item="tourId" open="(" separator="," close=")">
+            #{tourId}
+        </foreach>
     </select>
 
     <!-- ========================= -->

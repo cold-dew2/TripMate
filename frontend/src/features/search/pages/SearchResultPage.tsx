@@ -8,6 +8,7 @@ import SpotCard from "@/shared/components/spotCard/SpotCard";
 import MoimCard from "@/shared/components/moimCard/MoimCard";
 import usePlaceList from "@/features/place/hooks/usePlaceList";
 import useMoimList from "@/features/moim/hooks/useMoimList";
+import { translateCategoryList } from "@/shared/utils/category";
 import "./SearchResultPage.css";
 
 const SearchResultPage = () => {
@@ -74,11 +75,11 @@ const SearchResultPage = () => {
               <li key={place.tourId}>
                 <Link to={`/place/${place.tourId}`}>
                   <SpotCard
-                    imageUrl={place.firstImage || "/images/places/no-image.png"}
+                    imageUrl={place.firstImage || "/images/places/no-image.svg"}
                     title={t(place.tourNm)}
                     place={t(place.roadAddr)}
                     rating={place.avgScore}
-                    badge={t(place.cateNm)}
+                    badge={translateCategoryList(place.cateNm, t)}
                   />
                 </Link>
               </li>
@@ -98,8 +99,8 @@ const SearchResultPage = () => {
               <li key={moim.moimId}>
                 <Link to={`/moim/${moim.moimId}`}>
                   <MoimCard
-                    badge={t(moim.cateNm)}
-                    imageUrl="/images/places/no-image.png"
+                    badge={translateCategoryList(moim.cateNm, t)}
+                    imageUrl="/images/places/no-image.svg"
                     title={t(moim.moimTitle)}
                     desc={t(moim.moimDscr)}
                     date={moim.moimStartDt}

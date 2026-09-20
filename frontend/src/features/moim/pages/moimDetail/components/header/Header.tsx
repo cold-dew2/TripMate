@@ -1,5 +1,4 @@
 import type { MoimCategory, MoimDetail } from '@/types/moim';
-import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { resolveImageUrl } from '@/shared/utils/url';
 import './Header.css';
@@ -9,21 +8,14 @@ interface moimDetailProps {
   cate: MoimCategory[];
   onShare: () => void;
 }
-const images = [
-  "/images/places/T001.jpeg",
-  "/images/places/T002.jpeg",
-  "/images/places/T003.jpeg",
-  "/images/places/T004.jpeg",
-];
 
 const Header = ({ moim, cate, onShare }: moimDetailProps) => {
   const { t } = useTranslation();
-  const [randomImage] = useState(() => images[Math.floor(Math.random() * images.length)]);
 
   return (
     <div className="detail-header">
       <div className="detail-img">
-        <img src={moim.imageUrl ? resolveImageUrl(moim.imageUrl) : randomImage} alt={t('image.alt', { title: moim.moimTitle })} />
+        <img src={resolveImageUrl(moim.imageUrl) || "/images/places/no-image.svg"} alt={t('image.alt', { title: moim.moimTitle })} />
         <button type="button" className="detail-share-btn" onClick={onShare} aria-label={t('moim.share')}>
           <span aria-hidden="true">🔗</span>
         </button>

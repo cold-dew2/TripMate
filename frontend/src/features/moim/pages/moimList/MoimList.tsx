@@ -9,8 +9,10 @@ import FilterTabs, { type FilterOption } from "@/shared/components/filterTabs/Fi
 import Button from "@/shared/components/button/Button";
 import RegionBanner from "@/shared/components/regionBanner/RegionBanner";
 import { resolveImageUrl } from "@/shared/utils/url";
+import { translateCategoryList } from "@/shared/utils/category";
+import useUrlState from "@/shared/hooks/useUrlState";
 
-const MoimFilter: FilterOption[] = [
+const MOIM_FILTER_IDS: FilterOption[] = [
   { id: "all", label: "전체" },
   { id: "세종", label: "세종" },
   { id: "서울", label: "서울" },
@@ -26,7 +28,11 @@ const MoimList = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [query, setQuery] = useState("");
-  const [activeFilter, setActiveFilter] = useState<string>("all");
+  const [activeFilter, setActiveFilter] = useUrlState("region", "all");
+  const MoimFilter = useMemo(
+    () => MOIM_FILTER_IDS.map((option) => ({ ...option, label: t(option.label) })),
+    [t]
+  );
 
   const observerTarget = useRef<HTMLDivElement | null>(null);
 
@@ -114,7 +120,7 @@ const MoimList = () => {
                     <li key={moim.moimId}>
                       <Link to={`/moim/${moim.moimId}`}>
                         <MoimCard
-                            badge={moim.cateNm}
+                            badge={translateCategoryList(moim.cateNm, t)}
                             imageUrl={resolveImageUrl(moim.imageUrl)}
                             title={moim.moimTitle}
                             desc={moim.moimDscr}

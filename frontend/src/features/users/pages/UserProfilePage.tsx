@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import usePublicProfile from '../hooks/usePublicProfile';
 import { resolveImageUrl } from '@/shared/utils/url';
 import FilterTabs from '@/shared/components/filterTabs/FilterTabs';
+import PageState from '@/shared/components/pageState/PageState';
 import { formatDateWithDow } from '@/shared/utils/date';
 import './UserProfilePage.css';
 
@@ -12,11 +13,11 @@ type ProfileTab = 'info' | 'moims' | 'reviews';
 const UserProfilePage = () => {
   const { t } = useTranslation();
   const { userId } = useParams<{ userId: string }>();
-  const { data: result, isLoading, isError } = usePublicProfile(userId!);
+  const { data: result, isLoading, isError, refetch } = usePublicProfile(userId!);
   const [tab, setTab] = useState<ProfileTab>('info');
 
-  if (isLoading) return <p className="user-profile-status">{t('account.loading')}</p>;
-  if (isError || !result) return <p className="user-profile-status">{t('common.loadError')}</p>;
+  if (isLoading) return <PageState status="loading" />;
+  if (isError || !result) return <PageState status="error" onRetry={() => refetch()} />;
 
   const profile = result.data;
   const moims = result.moims ?? [];
@@ -73,7 +74,7 @@ const UserProfilePage = () => {
       {tab === 'moims' && (
         <section className="user-profile-list">
           {moims.length === 0 ? (
-            <p className="user-profile-empty">{t('moim.emptyMsg')}</p>
+            <PageState status="empty" message={t('moim.emptyMsg')} fullScreen={false} />
           ) : (
             <ul>
               {moims.map((moim) => (
@@ -92,7 +93,7 @@ const UserProfilePage = () => {
       {tab === 'reviews' && (
         <section className="user-profile-list">
           {reviews.length === 0 ? (
-            <p className="user-profile-empty">{t('common.loadError')}</p>
+            <PageState status="empty" message={t('my.noReceivedReviews')} fullScreen={false} />
           ) : (
             <ul className="user-profile-review-list">
               {reviews.map((review, index) => (

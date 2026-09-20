@@ -149,6 +149,10 @@
             a.USER_NM
             ,a.AREA_NM
             ,a.DESCRIPTION
+            ,a.AREA_NM_EN
+            ,a.AREA_NM_JA
+            ,a.DESCRIPTION_EN
+            ,a.DESCRIPTION_JA
             ,a.PROFILE_IMG_URL
             ,COALESCE(f.RATING, 0) AS RATING
             ,COALESCE(b.MOIM_CNT, 0) AS MOIM_CNT
@@ -257,13 +261,33 @@
             </if>
             <if test="request.areaNm != null">
                 ,AREA_NM = #{request.areaNm}
+                ,AREA_NM_EN = NULL
+                ,AREA_NM_JA = NULL
             </if>
             <if test="request.description != null">
                 ,DESCRIPTION = #{request.description}
+                ,DESCRIPTION_EN = NULL
+                ,DESCRIPTION_JA = NULL
             </if>
             <if test="request.profileImageUrl != null">
                 ,PROFILE_IMG_URL = #{request.profileImageUrl}
             </if>
+        WHERE USER_ID = #{userId}
+
+    </update>
+
+    <!-- ========================= -->
+    <!-- 프로필(지역/소개글) 번역 캐시 저장 -->
+    <!-- ========================= -->
+    <update id="updateProfileTranslation">
+
+        UPDATE TB_TRMA_USER_INFO
+        <set>
+            <if test="areaNmEn != null">AREA_NM_EN = #{areaNmEn},</if>
+            <if test="areaNmJa != null">AREA_NM_JA = #{areaNmJa},</if>
+            <if test="descriptionEn != null">DESCRIPTION_EN = #{descriptionEn},</if>
+            <if test="descriptionJa != null">DESCRIPTION_JA = #{descriptionJa},</if>
+        </set>
         WHERE USER_ID = #{userId}
 
     </update>

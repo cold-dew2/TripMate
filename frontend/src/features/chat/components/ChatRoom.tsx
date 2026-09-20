@@ -7,6 +7,7 @@ import { apiClient } from '@/shared/api/client';
 import useUser from '@/shared/hooks/useUser';
 import { useAlert } from '@/shared/contexts/AlertContext';
 import { getApiLang } from '@/shared/utils/lang';
+import PageState from '@/shared/components/pageState/PageState';
 import './ChatRoom.css';
 
 interface Message {
@@ -40,13 +41,13 @@ interface TranslationDelta {
   contentJa: string;
 }
 
-// 현재 화면 언어에 맞는 메시지 문구를 고른다. 번역이 아직 없으면(전송 직후이거나
-// AI가 끊겨 있었으면) 원문(한국어)을 그대로 보여준다.
-const pickDisplayContent = (message: Message): string => {
+// 현재 화면 언어로 번역된 문구. 화면 언어가 한국어면 번역할 대상이 없으므로 undefined.
+// 아직 번역이 끝나지 않았으면(전송 직후이거나 AI가 끊겨 있었으면)도 undefined.
+const getTranslation = (message: Message): string | undefined => {
   const lang = getApiLang();
-  if (lang === 'en' && message.contentEn) return message.contentEn;
-  if (lang === 'ja' && message.contentJa) return message.contentJa;
-  return message.content;
+  if (lang === 'en') return message.contentEn || undefined;
+  if (lang === 'ja') return message.contentJa || undefined;
+  return undefined;
 };
 
 interface ChatRoomProps {
@@ -68,7 +69,20 @@ export default function ChatRoom({ roomId, title, showLeave = true }: ChatRoomPr
   const [content, setContent] = useState('');
   const [error, setError] = useState('');
   const [isLeaving, setIsLeaving] = useState(false);
+  const [isSending, setIsSending] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  // 번역 버튼을 눌러 번역본을 보고 있는 메시지 id 집합. 기본값은 항상 원문이다.
+  const [translatedIds, setTranslatedIds] = useState<Set<string>>(new Set());
   const messagesRef = useRef<HTMLDivElement>(null);
+
+  const toggleTranslation = (messageId: string) => {
+    setTranslatedIds((current) => {
+      const next = new Set(current);
+      if (next.has(messageId)) next.delete(messageId);
+      else next.add(messageId);
+      return next;
+    });
+  };
 
   const kicked = myState === 'K';
 
@@ -83,13 +97,18 @@ export default function ChatRoom({ roomId, title, showLeave = true }: ChatRoomPr
   // 그 뒤로는 "읽음" 자체만 가볍게 알리거나(markRead) 서버가 보내주는 안읽음 수
   // 델타만 반영해서 서버에 부담을 주지 않는다.
   const load = async () => {
-    const r = await apiClient.get<{ data: Message[]; memberCount: number; myState: string | null }>(`/chat/rooms/${roomId}/messages`);
-    if (r.success) {
-      setMessages(r.data.data);
-      setMemberCount(r.data.memberCount ?? 0);
-      setMyState(r.data.myState ?? null);
-    } else {
-      setError(t('chat.loadFailed'));
+    setIsLoading(true);
+    try {
+      const r = await apiClient.get<{ data: Message[]; memberCount: number; myState: string | null }>(`/chat/rooms/${roomId}/messages`);
+      if (r.success) {
+        setMessages(r.data.data);
+        setMemberCount(r.data.memberCount ?? 0);
+        setMyState(r.data.myState ?? null);
+      } else {
+        setError(t('chat.loadFailed'));
+      }
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -143,13 +162,18 @@ export default function ChatRoom({ roomId, title, showLeave = true }: ChatRoomPr
 
   const send = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (!content.trim()) return;
-    const r = await apiClient.post<unknown>(`/chat/rooms/${roomId}/messages`, { content, title });
-    if (r.success) {
-      setContent('');
-      setError('');
-    } else {
-      setError(r.message || t('chat.sendFailed'));
+    if (!content.trim() || isSending) return;
+    setIsSending(true);
+    try {
+      const r = await apiClient.post<unknown>(`/chat/rooms/${roomId}/messages`, { content, title });
+      if (r.success) {
+        setContent('');
+        setError('');
+      } else {
+        setError(r.message || t('chat.sendFailed'));
+      }
+    } finally {
+      setIsSending(false);
     }
   };
 
@@ -184,15 +208,39 @@ export default function ChatRoom({ roomId, title, showLeave = true }: ChatRoomPr
       </div>
       {kicked && <p className="chat-kicked-banner">{t('chat.kickedBanner')}</p>}
       <div className="chat-messages" ref={messagesRef}>
-        {messages.map((m) => {
+        {isLoading ? (
+          <PageState status="loading" fullScreen={false} />
+        ) : messages.length === 0 ? (
+          <PageState status="empty" message={t('chat.emptyMessages')} fullScreen={false} />
+        ) : messages.map((m) => {
           const mine = m.senderId === user?.userId;
           const unread = m.unreadCount ?? 0;
+          const translation = getTranslation(m);
+          const wantsTranslation = translatedIds.has(m.messageId);
+          const showingTranslation = wantsTranslation && !!translation;
+          const canTranslate = getApiLang() !== 'ko';
           return (
             <article key={m.messageId} className={mine ? 'mine' : ''}>
               <b>{mine ? t('chat.me') : m.senderName}</b>
               <span className="chat-bubble-row">
                 {mine && unread > 0 && <em className="chat-unread-badge">{unread}</em>}
-                <p>{pickDisplayContent(m)}</p>
+                <span className="chat-bubble-content">
+                  <p>{showingTranslation ? translation : m.content}</p>
+                  {canTranslate && (
+                    <button
+                      type="button"
+                      className="chat-translate-btn"
+                      onClick={() => toggleTranslation(m.messageId)}
+                      disabled={wantsTranslation && !translation}
+                    >
+                      {showingTranslation
+                        ? t('chat.showOriginal')
+                        : wantsTranslation
+                          ? t('chat.translating')
+                          : t('chat.translate')}
+                    </button>
+                  )}
+                </span>
                 {!mine && unread > 0 && <em className="chat-unread-badge">{unread}</em>}
               </span>
             </article>
@@ -209,7 +257,7 @@ export default function ChatRoom({ roomId, title, showLeave = true }: ChatRoomPr
           aria-label={t('chat.placeholder')}
           disabled={kicked}
         />
-        <button type="submit" className="chat-send-btn" aria-label={t('chat.send')} disabled={kicked}>➤</button>
+        <button type="submit" className="chat-send-btn" aria-label={t('chat.send')} disabled={kicked || isSending}>➤</button>
       </form>
     </div>
   );

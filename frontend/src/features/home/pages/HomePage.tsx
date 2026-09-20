@@ -12,6 +12,7 @@ import useUser from '@/shared/hooks/useUser';
 import useMyTodaySchedule from '@/features/moim/hooks/useMyTodaySchedule';
 import TodayScheduleSheet from '@/features/home/components/todayScheduleSheet/TodayScheduleSheet';
 import { resolveImageUrl } from '@/shared/utils/url';
+import { translateCategoryList } from '@/shared/utils/category';
 
 const HomePage = () => {
   const { t } = useTranslation();
@@ -70,7 +71,7 @@ const HomePage = () => {
             spots.slice(0, 4)?.map(spot => (
               <li key={spot.tourId}>
                 <Link to={`/place/${spot.tourId}`}>
-                  <SpotCard imageUrl={spot.firstImage} title={t(spot.tourNm)} place={`${t(spot.roadAddr)}`} rating={spot.avgScore} badge={t(spot.cateNm)} />
+                  <SpotCard imageUrl={spot.firstImage} title={t(spot.tourNm)} place={`${t(spot.roadAddr)}`} rating={spot.avgScore} badge={translateCategoryList(spot.cateNm, t)} />
                 </Link>
               </li>
             ))
@@ -94,7 +95,7 @@ const HomePage = () => {
             moims.slice(0, 4)?.map(moim => (
               <li key={moim.moimId}>
                 <Link to={`/moim/${moim.moimId}`}>
-                  <MoimCard badge={t(moim.cateNm)} imageUrl={resolveImageUrl(moim.imageUrl)} title={moim.moimTitle} date={moim.moimStartDt} member={moim.memberCnt} views={moim.visitCnt}/>
+                  <MoimCard badge={translateCategoryList(moim.cateNm, t)} imageUrl={resolveImageUrl(moim.imageUrl)} title={moim.moimTitle} date={moim.moimStartDt} member={moim.memberCnt} views={moim.visitCnt}/>
                 </Link>
               </li>
             ))

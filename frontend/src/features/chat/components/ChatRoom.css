@@ -45,6 +45,10 @@
   min-height: 0;
   background: var(--white-100);
 }
+.chat-messages .page-state {
+  align-self: center;
+  justify-self: center;
+}
 .chat-messages article {
   width: fit-content;
   max-width: 78%;
@@ -81,6 +85,30 @@
 }
 .chat-messages article.mine .chat-bubble-row {
   flex-direction: row-reverse;
+}
+.chat-bubble-content {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+.chat-messages article.mine .chat-bubble-content {
+  align-items: flex-end;
+}
+.chat-translate-btn {
+  align-self: flex-start;
+  color: var(--purple-600);
+  font-size: 11px;
+  font-weight: var(--fw-bold);
+  text-decoration: underline;
+}
+.chat-messages article.mine .chat-translate-btn {
+  align-self: flex-end;
+  color: var(--purple-500);
+}
+.chat-translate-btn:disabled {
+  color: var(--gray-400);
+  text-decoration: none;
 }
 .chat-unread-badge {
   flex-shrink: 0;

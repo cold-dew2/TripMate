@@ -45,6 +45,13 @@ public interface UserMapper {
     //마이페이지_프로필 수정
     int updateProfile(@Param("request") UpdateProfileRequest request, @Param("userId") String userId);
 
+    //프로필(지역/소개글) 번역 캐시 저장
+    int updateProfileTranslation(@Param("userId") String userId,
+                                  @Param("areaNmEn") String areaNmEn,
+                                  @Param("areaNmJa") String areaNmJa,
+                                  @Param("descriptionEn") String descriptionEn,
+                                  @Param("descriptionJa") String descriptionJa);
+
     //사용 언어 삭제(전체 교체용)
     int deleteUserLanguages(String userId);
 

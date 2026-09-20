@@ -260,7 +260,7 @@ public class TourListServicelmpl implements TourListService {
     public TourDetailResponse tourDetail(TourDetailRequest request) {
 
         try {
-            TourDetailData tourDetail = tourListMapper.tourDetail(request.getTourId());
+            TourDetailData tourDetail = tourListMapper.tourDetail(request.getTourId(), request.getLang());
             applyDetailTranslation(tourDetail, request.getLang());
 
             return new TourDetailResponse(
@@ -293,7 +293,7 @@ public class TourListServicelmpl implements TourListService {
 
         try {
             StringBuilder tourListPrompt = new StringBuilder();
-            TourDetailData tourDetail = tourListMapper.tourDetail(request.getTourId());
+            TourDetailData tourDetail = tourListMapper.tourDetail(request.getTourId(), request.getLang());
 
             String prompt = "당신은 대한민국 여행 전문 AI입니다.\n";
 
@@ -696,6 +696,73 @@ public class TourListServicelmpl implements TourListService {
         }
     }
 
+    //관광지 이름 일괄 번역(캐시 우선, 없으면 번역 후 캐시에 저장)
+    @Override
+    public Map<String, String> translateTourNames(List<String> tourIds, String lang) {
+        if (!"en".equals(lang) && !"ja".equals(lang)) return Map.of();
+        if (tourIds == null || tourIds.isEmpty()) return Map.of();
+
+        List<String> distinctIds = tourIds.stream()
+                .filter(id -> id != null && !id.isBlank())
+                .distinct()
+                .toList();
+        if (distinctIds.isEmpty()) return Map.of();
+
+        List<TourSearchData> tours = tourListMapper.tourByIds(distinctIds, lang);
+        applySearchTranslations(tours, lang);
+
+        Map<String, String> result = new HashMap<>();
+        for (TourSearchData tour : tours) {
+            result.put(tour.getTourId(), tour.getTourNm());
+        }
+        return result;
+    }
+
+    //임의의 짧은 텍스트들을 key로 구분해 한 번에 번역. reviewId/reviewContent 필드를
+    //각각 key/번역결과 용도로 재사용해서(REVIEW_ID 배치 번역과 동일한 모양) 새
+    //GeminiData 타입을 늘리지 않는다.
+    @Override
+    public Map<String, String> translateFreeTexts(Map<String, String> textsByKey, String lang) {
+        if (!"en".equals(lang) && !"ja".equals(lang)) return Map.of();
+        if (textsByKey == null || textsByKey.isEmpty()) return Map.of();
+
+        Map<String, String> nonBlank = new LinkedHashMap<>();
+        for (Map.Entry<String, String> entry : textsByKey.entrySet()) {
+            if (entry.getValue() != null && !entry.getValue().isBlank()) {
+                nonBlank.put(entry.getKey(), entry.getValue());
+            }
+        }
+        if (nonBlank.isEmpty()) return Map.of();
+
+        try {
+            StringBuilder listPrompt = new StringBuilder();
+            for (Map.Entry<String, String> entry : nonBlank.entrySet()) {
+                listPrompt.append("[reviewId %s]\n내용: %s\n\n".formatted(entry.getKey(), entry.getValue()));
+            }
+
+            String langLabel = "en".equals(lang) ? "영어" : "일본어";
+            String prompt = "다음 텍스트들을 " + langLabel + "로 자연스럽게 번역해주세요.\n"
+                    + "반드시 JSON 형식으로만 응답하고, 요청받은 reviewId를 그대로 포함해서 응답하세요.\n"
+                    + "[응답 형식]\n"
+                    + "{\"reviewTranslations\":[{\"reviewId\":\"key1\",\"reviewContent\":\"번역된 텍스트\"}]}\n"
+                    + "[텍스트 목록]\n" + listPrompt;
+
+            GeminiData result = callGeminiForTranslation(prompt);
+            if (result == null || result.getReviewTranslations() == null) return Map.of();
+
+            Map<String, String> translated = new HashMap<>();
+            for (GeminiData.ReviewTranslationItem item : result.getReviewTranslations()) {
+                if (item.getReviewId() != null && item.getReviewContent() != null && !item.getReviewContent().isBlank()) {
+                    translated.put(item.getReviewId(), item.getReviewContent());
+                }
+            }
+            return translated;
+        } catch (Exception e) {
+            log.warn("텍스트 번역에 실패했습니다. lang={}", lang, e);
+            return Map.of();
+        }
+    }
+
     //일정별 교통편 추천
     @Override
     public TransportRecommendResponse transportRecommend(TransportRecommendRequest request) {
@@ -901,6 +968,10 @@ public class TourListServicelmpl implements TourListService {
 
         List<TourSearchData> uncached = new ArrayList<>();
         for (TourSearchData tour : tours) {
+            // 한국관광공사 공식 일어/영어 데이터로 이미 채워진 건(NATIVE_MATCH_YN='Y')
+            // Gemini로 다시 번역하지 않는다.
+            if ("Y".equals(tour.getNativeMatchYn())) continue;
+
             String cached = "en".equals(lang) ? tour.getTourNmEn() : tour.getTourNmJa();
             if (cached != null && !cached.isBlank()) {
                 tour.setTourNm(cached);
@@ -958,15 +1029,25 @@ public class TourListServicelmpl implements TourListService {
     private void applyDetailTranslation(TourDetailData tour, String lang) {
         if (tour == null) return;
         if (!"en".equals(lang) && !"ja".equals(lang)) return;
+        // 한국관광공사 공식 일어/영어 데이터로 이미 채워진 관광지는 Gemini로 다시
+        // 번역하지 않는다(tourDetail 쿼리에서 COALESCE로 이미 반영됨).
+        if ("Y".equals(tour.getNativeMatchYn())) return;
 
         String cachedNm = "en".equals(lang) ? tour.getTourNmEn() : tour.getTourNmJa();
         String cachedOverview = "en".equals(lang) ? tour.getOverviewEn() : tour.getOverviewJa();
         String cachedRoadAddr = "en".equals(lang) ? tour.getRoadAddrEn() : tour.getRoadAddrJa();
         String cachedDetailAddr = "en".equals(lang) ? tour.getDetailAddrEn() : tour.getDetailAddrJa();
-        if (cachedNm != null && !cachedNm.isBlank()) {
+        // 이름만 캐시된 걸로는 "다 캐시됐다"고 보지 않는다. 목록 화면(tourSearch)은
+        // 이름만 먼저 번역해 캐시해두기 때문에, 이름만 보고 판단하면 설명/주소는
+        // 영원히 번역을 시도하지 않고 한국어로 남는 문제가 있었다. 설명은 원본이 비어있는
+        // 관광지도 있어 판단 기준으로 쓰기 어려우니, 주소(모든 관광지에 항상 있음)까지
+        // 같이 캐시돼 있어야 "다 캐시됨"으로 본다.
+        boolean fullyCached = cachedNm != null && !cachedNm.isBlank()
+                && cachedRoadAddr != null && !cachedRoadAddr.isBlank();
+        if (fullyCached) {
             tour.setTourNm(cachedNm);
             if (cachedOverview != null && !cachedOverview.isBlank()) tour.setOverview(cachedOverview);
-            if (cachedRoadAddr != null && !cachedRoadAddr.isBlank()) tour.setRoadAddr(cachedRoadAddr);
+            tour.setRoadAddr(cachedRoadAddr);
             if (cachedDetailAddr != null && !cachedDetailAddr.isBlank()) tour.setDetailAddr(cachedDetailAddr);
             return;
         }

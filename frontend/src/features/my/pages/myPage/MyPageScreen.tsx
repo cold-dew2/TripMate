@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { apiClient } from '@/shared/api/client';
 import { resolveImageUrl } from '@/shared/utils/url';
+import { getApiLang } from '@/shared/utils/lang';
 import PageState from '@/shared/components/pageState/PageState';
 import './MyPageScreen.css';
 
@@ -43,9 +44,9 @@ const MyPageScreen = () => {
   // 로그인 토큰이 httpOnly 쿠키라 JS에서 로그인 여부를 미리 알 수 없으므로,
   // 항상 호출해보고 결과(성공/NEED_LOGIN)로 로그인 여부를 판단한다.
   const profile = useQuery({
-    queryKey: ['myProfile'],
+    queryKey: ['myProfile', getApiLang()],
     queryFn: async () => {
-      const r = await apiClient.get<{ data: MyProfile }>('/mypage/profile');
+      const r = await apiClient.get<{ data: MyProfile }>(`/mypage/profile?lang=${getApiLang()}`);
       if (!r.success) throw r;
       return r.data.data;
     },
@@ -199,14 +200,16 @@ const MyPageScreen = () => {
                     </div>
                     <time>{review.createDt}</time>
                   </div>
-                  <p>{review.reviewContent}</p>
-                  {review.imgUrls && (
-                    <ul className="mypage-review-images">
-                      {review.imgUrls.split(',').map((url, index) => (
-                        <li key={url}><img src={resolveImageUrl(url)} alt={t('image.reviewPhoto', { index: index + 1 })} /></li>
-                      ))}
-                    </ul>
-                  )}
+                  <div className="mypage-review-content">
+                    <p>{review.reviewContent}</p>
+                    {review.imgUrls && (
+                      <ul className="mypage-review-images">
+                        {review.imgUrls.split(',').map((url, index) => (
+                          <li key={url}><img src={resolveImageUrl(url)} alt={t('image.reviewPhoto', { index: index + 1 })} /></li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
                 </div>
               </li>
             ))}

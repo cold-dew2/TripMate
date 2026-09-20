@@ -7,8 +7,10 @@ import usePlaceList from "../../hooks/usePlaceList";
 import { useMemo, useState, useEffect, useRef, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useNavigate } from "react-router-dom";
+import { translateCategoryList } from "@/shared/utils/category";
+import useUrlState from "@/shared/hooks/useUrlState";
 
-const PlaceFilter: FilterOption[] = [
+const PLACE_FILTER_IDS: FilterOption[] = [
   { id: "all", label: "전체" },
   { id: "세종", label: "세종" },
   { id: "서울", label: "서울" },
@@ -24,7 +26,11 @@ const PlaceList = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [query, setQuery] = useState("");
-  const [activeFilter, setActiveFilter] = useState<string>("all");
+  const [activeFilter, setActiveFilter] = useUrlState("region", "all");
+  const PlaceFilter = useMemo(
+    () => PLACE_FILTER_IDS.map((option) => ({ ...option, label: t(option.label) })),
+    [t]
+  );
 
   const observerTarget = useRef<HTMLDivElement | null>(null);
 
@@ -117,11 +123,11 @@ const PlaceList = () => {
                     <li key={place.tourId}>
                       <Link to={`/place/${place.tourId}`}>
                         <SpotCard
-                            imageUrl={place.firstImage || `/images/places/no-image.png`}
+                            imageUrl={place.firstImage || `/images/places/no-image.svg`}
                             title={t(place.tourNm)}
                             place={t(place.roadAddr)}
                             rating={place.avgScore}
-                            badge={t(place.cateNm)}
+                            badge={translateCategoryList(place.cateNm, t)}
                         />
                       </Link>
                     </li>

@@ -12,12 +12,14 @@
     <insert id="insertApplyNotification">
 
         INSERT INTO TB_TRMA_NOTIFICATION
-        (USER_ID, TYPE_CD, TITLE, CONTENT, LINK_URL, IS_READ, CREATE_DT)
+        (USER_ID, TYPE_CD, TITLE, CONTENT, PARAM1, PARAM2, LINK_URL, IS_READ, CREATE_DT)
         SELECT
             a.CREATE_USER
             ,'APPLY'
             ,'새로운 참가 신청이 있어요'
             ,CONCAT(b.USER_NM, '님이 "', a.MOIM_TITLE, '"에 참가 신청했습니다.')
+            ,b.USER_NM
+            ,a.MOIM_TITLE
             ,CONCAT('/moimManage/', #{moimId})
             ,'N'
             ,CURRENT_TIMESTAMP
@@ -33,10 +35,12 @@
     <insert id="insertChatNotifications">
 
         INSERT INTO TB_TRMA_NOTIFICATION
-        (USER_ID, TYPE_CD, TITLE, CONTENT, LINK_URL, IS_READ, CREATE_DT)
+        (USER_ID, TYPE_CD, TITLE, CONTENT, PARAM1, PARAM2, LINK_URL, IS_READ, CREATE_DT)
         SELECT
             m.USER_ID
             ,'CHAT'
+            ,#{senderName}
+            ,#{content}
             ,#{senderName}
             ,#{content}
             ,CONCAT('/chat/', #{roomId})
@@ -54,12 +58,13 @@
     <insert id="insertCompleteNotificationsIfNeeded">
 
         INSERT INTO TB_TRMA_NOTIFICATION
-        (USER_ID, TYPE_CD, TITLE, CONTENT, LINK_URL, IS_READ, CREATE_DT)
+        (USER_ID, TYPE_CD, TITLE, CONTENT, PARAM1, LINK_URL, IS_READ, CREATE_DT)
         SELECT
             #{userId}
             ,'COMPLETE'
             ,'여행이 완료되었어요'
             ,CONCAT('"', a.MOIM_TITLE, '" 여행이 종료되었습니다. 후기를 남겨보세요!')
+            ,a.MOIM_TITLE
             ,CONCAT('/moim/', a.MOIM_ID, '/review')
             ,'N'
             ,CURRENT_TIMESTAMP
@@ -89,6 +94,8 @@
             ,TYPE_CD
             ,TITLE
             ,CONTENT
+            ,PARAM1
+            ,PARAM2
             ,LINK_URL
             ,IS_READ
             ,CREATE_DT
