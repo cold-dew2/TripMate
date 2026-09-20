@@ -19,7 +19,7 @@ const PageHeader = ({ pageTitle, contentTitle, href, linkText, current, total, o
       <div className="title-left">
         {contentTitle && (
           <>
-            <button onClick={onBack ?? (() => navigate(-1))} className="btn-back">
+            <button type="button" onClick={onBack ?? (() => navigate(-1))} className="btn-back">
               <span className="blind">뒤로가기</span>
             </button>
             <h1 className="coontent-title">{contentTitle}</h1>

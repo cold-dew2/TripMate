@@ -80,6 +80,21 @@
   color: var(--red-700);
   font-size: var(--fs-sm);
 }
+.auth-found-list {
+  margin-bottom: var(--space-2xl);
+  list-style: none;
+}
+.auth-found-list li {
+  padding: 14px 16px;
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-md);
+  color: var(--gray-900);
+  font-weight: var(--fw-bold);
+  text-align: center;
+}
+.auth-found-list li + li {
+  margin-top: var(--space-sm);
+}
 .auth-success {
   margin-top: 20px;
   padding: 12px 14px;

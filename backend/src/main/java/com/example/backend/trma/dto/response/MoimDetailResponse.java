@@ -20,4 +20,5 @@ public class MoimDetailResponse {
     private List<MoimCateData> cate;
     private List<MoimPlanData> plan;
     private MoimJoinStatusData joinStatus;
+    private MoimReviewStatusData reviewStatus;
 }

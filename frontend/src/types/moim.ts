@@ -31,6 +31,7 @@ export interface MoimCreatePrefill {
   title?: string;
   dscr?: string;
   themeId?: string;
+  region?: string;
   courseStops?: { name: string; address: string; sidoNm?: string; sggNm?: string }[];
 }
 
@@ -64,7 +65,7 @@ export interface MoimDetail {
   memberCnt: number;
   userId: string;
   userNm: string;
-  reviewScore: number;
+  reviewScore: number | null;
   imageUrl?: string;
 }
 
@@ -88,6 +89,11 @@ export interface MoimJoinStatus {
   stateCd: string;
 }
 
+export interface MoimReviewStatus {
+  moimReviewedYn: string;
+  tourReviewedYn: string;
+}
+
 export interface MyMoim {
   moimId: string;
   moimTitle: string;
@@ -100,6 +106,7 @@ export interface MyMoim {
   stateCd: string;
   cateCd: string;
   cateNm: string;
+  reviewedYn: string;
 }
 
 export interface MoimMember {
@@ -120,5 +127,6 @@ export interface MoimDetailResponse {
   cate: MoimCategory[];
   plan: MoimPlan[];
   joinStatus: MoimJoinStatus | null;
+  reviewStatus: MoimReviewStatus | null;
 }
 

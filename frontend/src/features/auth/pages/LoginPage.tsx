@@ -82,9 +82,9 @@ const LoginPage = () => {
       </form>
 
       <div className="auth-links">
-        <span>{t("account.findId")}</span>
+        <Link to="/auth/find-id">{t("account.findId")}</Link>
         <span aria-hidden="true">|</span>
-        <span>{t("account.findPw")}</span>
+        <Link to="/auth/find-password">{t("account.findPw")}</Link>
         <span aria-hidden="true">|</span>
         <Link to="/auth/signup" className="auth-link-signup">{t("account.signup")}</Link>
       </div>

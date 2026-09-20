@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useLocation, useSearchParams } from "react-router-dom";
 import "./MoimCreate.css";
 import { useForm } from "react-hook-form";
@@ -38,18 +38,22 @@ const MoimCreate = () => {
   const { t } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
   const location = useLocation();
-  const prefill = location.state as MoimCreatePrefill | null;
+  // setSearchParams로 step을 바꿀 때마다 새 history 엔트리가 만들어지면서
+  // location.state가 사라지므로(리액트 라우터 기본 동작), 세종 코스 등에서 넘어온
+  // prefill 데이터를 진입 시점에 한 번만 캡처해 단계 이동과 무관하게 유지한다.
+  const [prefill] = useState(() => location.state as MoimCreatePrefill | null);
 
   const currentStep = Number(searchParams.get("step")) || 1;
   const navigate = useNavigate();
 
-  const { setValue, watch, handleSubmit } = useForm<MoimCreateForm>({
+  const { setValue, watch, handleSubmit, formState: { isSubmitting } } = useForm<MoimCreateForm>({
     defaultValues: {
       moimCateData: [],
       moimPlanData: [],
       maxMember: 8,
       moimTitle: prefill?.title ?? "",
       moimDscr: prefill?.dscr ?? "",
+      region: prefill?.region ?? "",
     },
   });
 
@@ -159,31 +163,52 @@ const MoimCreate = () => {
     goToStep(4);
   };
 
+  const isSubmittingRef = useRef(false);
+
   const onSubmit = async (data: MoimCreateForm) => {
-    const result = await apiClient.post<{ data: { moimId: string } }>("/moimList/createMoim", data);
+    // isSubmitting 갱신은 리렌더를 거치므로, 그 사이에 들어오는 추가 클릭(연타)까지
+    // 막으려면 상태보다 즉시 반영되는 ref로 한 번 더 막아야 한다.
+    if (isSubmittingRef.current) return;
+    isSubmittingRef.current = true;
 
-    if (!result.success) {
-      // 실패 원인을 그대로 보여줘야 "왜 안 되는지" 바로 알 수 있다(로그인 필요/AI 사용 불가/서버 오류 등).
-      if (result.code === "NEED_LOGIN") {
-        showAlert(t("moimCreate.step6.needLogin"));
-        navigate("/auth");
-      } else {
-        showAlert(result.message || t("moimCreate.step6.registerError"));
+    try {
+      const result = await apiClient.post<{ data: { moimId: string } }>("/moimList/createMoim", data);
+
+      if (!result.success) {
+        // 실패 원인을 그대로 보여줘야 "왜 안 되는지" 바로 알 수 있다(로그인 필요/AI 사용 불가/서버 오류 등).
+        if (result.code === "NEED_LOGIN") {
+          showAlert(t("moimCreate.step6.needLogin"));
+          navigate("/auth");
+        } else {
+          showAlert(result.message || t("moimCreate.step6.registerError"));
+        }
+        return;
       }
-      return;
-    }
 
-    if (!result.data.data) {
-      showAlert(t("moimCreate.step6.registerError"));
-      return;
-    }
+      if (!result.data.data) {
+        showAlert(t("moimCreate.step6.registerError"));
+        return;
+      }
 
-    setCreatedMoimId(result.data.data.moimId);
-    goToStep(7);
+      setCreatedMoimId(result.data.data.moimId);
+      goToStep(7);
+    } finally {
+      isSubmittingRef.current = false;
+    }
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)}>
+    <form
+      onSubmit={handleSubmit(onSubmit)}
+      onKeyDown={(event) => {
+        // 여러 단계(검색창, 제목/설명 입력 등)가 이 하나의 form 안에 있다 보니,
+        // 어느 input에서든 엔터를 누르면 마지막 단계의 "등록하기"처럼 form 전체가
+        // 제출돼 버린다. 실제 제출 버튼(Step6의 등록 버튼) 클릭이 아닌 이상 막는다.
+        if (event.key === "Enter" && (event.target as HTMLElement).tagName === "INPUT") {
+          event.preventDefault();
+        }
+      }}
+    >
       {currentStep < 7 && (
         <PageHeader
           contentTitle={t("moimCreate.title")}
@@ -208,6 +233,7 @@ const MoimCreate = () => {
           onPrev={handlePrev}
           defaultTitle={prefill?.title}
           defaultDscr={prefill?.dscr}
+          defaultRegion={prefill?.region}
         />
       )}
 
@@ -250,6 +276,7 @@ const MoimCreate = () => {
           setValue={setValue}
           itemsByDay={itemsByDay}
           onPrev={() => goToStep(5)}
+          isSubmitting={isSubmitting}
         />
       )}
 

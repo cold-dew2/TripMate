@@ -34,9 +34,13 @@ public class MoimListController {
     public MoimDetailResponse moimDetail(@ModelAttribute MoimDetailRequest request,
                                          Authentication authentication) {
 
-        // authentication 객체가 null이 아니고 인증된 상태인지 확인
+        // authentication 객체가 null이 아니고 인증된 상태인지 확인.
+        // Spring Security의 AnonymousAuthenticationFilter는 비로그인 사용자에게도
+        // isAuthenticated()=true인 익명 토큰(이름 "anonymousUser")을 부여하므로 이것도
+        // 걸러내야 한다(안 그러면 게스트가 실제 계정처럼 취급돼 방문 이력 등록이 실패한다).
         String userId = null;
-        if (authentication != null && authentication.isAuthenticated()) {
+        if (authentication != null && authentication.isAuthenticated()
+                && !"anonymousUser".equals(authentication.getName())) {
             userId = authentication.getName();
         }
 
@@ -63,6 +67,28 @@ public class MoimListController {
 
         String userId = authentication.getName();
         return moimListService.myMoim(userId);
+    }
+
+    //내가 가입한 모임 중 오늘 진행 중인 모임들의 오늘 일정
+    @GetMapping("/myTodaySchedule")
+    public MyTodayScheduleResponse myTodaySchedule(Authentication authentication) {
+
+        if (authentication == null || !authentication.isAuthenticated()
+                || "anonymousUser".equals(authentication.getName())) {
+
+            return new MyTodayScheduleResponse(
+                    false,
+                    500,
+                    "NEED_LOGIN",
+                    "로그인이 필요합니다.",
+                    "/moimList/myTodaySchedule",
+                    "",
+                    null
+            );
+        }
+
+        String userId = authentication.getName();
+        return moimListService.myTodaySchedule(userId);
     }
 
     //내 모임 목록 조회
@@ -147,6 +173,47 @@ public class MoimListController {
         return moimListService.updateMoimMember(moimId, targetUserId, request, userId);
     }
 
+    //모임 일정 수정
+    @PutMapping("/{moimId}/plan")
+    public UpdateMoimPlanResponse updateMoimPlan(@PathVariable String moimId,
+                                                 @RequestBody UpdateMoimPlanRequest request,
+                                                 Authentication authentication) {
+
+        if (authentication == null || !authentication.isAuthenticated()
+                || "anonymousUser".equals(authentication.getName())) {
+
+            return new UpdateMoimPlanResponse(
+                    false,
+                    500,
+                    "NEED_LOGIN",
+                    "로그인이 필요합니다.",
+                    "/moimList/" + moimId + "/plan"
+            );
+        }
+
+        String userId = authentication.getName();
+        return moimListService.updateMoimPlan(moimId, request, userId);
+    }
+
+    //모임 관리(신청자 목록) 조회 시 가입 신청 알림 읽음 처리
+    @PutMapping("/{moimId}/applicantsRead")
+    public MarkApplicantsReadResponse markApplicantsRead(@PathVariable String moimId, Authentication authentication) {
+
+        if (authentication == null || !authentication.isAuthenticated()
+                || "anonymousUser".equals(authentication.getName())) {
+
+            return new MarkApplicantsReadResponse(
+                    false,
+                    500,
+                    "NEED_LOGIN",
+                    "로그인이 필요합니다.",
+                    "/moimList/" + moimId + "/applicantsRead"
+            );
+        }
+
+        return moimListService.markApplicantsRead(moimId, authentication.getName());
+    }
+
     //모임(여행) 후기 등록
     @PostMapping("/{moimId}/review")
     public CreateMoimReviewResponse createMoimReview(@PathVariable String moimId,
@@ -176,5 +243,19 @@ public class MoimListController {
                                            @RequestParam(required = false) String lang) {
 
         return moimListService.moimReviews(moimId, lang);
+    }
+
+    //모임 일정 기반 교통편 혼잡도 분석(가입된 멤버만)
+    @GetMapping("/{moimId}/transportRecommend")
+    public TransportRecommendResponse moimTransportRecommend(@PathVariable String moimId,
+                                                              Authentication authentication) {
+
+        String userId = null;
+        if (authentication != null && authentication.isAuthenticated()
+                && !"anonymousUser".equals(authentication.getName())) {
+            userId = authentication.getName();
+        }
+
+        return moimListService.moimTransportRecommend(moimId, userId);
     }
 }

@@ -123,4 +123,32 @@
             AND USER_ID = #{userId}
 
     </update>
+
+    <!-- ========================= -->
+    <!-- 채팅방 알림 일괄 읽음 처리(채팅방 직접 입장 시) -->
+    <!-- ========================= -->
+    <update id="markChatNotificationsRead">
+
+        UPDATE TB_TRMA_NOTIFICATION
+        SET IS_READ = 'Y'
+        WHERE USER_ID = #{userId}
+            AND TYPE_CD = 'CHAT'
+            AND LINK_URL = CONCAT('/chat/', #{roomId})
+            AND IS_READ = 'N'
+
+    </update>
+
+    <!-- ========================= -->
+    <!-- 모임 가입 신청 알림 일괄 읽음 처리(모임 관리 화면 진입 시) -->
+    <!-- ========================= -->
+    <update id="markApplyNotificationsRead">
+
+        UPDATE TB_TRMA_NOTIFICATION
+        SET IS_READ = 'Y'
+        WHERE USER_ID = #{userId}
+            AND TYPE_CD = 'APPLY'
+            AND LINK_URL = CONCAT('/moimManage/', #{moimId})
+            AND IS_READ = 'N'
+
+    </update>
 </mapper>

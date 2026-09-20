@@ -1,121 +1,333 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router-dom';
 import { apiClient } from '@/shared/api/client';
+import { useAlert } from '@/shared/contexts/AlertContext';
 import useMoimDetail from '../../hooks/useMoimDetail';
 import useCreateMoimReview from '../../hooks/useCreateMoimReview';
+import { useCreateReview } from '@/features/place/hooks/useReveiws';
+import Input from '@/shared/components/input/Input';
+import Select from '@/shared/components/select/Select';
 import Textarea from '@/shared/components/textarea/Textarea';
 import Button from '@/shared/components/button/Button';
 import PageHeader from '@/layouts/components/header/pageHeader/PageHeader';
 import './MoimReviewPage.css';
 
-interface FormValues {
+type FlowStep = 'choose' | 'writeTour' | 'writeMoim';
+
+interface MoimFormValues {
   reviewContent: string;
   reviewScore: number;
 }
 
-const SCORE_LABEL_KEYS: Record<number, string> = {
-  1: 'review.scoreLabel1',
-  2: 'review.scoreLabel2',
-  3: 'review.scoreLabel3',
-  4: 'review.scoreLabel4',
-  5: 'review.scoreLabel5',
+interface TourFormValues {
+  tourId: string;
+  reviewTitle: string;
+  reviewContent: string;
+  reviewScore: number;
+}
+
+const uploadFiles = async (files: File[]) => {
+  return Promise.all(files.map(async (file) => {
+    const body = new FormData();
+    body.append('file', file);
+    const uploadResult = await apiClient.upload<{ data: { url: string } }>('/uploads', body);
+    if (!uploadResult.success) throw uploadResult;
+    return uploadResult.data.data.url;
+  }));
 };
+
+const StarRating = ({ score, onChange, label }: { score: number; onChange: (value: number) => void; label: string }) => (
+  <div className="review-score-block">
+    <span className="review-score-block-label">{label}</span>
+    <div className="review-star-row">
+      <div className="review-star-rating" role="radiogroup" aria-label={label}>
+        {[1, 2, 3, 4, 5].map((star) => (
+          <button
+            key={star}
+            type="button"
+            role="radio"
+            aria-checked={score === star}
+            className={star <= score ? 'star-btn filled' : 'star-btn'}
+            onClick={() => onChange(star)}
+          >★</button>
+        ))}
+      </div>
+      <span className="review-score-value">{score.toFixed(1)}</span>
+    </div>
+  </div>
+);
+
+const ImagePicker = ({ files, onAdd, onRemove, label, removeLabel }: { files: File[]; onAdd: (list: FileList | null) => void; onRemove: (index: number) => void; label: string; removeLabel: string }) => (
+  <div className="review-image-block">
+    <label className="review-image-label">{label}
+      <input type="file" accept="image/*" multiple onChange={(event) => onAdd(event.target.files)} />
+    </label>
+    <ul className="review-image-preview">
+      {files.map((file, index) => (
+        <li key={`${file.name}-${index}`}>
+          <img src={URL.createObjectURL(file)} alt="" />
+          <button type="button" className="review-image-remove" onClick={() => onRemove(index)} aria-label={removeLabel}>×</button>
+        </li>
+      ))}
+      {files.length < 5 && (
+        <li className="review-image-add">
+          <label>
+            <span aria-hidden="true">+</span>
+            <input type="file" accept="image/*" multiple onChange={(event) => onAdd(event.target.files)} />
+          </label>
+        </li>
+      )}
+    </ul>
+  </div>
+);
 
 const MoimReviewPage = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const { showAlert } = useAlert();
   const { moimId } = useParams<{ moimId: string }>();
   const { data: result } = useMoimDetail(moimId!);
-  const createReview = useCreateMoimReview(moimId!);
-  const [files, setFiles] = useState<File[]>([]);
+  const createMoimReview = useCreateMoimReview(moimId!);
+  const createTourReview = useCreateReview();
 
-  const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm<FormValues>({
-    defaultValues: { reviewContent: '', reviewScore: 5 },
-  });
-  const score = watch('reviewScore');
+  const [step, setStep] = useState<FlowStep>('choose');
+  const [tourWritten, setTourWritten] = useState(false);
+  const [moimWritten, setMoimWritten] = useState(false);
+  // 이번 방문 중에 이미 추가리뷰로 남긴 관광지들. 다음 관광지 선택 목록에서 빼서
+  // 같은 곳을 실수로 중복 선택하지 않도록 한다.
+  const [reviewedTourIds, setReviewedTourIds] = useState<string[]>([]);
+  const [tourFiles, setTourFiles] = useState<File[]>([]);
+  const [moimFiles, setMoimFiles] = useState<File[]>([]);
 
-  const addFiles = (list: FileList | null) => {
-    setFiles((prev) => [...prev, ...Array.from(list ?? [])].slice(0, 5));
+  const places = useMemo(() => {
+    const seen = new Map<string, string>();
+    (result?.plan ?? []).forEach((item) => {
+      if (item.tourId && !seen.has(item.tourId)) seen.set(item.tourId, item.tourNm);
+    });
+    return Array.from(seen, ([tourId, tourNm]) => ({ tourId, tourNm }));
+  }, [result?.plan]);
+
+  const availableTourPlaces = useMemo(
+    () => places.filter((place) => !reviewedTourIds.includes(place.tourId)),
+    [places, reviewedTourIds]
+  );
+
+  const {
+    register: registerTour,
+    handleSubmit: handleTourSubmit,
+    watch: watchTour,
+    setValue: setTourValue,
+    reset: resetTourForm,
+    formState: { errors: tourErrors },
+  } = useForm<TourFormValues>({ defaultValues: { reviewScore: 5, tourId: '' } });
+  const tourScore = watchTour('reviewScore');
+
+  const {
+    register: registerMoim,
+    handleSubmit: handleMoimSubmit,
+    watch: watchMoim,
+    setValue: setMoimValue,
+    formState: { errors: moimErrors },
+  } = useForm<MoimFormValues>({ defaultValues: { reviewContent: '', reviewScore: 5 } });
+  const moimScore = watchMoim('reviewScore');
+
+  useEffect(() => {
+    if (availableTourPlaces.length > 0) setTourValue('tourId', availableTourPlaces[0].tourId);
+  }, [availableTourPlaces, setTourValue]);
+
+  useEffect(() => {
+    if (result?.reviewStatus) {
+      setTourWritten(result.reviewStatus.tourReviewedYn === 'Y');
+      setMoimWritten(result.reviewStatus.moimReviewedYn === 'Y');
+    }
+  }, [result?.reviewStatus]);
+
+  const addTourFiles = (list: FileList | null) => setTourFiles((prev) => [...prev, ...Array.from(list ?? [])].slice(0, 5));
+  const removeTourFile = (index: number) => setTourFiles((prev) => prev.filter((_, i) => i !== index));
+  const addMoimFiles = (list: FileList | null) => setMoimFiles((prev) => [...prev, ...Array.from(list ?? [])].slice(0, 5));
+  const removeMoimFile = (index: number) => setMoimFiles((prev) => prev.filter((_, i) => i !== index));
+
+  const submitTourReview = async (values: TourFormValues) => {
+    const imageUrls = await uploadFiles(tourFiles);
+    await createTourReview.mutateAsync({ ...values, moimId, imageUrls });
+    setReviewedTourIds((prev) => [...prev, values.tourId]);
+    setTourWritten(true);
+    if (moimWritten) {
+      showAlert(t('review.flowComplete'));
+      navigate(`/moim/${moimId}`);
+    } else {
+      setStep('choose');
+    }
   };
-  const removeFile = (index: number) => {
-    setFiles((prev) => prev.filter((_, i) => i !== index));
+
+  // "추가리뷰 남기기": 현재 작성한 리뷰만 저장하고, 다음 관광지를 이어서 쓸 수 있게
+  // writeTour 단계에 그대로 남아 폼을 초기화한다(다른 리뷰 유형으로 넘어가지 않음).
+  const addAnotherTourReview = async (values: TourFormValues) => {
+    const imageUrls = await uploadFiles(tourFiles);
+    await createTourReview.mutateAsync({ ...values, moimId, imageUrls });
+    setReviewedTourIds((prev) => [...prev, values.tourId]);
+    setTourWritten(true);
+    setTourFiles([]);
+    resetTourForm({ reviewScore: 5, tourId: '', reviewTitle: '', reviewContent: '' });
   };
 
-  const submit = async (values: FormValues) => {
-    const imageUrls = await Promise.all(files.map(async (file) => {
-      const body = new FormData();
-      body.append('file', file);
-      const uploadResult = await apiClient.upload<{ data: { url: string } }>('/uploads', body);
-      if (!uploadResult.success) throw uploadResult;
-      return uploadResult.data.data.url;
-    }));
-    await createReview.mutateAsync({ ...values, imageUrls });
-    navigate(`/moim/${moimId}`);
+  const submitMoimReview = async (values: MoimFormValues) => {
+    const imageUrls = await uploadFiles(moimFiles);
+    await createMoimReview.mutateAsync({ ...values, imageUrls });
+    setMoimWritten(true);
+    if (tourWritten || places.length === 0) {
+      showAlert(t('review.flowComplete'));
+      navigate(`/moim/${moimId}`);
+    } else {
+      setStep('choose');
+    }
   };
 
-  const title = result ? `${t(result.data.moimTitle)} ${t('review.registerTitle')}` : t('review.registerTitle');
+  const handleBack = () => {
+    if (step === 'choose') {
+      navigate(-1);
+    } else {
+      setStep('choose');
+    }
+  };
+
+  const title = result ? `${t(result.data.moimTitle)} ${t('review.flowTitle')}` : t('review.flowTitle');
+
+  if (!result) {
+    return (
+      <div className="moim-review-page">
+        <PageHeader contentTitle={t('review.flowTitle')} onBack={() => navigate(-1)} />
+        <p className="review-state">{t('account.loading')}</p>
+      </div>
+    );
+  }
 
   return (
     <div className="moim-review-page">
-      <PageHeader contentTitle={title} onBack={() => navigate(-1)} />
+      <PageHeader contentTitle={title} onBack={handleBack} />
 
-      <form className="moim-review-form" onSubmit={handleSubmit(submit)}>
-        <p className="moim-review-prompt">{t('review.moimPrompt')}</p>
-
-        <div className="moim-review-score-row">
-          <div className="review-star-rating" role="radiogroup" aria-label={t('review.score')}>
-            {[1, 2, 3, 4, 5].map((star) => (
-              <button
-                key={star}
-                type="button"
-                role="radio"
-                aria-checked={score === star}
-                className={star <= score ? 'star-btn filled' : 'star-btn'}
-                onClick={() => setValue('reviewScore', star)}
-              >★</button>
-            ))}
+      {step === 'choose' && (
+        <div className="review-choose">
+          <div className="review-choose-hero">
+            <span className="review-choose-emoji" aria-hidden="true">🎉</span>
+            <p className="review-choose-title">{t('review.choosePrompt')}</p>
           </div>
-          <span className="moim-review-score-value">{score.toFixed(1)} ({t(SCORE_LABEL_KEYS[score])})</span>
+
+          <div className="review-choose-cards">
+            {!tourWritten && places.length > 0 && (
+              <button type="button" className="review-choose-card" onClick={() => setStep('writeTour')}>
+                <span className="review-choose-card-icon" aria-hidden="true">🏞️</span>
+                <span className="review-choose-card-body">
+                  <strong>{t('review.writeTourBtn')}</strong>
+                  <span>{t('review.tourCardDesc')}</span>
+                </span>
+                <span className="review-choose-card-arrow" aria-hidden="true">›</span>
+              </button>
+            )}
+            {!moimWritten && (
+              <button type="button" className="review-choose-card" onClick={() => setStep('writeMoim')}>
+                <span className="review-choose-card-icon" aria-hidden="true">👥</span>
+                <span className="review-choose-card-body">
+                  <strong>{t('review.writeMoimBtn')}</strong>
+                  <span>{t('review.moimCardDesc')}</span>
+                </span>
+                <span className="review-choose-card-arrow" aria-hidden="true">›</span>
+              </button>
+            )}
+          </div>
+
+          {places.length === 0 && <p className="review-choose-note">{t('review.noPlaceToReview')}</p>}
+
+          <button type="button" className="review-choose-finish" onClick={() => navigate(`/moim/${moimId}`)}>
+            {t('review.finishBtn')}
+          </button>
         </div>
-        <input type="hidden" {...register('reviewScore', { valueAsNumber: true })} />
+      )}
 
-        <Textarea
-          label={t('review.content')}
-          blind
-          rows={5}
-          placeholder={t('review.moimContentPlaceholder')}
-          error={errors.reviewContent && t('review.contentRequired')}
-          {...register('reviewContent', { required: true, maxLength: 1000 })}
-        />
+      {step === 'writeTour' && (
+        <form className="review-form" onSubmit={handleTourSubmit(submitTourReview)}>
+          <div className="review-form-scroll">
+            <p className="review-form-prompt">{t('review.tourPrompt')}</p>
 
-        <label className="moim-review-image-label">{t('review.images')}
-          <input type="file" accept="image/*" multiple onChange={(event) => addFiles(event.target.files)} />
-        </label>
-        <ul className="moim-review-image-preview">
-          {files.map((file, index) => (
-            <li key={`${file.name}-${index}`}>
-              <img src={URL.createObjectURL(file)} alt="" />
-              <button type="button" className="moim-review-image-remove" onClick={() => removeFile(index)} aria-label={t('common.remove')}>×</button>
-            </li>
-          ))}
-          {files.length < 5 && (
-            <li className="moim-review-image-add">
-              <label>
-                +
-                <input type="file" accept="image/*" multiple onChange={(event) => addFiles(event.target.files)} />
-              </label>
-            </li>
-          )}
-        </ul>
+            <div className="review-form-card">
+              {availableTourPlaces.length > 0 && (
+                <Select
+                  label={t('review.selectPlace')}
+                  options={availableTourPlaces.map((place) => ({ value: place.tourId, option: place.tourNm }))}
+                  {...registerTour('tourId', { required: true })}
+                />
+              )}
 
-        <Button
-          type="submit"
-          text={createReview.isPending ? t('common.saving') : t('review.registerTitle')}
-          disabled={createReview.isPending}
-        />
-      </form>
+              <StarRating score={tourScore} onChange={(value) => setTourValue('reviewScore', value)} label={t('review.score')} />
+              <input type="hidden" {...registerTour('reviewScore', { valueAsNumber: true })} />
+
+              <Input
+                label={t('review.title')}
+                error={tourErrors.reviewTitle && t('review.titleRequired')}
+                {...registerTour('reviewTitle', { required: true, maxLength: 60 })}
+              />
+              <Textarea
+                label={t('review.content')}
+                blind
+                rows={5}
+                error={tourErrors.reviewContent && t('review.contentRequired')}
+                {...registerTour('reviewContent', { required: true, maxLength: 1000 })}
+              />
+
+              <ImagePicker files={tourFiles} onAdd={addTourFiles} onRemove={removeTourFile} label={t('review.images')} removeLabel={t('common.remove')} />
+            </div>
+          </div>
+
+          <div className="review-form-actions">
+            <Button
+              type="button"
+              variant="secondary"
+              text={t('review.addAnotherTourBtn')}
+              disabled={createTourReview.isPending || availableTourPlaces.length <= 1}
+              onClick={handleTourSubmit(addAnotherTourReview)}
+            />
+            <Button
+              type="submit"
+              text={createTourReview.isPending ? t('common.saving') : t('review.registerTitle')}
+              disabled={createTourReview.isPending}
+            />
+          </div>
+        </form>
+      )}
+
+      {step === 'writeMoim' && (
+        <form className="review-form" onSubmit={handleMoimSubmit(submitMoimReview)}>
+          <div className="review-form-scroll">
+            <p className="review-form-prompt">{t('review.moimPrompt')}</p>
+
+            <div className="review-form-card">
+              <StarRating score={moimScore} onChange={(value) => setMoimValue('reviewScore', value)} label={t('review.score')} />
+              <input type="hidden" {...registerMoim('reviewScore', { valueAsNumber: true })} />
+
+              <Textarea
+                label={t('review.content')}
+                blind
+                rows={5}
+                placeholder={t('review.moimContentPlaceholder')}
+                error={moimErrors.reviewContent && t('review.contentRequired')}
+                {...registerMoim('reviewContent', { required: true, maxLength: 1000 })}
+              />
+
+              <ImagePicker files={moimFiles} onAdd={addMoimFiles} onRemove={removeMoimFile} label={t('review.images')} removeLabel={t('common.remove')} />
+            </div>
+          </div>
+
+          <div className="review-form-actions">
+            <Button
+              type="submit"
+              text={createMoimReview.isPending ? t('common.saving') : t('review.registerTitle')}
+              disabled={createMoimReview.isPending}
+            />
+          </div>
+        </form>
+      )}
     </div>
   );
 };

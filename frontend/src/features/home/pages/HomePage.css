@@ -2,51 +2,169 @@
   position: relative;
   z-index: 1;
 }
+
+.home-today-banner {
+  position: relative;
+  isolation: isolate;
+
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+
+  width: 100%;
+  padding: var(--space-lg) var(--space-2xl);
+
+  border: 1.5px solid var(--purple-300);
+  border-radius: var(--radius-lg);
+
+  background: var(--white);
+  box-shadow: var(--shadow-card);
+
+  text-align: left;
+
+  animation: home-today-banner-pulse 2.2s ease-in-out infinite;
+}
+
+.home-today-banner-badge {
+  flex-shrink: 0;
+
+  padding: 4px 8px;
+
+  border-radius: var(--radius-pill);
+
+  background: var(--purple-100);
+  color: var(--purple-700);
+
+  font-size: var(--fs-2xs);
+  font-weight: var(--fw-ebold);
+
+  white-space: nowrap;
+}
+
+.home-today-banner-title {
+  flex: 1;
+
+  overflow: hidden;
+
+  color: var(--gray-900);
+
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-bold);
+
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.home-today-banner-cta {
+  flex-shrink: 0;
+
+  color: var(--purple-600);
+
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-bold);
+
+  white-space: nowrap;
+}
+
+.home-today-banner-cta::after {
+  content: " ›";
+}
+
+@keyframes home-today-banner-pulse {
+  0%,
+  100% {
+    border-color: var(--purple-300);
+    box-shadow: var(--shadow-card);
+  }
+
+  50% {
+    border-color: var(--purple-600);
+    box-shadow: var(--shadow-button);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-today-banner {
+    animation: none;
+  }
+}
+
+/* =================================
+   세종 배너
+   ================================= */
+
 .sejong-banner {
   display: flex;
   align-items: center;
   justify-content: space-between;
+
   gap: var(--space-2xl);
+
   padding: var(--space-3xl) var(--space-4xl);
+
   border: 1.5px solid var(--purple-500);
   border-radius: var(--radius-xl);
+
   background: var(--white);
+
   box-shadow: var(--shadow-card-lg);
 }
+
 .sejong-banner-eyebrow {
   color: var(--purple-500);
+
   font-size: var(--fs-xs);
   font-weight: var(--fw-bold);
 }
+
 .sejong-banner-title {
   margin-top: 4px;
+
   color: var(--gray-900);
+
   font-size: var(--fs-xl);
   font-weight: var(--fw-ebold);
 }
+
 .sejong-banner-desc {
   margin-top: 6px;
+
   color: var(--gray-500);
+
   font-size: var(--fs-sm);
 }
+
 .sejong-banner-icon {
   flex-shrink: 0;
+
   font-size: 40px;
 }
 
+/* =================================
+   스팟 리스트
+   ================================= */
+
 .spot-list {
   display: grid;
+
   grid-template-columns: repeat(4, 1fr);
+
   gap: 14px;
 }
+
 .spot-list li {
   min-width: 0;
 }
+
+/* =================================
+   모바일
+   ================================= */
 
 @media (max-width: 768px) {
   .spot-list {
     display: block;
   }
+
   .spot-list li + li {
     margin-top: 20px;
   }

@@ -5,6 +5,7 @@ import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-q
 
 export interface CreateReviewPayload {
   tourId: string;
+  moimId?: string;
   reviewTitle: string;
   reviewContent: string;
   reviewScore: number;

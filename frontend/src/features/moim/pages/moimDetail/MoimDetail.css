@@ -27,11 +27,20 @@
 .moim-detail-plan {
   margin-top: var(--space-2xl);
 }
-.moim-detail-plan h2 {
+.moim-detail-plan-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-lg);
   margin-bottom: var(--space-lg);
+}
+.moim-detail-plan-header h2 {
   color: var(--gray-900);
   font-size: var(--fs-lg);
   font-weight: var(--fw-ebold);
+}
+.moim-detail-plan-header .btn {
+  flex-shrink: 0;
 }
 .moim-detail-empty {
   padding: var(--space-2xl) 0;
@@ -39,6 +48,13 @@
   font-size: var(--fs-sm);
   text-align: center;
 }
+.moim-detail-transport-empty {
+  margin-bottom: var(--space-lg);
+  color: var(--gray-400);
+  font-size: var(--fs-sm);
+  text-align: center;
+}
+
 .moim-detail-reviews {
   margin-top: var(--space-2xl);
 }

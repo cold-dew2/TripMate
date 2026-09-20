@@ -22,4 +22,5 @@ public class MoimSearchData {
     private String cateCd;
     private String cateNm;
     private int avgScore;
+    private String imageUrl;
 }

@@ -83,3 +83,42 @@
 .profile-editor-lang-chip input {
   accent-color: var(--purple-600);
 }
+.profile-editor-lang-levels {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  margin-top: var(--space-lg);
+}
+.profile-editor-lang-level-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+}
+.profile-editor-lang-level-name {
+  color: var(--gray-700);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-bold);
+}
+.profile-editor-lang-level-picker {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+.profile-editor-lang-level-star {
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--gray-200);
+  font-size: var(--fs-lg);
+  line-height: 1;
+  cursor: pointer;
+}
+.profile-editor-lang-level-star.active {
+  color: var(--purple-600);
+}
+.profile-editor-lang-level-value {
+  margin-left: var(--space-xs);
+  color: var(--gray-600);
+  font-size: var(--fs-xs);
+}

@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "@/shared/api/client";
 import type { MyMoim } from "@/types/moim";
 
-export const useMyMoim = () => {
+export const useMyMoim = (enabled = true) => {
   return useQuery({
     queryKey: ["myMoim"],
     queryFn: async () => {
@@ -10,6 +10,7 @@ export const useMyMoim = () => {
       if (!result.success) throw result;
       return result.data.data ?? [];
     },
+    enabled,
   });
 };
 

@@ -3,11 +3,14 @@ package com.example.backend.trma.service.impl;
 import com.example.backend.trma.dto.dataList.*;
 import com.example.backend.trma.dto.request.*;
 import com.example.backend.trma.dto.response.*;
+import com.example.backend.trma.mapper.ChatMapper;
 import com.example.backend.trma.mapper.MoimListMapper;
 import com.example.backend.trma.mapper.NotificationMapper;
 import com.example.backend.trma.service.MoimListService;
 import com.example.backend.trma.service.NotificationPushService;
+import com.example.backend.trma.service.TourListService;
 import com.example.backend.trma.util.AiErrorUtil;
+import com.example.backend.trma.util.AiJsonUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.NonNull;
@@ -18,7 +21,9 @@ import org.springframework.web.client.RestClient;
 import tools.jackson.databind.ObjectMapper;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -27,9 +32,11 @@ import java.util.UUID;
 public class MoimListServicelmpl implements MoimListService {
 
     private final MoimListMapper moimListMapper;
+    private final ChatMapper chatMapper;
     private final NotificationMapper notificationMapper;
     private final NotificationPushService notificationPushService;
     private final RestClient restClient;
+    private final TourListService tourListService;
 
     //사용자 정보 조회
     public MoimSearchResponse moimSearch(MoimSearchRequest request) {
@@ -131,111 +138,53 @@ public class MoimListServicelmpl implements MoimListService {
             }
 
             MoimSearchRequest request2 = new MoimSearchRequest();
-            if(request.getKeyword() == null || request.getKeyword().equals("")){
-                request2.setKeyword("여름");
-            }else{
-                request2.setKeyword(request.getKeyword());
-            }
+            request2.setKeyword(request.getKeyword());
             request2.setCateCd(request.getCateCd());
 
             List<MoimSearchData> moimSearch = moimListMapper.moimSearch(request2);
-            if (moimSearch == null || moimSearch.isEmpty()) {
-                // 테스트
-                prompt = prompt + "[현재 모집 중인 소모임]\n" +
-                        "[소모임 번호 001]\n" +
-                        "소모임ID : TRMAMOIM00001\n" +
-                        "소모임명 : 강원도 힐링 캠핑\n" +
-                        "소모임설명 : 강원도 자연 속에서 1박 2일 캠핑과 바비큐를 함께 즐기는 힐링 모임입니다.\n" +
-                        "카테고리 : 캠핑, 자연, 힐링\n\n" +
 
-                        "[소모임 번호 002]\n" +
-                        "소모임ID : TRMAMOIM00002\n" +
-                        "소모임명 : 서울 감성 카페 투어\n" +
-                        "소모임설명 : 서울의 유명 감성 카페를 함께 방문하며 사진도 찍고 이야기를 나누는 모임입니다.\n" +
-                        "카테고리 : 카페, 사진명소\n\n" +
-
-                        "[소모임 번호 003]\n" +
-                        "소모임ID : TRMAMOIM00003\n" +
-                        "소모임명 : 부산 바다 드라이브\n" +
-                        "소모임설명 : 해안도로를 따라 드라이브를 즐기고 바다 풍경을 감상하는 여행 모임입니다.\n" +
-                        "카테고리 : 바다, 드라이브\n\n" +
-
-                        "[소모임 번호 004]\n" +
-                        "소모임ID : TRMAMOIM00004\n" +
-                        "소모임명 : 전주 맛집 탐방\n" +
-                        "소모임설명 : 전주 한옥마을과 다양한 현지 맛집을 함께 즐기는 미식 여행입니다.\n" +
-                        "카테고리 : 맛집, 문화\n\n" +
-
-                        "[소모임 번호 005]\n" +
-                        "소모임ID : TRMAMOIM00005\n" +
-                        "소모임명 : 제주 오름 트레킹\n" +
-                        "소모임설명 : 제주 오름을 걸으며 자연을 만끽하고 인생 사진을 남기는 모임입니다.\n" +
-                        "카테고리 : 자연, 산, 사진명소\n\n" +
-
-                        "[소모임 번호 006]\n" +
-                        "소모임ID : TRMAMOIM00006\n" +
-                        "소모임명 : 경주 역사 여행\n" +
-                        "소모임설명 : 신라의 역사 유적을 둘러보고 문화 해설과 함께 여행하는 모임입니다.\n" +
-                        "카테고리 : 역사, 문화\n\n" +
-
-                        "[소모임 번호 007]\n" +
-                        "소모임ID : TRMAMOIM00007\n" +
-                        "소모임명 : 가족과 함께 공원 나들이\n" +
-                        "소모임설명 : 아이들과 함께 공원에서 피크닉과 다양한 체험을 즐기는 가족 모임입니다.\n" +
-                        "카테고리 : 가족여행, 공원, 아이와 함께\n\n" +
-
-                        "[소모임 번호 008]\n" +
-                        "소모임ID : TRMAMOIM00008\n" +
-                        "소모임명 : 야경 출사 모임\n" +
-                        "소모임설명 : 서울의 아름다운 야경 명소를 방문하여 사진 촬영을 함께하는 모임입니다.\n" +
-                        "카테고리 : 야경, 사진명소\n\n" +
-
-                        "[소모임 번호 009]\n" +
-                        "소모임ID : TRMAMOIM00009\n" +
-                        "소모임명 : 반려견과 떠나는 여행\n" +
-                        "소모임설명 : 반려동물과 함께 여행할 수 있는 명소를 방문하는 소규모 여행 모임입니다.\n" +
-                        "카테고리 : 반려동물 동반, 산책\n\n" +
-
-                        "[소모임 번호 010]\n" +
-                        "소모임ID : TRMAMOIM00010\n" +
-                        "소모임명 : 온천 힐링 여행\n" +
-                        "소모임설명 : 온천에서 휴식을 취하고 맛집까지 함께 즐기는 힐링 여행 모임입니다.\n" +
-                        "카테고리 : 온천·스파, 힐링, 맛집\n\n";
-
-            } else {
-                StringBuilder moimListPrompt = new StringBuilder();
-
-                prompt = prompt + "[관광지 목록]\n";
-
-                int no = 1;
-
-                for (MoimSearchData moim : moimSearch) {
-                    moimListPrompt.append("""
-                            [소모임 번호 %03d]
-                            소모임ID : %s
-                            소모임명 : %s
-                            소모임설명 : %s
-                            카테고리 : %s
-                            """.formatted(
-                            no++,
-                            moim.getMoimId(),
-                            moim.getMoimTitle(),
-                            moim.getMoimDscr(),
-                            moim.getCateNm()
-                    ));
-                }
-
-                prompt = prompt + moimListPrompt;
+            // 검색어+테마 조합에 맞는 모집 중인 소모임이 없으면 테마만으로, 그래도 없으면
+            // 테마도 빼고 다시 찾는다. 예전에는 여기서 DB에 존재하지 않는 가짜 소모임
+            // 목록을 프롬프트에 넣었는데, Gemini가 그 가짜 ID(TRMAMOIM00001 등, 실제로는
+            // 다른 소모임에 쓰이고 있을 수도 있는 ID)를 추천하면 이후 실제 조회 결과와
+            // 어긋나는 문제가 있었다. 항상 실제 DB에 있는 소모임만 후보로 준다.
+            if ((moimSearch == null || moimSearch.isEmpty())
+                    && request2.getKeyword() != null && !request2.getKeyword().isBlank()) {
+                MoimSearchRequest cateOnly = new MoimSearchRequest();
+                cateOnly.setCateCd(request.getCateCd());
+                moimSearch = moimListMapper.moimSearch(cateOnly);
             }
+            if (moimSearch == null || moimSearch.isEmpty()) {
+                moimSearch = moimListMapper.moimSearch(new MoimSearchRequest());
+            }
+
+            StringBuilder moimListPrompt = new StringBuilder();
+
+            prompt = prompt + "[현재 모집 중인 소모임]\n";
+
+            int no = 1;
+
+            for (MoimSearchData moim : moimSearch) {
+                moimListPrompt.append("""
+                        [소모임 번호 %03d]
+                        소모임ID : %s
+                        소모임명 : %s
+                        소모임설명 : %s
+                        카테고리 : %s
+                        """.formatted(
+                        no++,
+                        moim.getMoimId(),
+                        moim.getMoimTitle(),
+                        moim.getMoimDscr(),
+                        moim.getCateNm()
+                ));
+            }
+
+            prompt = prompt + moimListPrompt;
 
             GeminiRequest geminiRequest = new GeminiRequest(List.of(new GeminiRequest.Content(List.of(new GeminiRequest.Part(prompt)))));
 
-            GeminiResponse response = restClient.post()
-                    .uri(url)
-                    .header("X-goog-api-key", apiKey)
-                    .body(geminiRequest)
-                    .retrieve()
-                    .body(GeminiResponse.class);
+            GeminiResponse response = callGemini(geminiRequest);
 
             String aiResult = "";
 
@@ -255,7 +204,7 @@ public class MoimListServicelmpl implements MoimListService {
 
             ObjectMapper objectMapper = new ObjectMapper();
             GeminiData recommend =
-                    objectMapper.readValue(aiResult, GeminiData.class);
+                    objectMapper.readValue(AiJsonUtil.extractJson(aiResult), GeminiData.class);
 
             List<MoimAiSearchData> moimAiSearchData = new ArrayList<>();
 
@@ -334,6 +283,18 @@ public class MoimListServicelmpl implements MoimListService {
             List<MoimCateData> moimCate = moimListMapper.moimCate(request.getMoimId());
             List<MoimPlanData> moimPlan = moimListMapper.moimPlan(request.getMoimId(), request.getLang());
             MoimJoinStatusData moimJoinStatus = moimListMapper.moimJoinStatus(request.getMoimId(), userId);
+            MoimReviewStatusData moimReviewStatus = moimListMapper.moimReviewStatus(request.getMoimId(), userId);
+
+            // 조회수 집계용 방문 이력. 비로그인 게스트는 사용자별로 구분할 수 없어 남기지
+            // 않고, 이 기록이 실패해도 상세조회 자체는 이미 완료된 것으로 처리해야 하므로
+            // 별도로 감싸서 조회 성공 여부에 영향을 주지 않게 한다.
+            if (userId != null) {
+                try {
+                    moimListMapper.insertMoimVisitIfNotExists(request.getMoimId(), userId);
+                } catch (Exception e) {
+                    log.warn("모임 방문 이력 등록에 실패했습니다. moimId={}", request.getMoimId(), e);
+                }
+            }
 
             return new MoimDetailResponse(
                     true,
@@ -345,7 +306,8 @@ public class MoimListServicelmpl implements MoimListService {
                     moimDetail,
                     moimCate,
                     moimPlan,
-                    moimJoinStatus
+                    moimJoinStatus,
+                    moimReviewStatus
             );
         } catch (Exception e) {
             log.error("처리 중 오류가 발생했습니다.", e);
@@ -356,6 +318,7 @@ public class MoimListServicelmpl implements MoimListService {
                     "조회 중 오류가 발생했습니다.",
                     "/moimList/moimDetail",
                     "",
+                    null,
                     null,
                     null,
                     null,
@@ -422,6 +385,58 @@ public class MoimListServicelmpl implements MoimListService {
         }
     }
 
+    //내가 가입한 모임 중 오늘 진행 중인 모임들의 오늘 일정
+    @Override
+    public MyTodayScheduleResponse myTodaySchedule(String userId) {
+
+        try {
+            String today = java.time.LocalDate.now(java.time.ZoneId.of("Asia/Seoul")).toString();
+            List<MyTodayScheduleRowData> rows = moimListMapper.myTodaySchedule(userId, today);
+
+            // MOIM_ID 기준으로 묶는다. 쿼리가 이미 MOIM_ID로 정렬돼 있어 LinkedHashMap으로
+            // 순서를 그대로 유지한다.
+            java.util.LinkedHashMap<String, String> titleByMoimId = new java.util.LinkedHashMap<>();
+            java.util.Map<String, List<MyTodayScheduleItemData>> itemsByMoimId = new java.util.LinkedHashMap<>();
+            for (MyTodayScheduleRowData row : rows) {
+                titleByMoimId.putIfAbsent(row.getMoimId(), row.getMoimTitle());
+                List<MyTodayScheduleItemData> items = itemsByMoimId.computeIfAbsent(row.getMoimId(), k -> new ArrayList<>());
+                if (row.getTime() != null && row.getPlaceName() != null) {
+                    items.add(new MyTodayScheduleItemData(row.getTime(), row.getPlaceName()));
+                }
+            }
+
+            List<MyTodayScheduleMoimData> data = new ArrayList<>();
+            for (java.util.Map.Entry<String, String> entry : titleByMoimId.entrySet()) {
+                data.add(new MyTodayScheduleMoimData(
+                        entry.getKey(),
+                        entry.getValue(),
+                        itemsByMoimId.getOrDefault(entry.getKey(), new ArrayList<>())
+                ));
+            }
+
+            return new MyTodayScheduleResponse(
+                    true,
+                    200,
+                    "SUCCESS",
+                    "오늘 진행 중인 모임 일정을 정상적으로 조회했습니다.",
+                    "/moimList/myTodaySchedule",
+                    "",
+                    data
+            );
+        } catch (Exception e) {
+            log.error("처리 중 오류가 발생했습니다.", e);
+            return new MyTodayScheduleResponse(
+                    false,
+                    500,
+                    "FAIL",
+                    "조회 중 오류가 발생했습니다.",
+                    "/moimList/myTodaySchedule",
+                    "",
+                    null
+            );
+        }
+    }
+
     //모임 생성
     @Override
     @Transactional
@@ -457,6 +472,9 @@ public class MoimListServicelmpl implements MoimListService {
 
                     moimListMapper.insertMoimPlan(moimPlan, moimId, userId);
                 }
+
+                //대표 이미지를 첫 일정 관광지 이미지로 설정
+                moimListMapper.updateMoimImgFromFirstPlan(moimId);
             }
 
             return new CreateMoimResponse(
@@ -552,10 +570,27 @@ public class MoimListServicelmpl implements MoimListService {
     public UpdateMoimMemberResponse updateMoimMember(String moimId, String targetUserId, UpdateMoimMemberRequest request, String userId) {
 
         try {
+            // 신청 승인/거절뿐 아니라 이미 가입된 멤버 추방(거절과 동일하게 행을 삭제)에도
+            // 쓰이는 엔드포인트라, 모임장이 아닌 사람이 함부로 멤버를 바꾸지 못하도록 막는다.
+            if (!userId.equals(moimListMapper.moimHostUserId(moimId))) {
+                return new UpdateMoimMemberResponse(
+                        false,
+                        403,
+                        "FORBIDDEN",
+                        "모임장만 처리할 수 있습니다.",
+                        "/moimList/" + moimId + "/members/" + targetUserId,
+                        ""
+                );
+            }
+
             if (request.isApprove()) {
                 moimListMapper.updateMoimMemberState(moimId, targetUserId, "Y", userId);
             } else {
                 moimListMapper.deleteMoimMember(moimId, targetUserId);
+                // 채팅방은 그대로 남겨두고 상태만 "추방됨"으로 표시한다(대기 중이던
+                // 신청자를 거절하는 경우엔 애초에 채팅방 멤버 행이 없을 수 있는데, 그때는
+                // 그냥 아무 일도 일어나지 않는다).
+                chatMapper.markChatMemberKicked("moim-" + moimId, targetUserId);
             }
 
             return new UpdateMoimMemberResponse(
@@ -575,6 +610,91 @@ public class MoimListServicelmpl implements MoimListService {
                     "처리 중 오류가 발생했습니다.",
                     "/moimList/" + moimId + "/members/" + targetUserId,
                     ""
+            );
+        }
+    }
+
+    //모임 일정 수정
+    @Override
+    public UpdateMoimPlanResponse updateMoimPlan(String moimId, UpdateMoimPlanRequest request, String userId) {
+
+        try {
+            if (!userId.equals(moimListMapper.moimHostUserId(moimId))) {
+                return new UpdateMoimPlanResponse(
+                        false,
+                        403,
+                        "FORBIDDEN",
+                        "모임장만 일정을 수정할 수 있습니다.",
+                        "/moimList/" + moimId + "/plan"
+                );
+            }
+
+            if (request.getMoimEndDt() != null && !request.getMoimEndDt().isBlank()) {
+                MoimDetailData moim = moimListMapper.moimDetail(moimId);
+                if (moim != null && moim.getMoimStartDt() != null
+                        && java.time.LocalDate.parse(request.getMoimEndDt()).isBefore(moim.getMoimStartDt())) {
+                    return new UpdateMoimPlanResponse(
+                            false,
+                            400,
+                            "INVALID_DATE",
+                            "종료일은 시작일보다 이전일 수 없습니다.",
+                            "/moimList/" + moimId + "/plan"
+                    );
+                }
+                moimListMapper.updateMoimEndDt(moimId, request.getMoimEndDt(), userId);
+            }
+
+            moimListMapper.deleteMoimPlan(moimId);
+            if (request.getItems() != null) {
+                for (MoimPlanInsertData item : request.getItems()) {
+                    moimListMapper.insertMoimPlan(item, moimId, userId);
+                }
+            }
+
+            //대표 이미지를 변경된 일정의 첫 관광지 이미지로 다시 설정
+            moimListMapper.updateMoimImgFromFirstPlan(moimId);
+
+            return new UpdateMoimPlanResponse(
+                    true,
+                    200,
+                    "SUCCESS",
+                    "일정을 수정했습니다.",
+                    "/moimList/" + moimId + "/plan"
+            );
+        } catch (Exception e) {
+            log.error("처리 중 오류가 발생했습니다.", e);
+            return new UpdateMoimPlanResponse(
+                    false,
+                    500,
+                    "FAIL",
+                    "일정 수정 중 오류가 발생했습니다.",
+                    "/moimList/" + moimId + "/plan"
+            );
+        }
+    }
+
+    //모임 관리(신청자 목록) 조회 시 가입 신청 알림 읽음 처리
+    @Override
+    public MarkApplicantsReadResponse markApplicantsRead(String moimId, String userId) {
+
+        try {
+            notificationMapper.markApplyNotificationsRead(moimId, userId);
+
+            return new MarkApplicantsReadResponse(
+                    true,
+                    200,
+                    "SUCCESS",
+                    "알림을 읽음 처리했습니다.",
+                    "/moimList/" + moimId + "/applicantsRead"
+            );
+        } catch (Exception e) {
+            log.error("처리 중 오류가 발생했습니다.", e);
+            return new MarkApplicantsReadResponse(
+                    false,
+                    500,
+                    "FAIL",
+                    "처리 중 오류가 발생했습니다.",
+                    "/moimList/" + moimId + "/applicantsRead"
             );
         }
     }
@@ -640,12 +760,105 @@ public class MoimListServicelmpl implements MoimListService {
         }
     }
 
+    //모임 일정 기반 교통편 혼잡도 분석(가입된 멤버만)
+    @Override
+    public TransportRecommendResponse moimTransportRecommend(String moimId, String userId) {
+
+        if (userId == null) {
+            return new TransportRecommendResponse(
+                    false,
+                    500,
+                    "NEED_LOGIN",
+                    "로그인이 필요합니다.",
+                    "/moimList/" + moimId + "/transportRecommend",
+                    "",
+                    null
+            );
+        }
+
+        try {
+            // 승인된(STATE_CD='Y') 멤버만 볼 수 있다. 모임장도 생성 시 ROLE_CD='A',
+            // STATE_CD='Y'로 자기 자신이 멤버 테이블에 등록되므로 여기서 함께 걸러진다.
+            MoimJoinStatusData joinStatus = moimListMapper.moimJoinStatus(moimId, userId);
+            if (joinStatus == null || !"Y".equals(joinStatus.getStateCd())) {
+                return new TransportRecommendResponse(
+                        false,
+                        403,
+                        "FORBIDDEN",
+                        "가입된 소모임 멤버만 교통편 분석을 볼 수 있습니다.",
+                        "/moimList/" + moimId + "/transportRecommend",
+                        "",
+                        null
+                );
+            }
+
+            List<MoimPlanData> plan = moimListMapper.moimPlan(moimId, "ko");
+
+            // 일정은 달력 날짜(START_DT)로 저장돼 있는데, AI 프롬프트에는 실제 날짜가
+            // 아니라 "몇 번째 날"(1일차, 2일차...)이 필요하므로 날짜를 오름차순으로
+            // 정렬해 순번을 매긴다.
+            List<String> sortedDates = plan.stream()
+                    .map(MoimPlanData::getStartDt)
+                    .filter(java.util.Objects::nonNull)
+                    .distinct()
+                    .sorted()
+                    .toList();
+            java.util.Map<String, Integer> dayIndexByDate = new java.util.HashMap<>();
+            for (int i = 0; i < sortedDates.size(); i++) {
+                dayIndexByDate.put(sortedDates.get(i), i + 1);
+            }
+
+            List<TransportRecommendRequest.TransportStopInput> stops = new ArrayList<>();
+            for (MoimPlanData item : plan) {
+                Integer day = dayIndexByDate.get(item.getStartDt());
+                if (day == null || item.getTourId() == null) continue;
+
+                TransportRecommendRequest.TransportStopInput stop = new TransportRecommendRequest.TransportStopInput();
+                stop.setDay(day);
+                stop.setTime(item.getRmks());
+                stop.setTourId(item.getTourId());
+                stop.setTourNm(item.getTourNm());
+                stop.setRoadAddr(item.getRoadAddr());
+                stops.add(stop);
+            }
+
+            TransportRecommendRequest request = new TransportRecommendRequest();
+            request.setItems(stops);
+
+            TransportRecommendResponse result = tourListService.transportRecommend(request);
+
+            return new TransportRecommendResponse(
+                    result.isSuccess(),
+                    result.getStatus(),
+                    result.getCode(),
+                    result.getMessage(),
+                    "/moimList/" + moimId + "/transportRecommend",
+                    result.getToken(),
+                    result.getData()
+            );
+        } catch (Exception e) {
+            log.error("처리 중 오류가 발생했습니다.", e);
+            return new TransportRecommendResponse(
+                    false,
+                    500,
+                    "FAIL",
+                    "교통편 분석 중 오류가 발생했습니다.",
+                    "/moimList/" + moimId + "/transportRecommend",
+                    "",
+                    null
+            );
+        }
+    }
+
     // ========================= 소모임 제목/소개/후기 번역 =========================
     // 사용자가 직접 입력하는 값이라 한국어만 존재하므로, 관광지와 동일한 방식으로
     // 제목/소개는 DB에 캐시하고(재사용), 계속 새로 작성되는 후기는 조회 시점에 매번 번역한다.
 
-    private GeminiData callGeminiForTranslation(String prompt) {
-        GeminiRequest geminiRequest = new GeminiRequest(List.of(new GeminiRequest.Content(List.of(new GeminiRequest.Part(prompt)))));
+    // Gemini 호출 시 주고받은 JSON을 그대로 콘솔에 남긴다. AI 응답이 비거나 이상할 때
+    // 이 로그를 보면 실제로 어떤 프롬프트를 보냈고 Gemini가 뭐라고 답했는지 바로 확인할 수 있다.
+    private GeminiResponse callGemini(GeminiRequest geminiRequest) {
+        ObjectMapper objectMapper = new ObjectMapper();
+        System.out.println("[Gemini 요청] " + objectMapper.writeValueAsString(geminiRequest));
 
         GeminiResponse response = restClient.post()
                 .uri(url)
@@ -654,6 +867,16 @@ public class MoimListServicelmpl implements MoimListService {
                 .retrieve()
                 .body(GeminiResponse.class);
 
+        System.out.println("[Gemini 응답] " + objectMapper.writeValueAsString(response));
+
+        return response;
+    }
+
+    private GeminiData callGeminiForTranslation(String prompt) {
+        GeminiRequest geminiRequest = new GeminiRequest(List.of(new GeminiRequest.Content(List.of(new GeminiRequest.Part(prompt)))));
+
+        GeminiResponse response = callGemini(geminiRequest);
+
         String aiResult = "";
         if (response != null && response.candidates() != null && !response.candidates().isEmpty()) {
             aiResult = response.candidates().get(0).content().parts().get(0).text();
@@ -661,7 +884,7 @@ public class MoimListServicelmpl implements MoimListService {
         if (aiResult == null || aiResult.isBlank()) return null;
 
         ObjectMapper objectMapper = new ObjectMapper();
-        return objectMapper.readValue(aiResult, GeminiData.class);
+        return objectMapper.readValue(AiJsonUtil.extractJson(aiResult), GeminiData.class);
     }
 
     private void applyMoimDetailTranslation(MoimDetailData moim, String lang) {
@@ -706,34 +929,58 @@ public class MoimListServicelmpl implements MoimListService {
         }
     }
 
+    // 관광지 후기와 동일하게 REVIEW_ID 기준으로 캐시한다.
     private void applyMoimReviewTranslations(List<MoimReviewData> reviews, String lang) {
         if (!"en".equals(lang) && !"ja".equals(lang)) return;
         if (reviews == null || reviews.isEmpty()) return;
 
+        List<MoimReviewData> uncached = new ArrayList<>();
+        for (MoimReviewData review : reviews) {
+            String cached = "en".equals(lang) ? review.getReviewContentEn() : review.getReviewContentJa();
+            if (cached != null && !cached.isBlank()) {
+                review.setReviewContent(cached);
+            } else {
+                uncached.add(review);
+            }
+        }
+        if (uncached.isEmpty()) return;
+
         try {
             StringBuilder listPrompt = new StringBuilder();
-            for (int i = 0; i < reviews.size(); i++) {
-                listPrompt.append("[index %d]\n내용: %s\n\n".formatted(
-                        i,
-                        reviews.get(i).getReviewContent() == null ? "" : reviews.get(i).getReviewContent()
+            for (MoimReviewData review : uncached) {
+                listPrompt.append("[reviewId %s]\n내용: %s\n\n".formatted(
+                        review.getReviewId(),
+                        review.getReviewContent() == null ? "" : review.getReviewContent()
                 ));
             }
 
             String langLabel = "en".equals(lang) ? "영어" : "일본어";
             String prompt = "다음은 여행 후기 목록입니다. 각 후기 내용을 " + langLabel + "로 자연스럽게 번역해주세요.\n"
-                    + "반드시 JSON 형식으로만 응답하고, 요청받은 index를 그대로 포함해서 응답하세요.\n"
+                    + "반드시 JSON 형식으로만 응답하고, 요청받은 reviewId를 그대로 포함해서 응답하세요.\n"
                     + "[응답 형식]\n"
-                    + "{\"reviewTranslations\":[{\"index\":0,\"reviewContent\":\"번역된 내용\"}]}\n"
+                    + "{\"reviewTranslations\":[{\"reviewId\":\"R0001\",\"reviewContent\":\"번역된 내용\"}]}\n"
                     + "[후기 목록]\n" + listPrompt;
 
             GeminiData result = callGeminiForTranslation(prompt);
             if (result == null || result.getReviewTranslations() == null) return;
 
+            Map<String, String> translatedContents = new HashMap<>();
             for (GeminiData.ReviewTranslationItem item : result.getReviewTranslations()) {
-                if (item.getIndex() < 0 || item.getIndex() >= reviews.size()) continue;
-                if (item.getReviewContent() != null && !item.getReviewContent().isBlank()) {
-                    reviews.get(item.getIndex()).setReviewContent(item.getReviewContent());
+                if (item.getReviewId() != null && item.getReviewContent() != null) {
+                    translatedContents.put(item.getReviewId(), item.getReviewContent());
                 }
+            }
+
+            for (MoimReviewData review : uncached) {
+                String content = translatedContents.get(review.getReviewId());
+                if (content == null || content.isBlank()) continue;
+
+                moimListMapper.updateReviewTranslation(
+                        review.getReviewId(),
+                        "en".equals(lang) ? content : null,
+                        "ja".equals(lang) ? content : null
+                );
+                review.setReviewContent(content);
             }
         } catch (Exception e) {
             log.warn("모임 후기 번역에 실패해 한국어로 표시합니다. lang={}", lang, e);

@@ -146,18 +146,18 @@ const MyPageScreen = () => {
         {p?.description && <p className="mypage-desc">{p.description}</p>}
 
         <div className="mypage-stats">
-          <div>
+          <Link to="/moimManage">
             <strong>{p?.ongoingMoimCount ?? 0}</strong>
             <span>{t('my.moiming')}</span>
-          </div>
+          </Link>
           <div>
             <strong>{p?.memberCount ?? 0}</strong>
             <span>{t('my.member')}</span>
           </div>
-          <div>
+          <Link to="/my/reviews">
             <strong>{p?.reviewCount ?? 0}</strong>
             <span>{t('my.getReview')}</span>
-          </div>
+          </Link>
         </div>
       </section>
 
@@ -169,7 +169,10 @@ const MyPageScreen = () => {
               <div key={lang.langCd} className="mypage-lang-card">
                 <span className="flag" aria-hidden="true">{FLAG_BY_LANG[lang.langCd] ?? '🌐'}</span>
                 <strong>{lang.langNm}</strong>
-                <span className="level">{lang.levelNm}</span>
+                <span className="level" aria-label={t('my.langLevel', { level: Number(lang.levelNm) || 0 })}>
+                  {'★'.repeat(Number(lang.levelNm) || 0)}
+                  {'☆'.repeat(Math.max(0, 5 - (Number(lang.levelNm) || 0)))}
+                </span>
               </div>
             ))}
           </div>

@@ -29,4 +29,10 @@ public interface NotificationMapper {
 
     //알림 읽음 처리
     int markNotificationRead(@Param("notiId") long notiId, @Param("userId") String userId);
+
+    //채팅방에 들어왔을 때, 그 방의 채팅 알림을 모두 읽음 처리
+    int markChatNotificationsRead(@Param("roomId") String roomId, @Param("userId") String userId);
+
+    //모임 관리(신청자 목록)에 들어왔을 때, 그 모임의 가입 신청 알림을 모두 읽음 처리
+    int markApplyNotificationsRead(@Param("moimId") String moimId, @Param("userId") String userId);
 }

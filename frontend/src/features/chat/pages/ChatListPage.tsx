@@ -13,6 +13,7 @@ interface Room {
   title: string;
   lastMessage: string | null;
   unreadCount: number;
+  myState: string | null;
 }
 
 type RoomFilter = 'all' | 'unread';
@@ -80,10 +81,13 @@ export default function ChatListPage() {
         <ul>
           {visibleRooms.map((room) => (
             <li key={room.roomId}>
-              <Link to={`/chat/${room.roomId}`}>
+              <Link to={`/chat/${room.roomId}`} state={{ title: room.title }}>
                 <div className="room-avatar">💬</div>
                 <div>
-                  <b>{room.title}</b>
+                  <b>
+                    {room.title}
+                    {room.myState === 'K' && <span className="room-kicked-badge">{t('chat.kickedLabel')}</span>}
+                  </b>
                   <p>{room.lastMessage}</p>
                 </div>
                 {room.unreadCount > 0 && (

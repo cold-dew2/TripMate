@@ -11,13 +11,19 @@ import Button from '@/shared/components/button/Button';
 import './ProfileEditor.css';
 
 const MAX_LANGUAGES = 3;
+const DEFAULT_LEVEL = 3;
 
 interface Profile {
   userNm: string;
   areaNm: string;
   description: string;
   profileImageUrl: string;
-  languages?: { langCd: string }[];
+  languages?: { langCd: string; levelNm?: string }[];
+}
+
+interface LanguageSelection {
+  langCd: string;
+  levelCd: number;
 }
 
 interface FormValues {
@@ -43,8 +49,11 @@ export default function ProfileEditor() {
   const { register, handleSubmit, reset, formState: { isSubmitting } } = useForm<FormValues>({
     defaultValues: { userNm: '', areaNm: '', description: '' },
   });
-  const [langCds, setLangCds] = useState<string[]>([]);
+  const [languages, setLanguages] = useState<LanguageSelection[]>([]);
   const [uploadError, setUploadError] = useState('');
+  // 새로 고른 프로필 이미지는 "완료"를 눌러 저장하기 전까지는 미리보기용으로만 들고
+  // 있는다. 이 값이 없으면 업로드를 아예 안 한 것이므로 기존 이미지를 그대로 쓴다.
+  const [pendingImageUrl, setPendingImageUrl] = useState<string | null>(null);
 
   useEffect(() => {
     if (profile.data) {
@@ -53,7 +62,11 @@ export default function ProfileEditor() {
         areaNm: profile.data.areaNm ?? '',
         description: profile.data.description ?? '',
       });
-      setLangCds((profile.data.languages ?? []).map((lang) => lang.langCd));
+      setLanguages((profile.data.languages ?? []).map((lang) => ({
+        langCd: lang.langCd,
+        levelCd: Number(lang.levelNm) || DEFAULT_LEVEL,
+      })));
+      setPendingImageUrl(null);
     }
   }, [profile.data, reset]);
 
@@ -64,15 +77,21 @@ export default function ProfileEditor() {
   ];
 
   const toggleLanguage = (value: string) => {
-    setLangCds((prev) => {
-      if (prev.includes(value)) return prev.filter((code) => code !== value);
+    setLanguages((prev) => {
+      if (prev.some((lang) => lang.langCd === value)) {
+        return prev.filter((lang) => lang.langCd !== value);
+      }
       if (prev.length >= MAX_LANGUAGES) return prev;
-      return [...prev, value];
+      return [...prev, { langCd: value, levelCd: DEFAULT_LEVEL }];
     });
   };
 
+  const setLanguageLevel = (value: string, levelCd: number) => {
+    setLanguages((prev) => prev.map((lang) => (lang.langCd === value ? { ...lang, levelCd } : lang)));
+  };
+
   const update = useMutation({
-    mutationFn: async (data: Partial<FormValues> & { profileImageUrl?: string; langCds?: string[] }) => {
+    mutationFn: async (data: Partial<FormValues> & { profileImageUrl?: string; languages?: LanguageSelection[] }) => {
       const r = await apiClient.put<{ data: Profile }>('/mypage/profile', data);
       if (!r.success) throw r;
       return r.data.data;
@@ -94,13 +113,18 @@ export default function ProfileEditor() {
       body.append('file', file);
       const r = await apiClient.upload<{ data: { url: string } }>('/uploads', body);
       if (!r.success) throw r;
-      update.mutate({ profileImageUrl: r.data.data.url });
+      // 서버에 올리기만 하고, 실제 프로필 반영은 "완료"를 눌렀을 때 onSubmit에서 한다.
+      setPendingImageUrl(r.data.data.url);
     } catch {
       setUploadError(t('my.uploadFailed'));
     }
   };
 
-  const onSubmit = (values: FormValues) => update.mutate({ ...values, langCds });
+  const onSubmit = (values: FormValues) => update.mutate({
+    ...values,
+    languages,
+    ...(pendingImageUrl ? { profileImageUrl: pendingImageUrl } : {}),
+  });
 
   if (profile.isLoading) return <p className="profile-editor-loading">{t('account.loading')}</p>;
   if (profile.isError || !profile.data) return <p className="profile-editor-loading">{t('common.loadError')}</p>;
@@ -108,7 +132,7 @@ export default function ProfileEditor() {
   return (
     <section className="profile-editor">
       <div className="profile-editor-avatar-row">
-        <img className="profile-editor-avatar" src={profile.data.profileImageUrl ? resolveImageUrl(profile.data.profileImageUrl) : '/images/places/no-image.png'} alt={t('image.profilePhoto', { name: profile.data.userNm })} />
+        <img className="profile-editor-avatar" src={pendingImageUrl ? resolveImageUrl(pendingImageUrl) : profile.data.profileImageUrl ? resolveImageUrl(profile.data.profileImageUrl) : '/images/places/no-image.png'} alt={t('image.profilePhoto', { name: profile.data.userNm })} />
         <label className="profile-editor-upload">
           {t('account.edit')}
           <input type="file" accept="image/*" onChange={(event) => void uploadImage(event.target.files?.[0])} />
@@ -125,13 +149,13 @@ export default function ProfileEditor() {
           <span className="profile-editor-langs-label">{t('my.useLang')} ({t('my.langMaxHint', { max: MAX_LANGUAGES })})</span>
           <div className="profile-editor-lang-options">
             {languageOptions.map((option) => {
-              const checked = langCds.includes(option.value);
+              const checked = languages.some((lang) => lang.langCd === option.value);
               return (
                 <label key={option.value} className={checked ? 'profile-editor-lang-chip checked' : 'profile-editor-lang-chip'}>
                   <input
                     type="checkbox"
                     checked={checked}
-                    disabled={!checked && langCds.length >= MAX_LANGUAGES}
+                    disabled={!checked && languages.length >= MAX_LANGUAGES}
                     onChange={() => toggleLanguage(option.value)}
                   />
                   {option.label}
@@ -139,6 +163,35 @@ export default function ProfileEditor() {
               );
             })}
           </div>
+
+          {languages.length > 0 && (
+            <div className="profile-editor-lang-levels">
+              {languages.map((lang) => {
+                const label = languageOptions.find((option) => option.value === lang.langCd)?.label ?? lang.langCd;
+                return (
+                  <div key={lang.langCd} className="profile-editor-lang-level-row">
+                    <span className="profile-editor-lang-level-name">{label}</span>
+                    <div className="profile-editor-lang-level-picker" role="radiogroup" aria-label={t('my.langLevelLabel')}>
+                      {[1, 2, 3, 4, 5].map((level) => (
+                        <button
+                          key={level}
+                          type="button"
+                          role="radio"
+                          aria-checked={lang.levelCd === level}
+                          aria-label={t('my.langLevel', { level })}
+                          className={lang.levelCd >= level ? 'profile-editor-lang-level-star active' : 'profile-editor-lang-level-star'}
+                          onClick={() => setLanguageLevel(lang.langCd, level)}
+                        >
+                          ★
+                        </button>
+                      ))}
+                      <span className="profile-editor-lang-level-value">{t('my.langLevel', { level: lang.levelCd })}</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
 
         <Button type="submit" text={isSubmitting || update.isPending ? t('common.saving') : t('common.submit')} disabled={isSubmitting || update.isPending} />

@@ -1,12 +1,7 @@
 .step3-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: var(--space-lg);
   margin-bottom: 30px;
-}
-.step3-header .form.select {
-  width: 160px;
 }
 
 .buttons.fixed.step3-fixed {

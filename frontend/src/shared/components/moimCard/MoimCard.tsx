@@ -41,7 +41,7 @@ const MoimCard = ({ loading = false, badge, imageUrl, title, date, member, maxMe
         <>
           {badge && (
             <div className="badges">
-              {badge.split(",").map((item) => (
+              {badge.split(",").slice(0, 5).map((item) => (
                 <span key={item} className="badge">
                   #{item}
                 </span>

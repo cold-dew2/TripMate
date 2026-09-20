@@ -22,6 +22,50 @@
     </select>
 
     <!-- ========================= -->
+    <!-- 아이디 찾기(이름으로 조회) -->
+    <!-- ========================= -->
+    <select id="findIdByUserNm"
+            parameterType="string"
+            resultType="string">
+
+        SELECT
+            a.USER_ID
+        FROM TB_TRMA_USER_INFO a
+        WHERE
+            a.USER_NM = #{userNm}
+        ORDER BY a.CREATE_DT
+
+    </select>
+
+    <!-- ========================= -->
+    <!-- 비밀번호 재설정 대상자 확인 -->
+    <!-- ========================= -->
+    <select id="existsUserForReset"
+            resultType="int">
+
+        SELECT
+            COUNT(1)
+        FROM TB_TRMA_USER_INFO a
+        WHERE
+            a.USER_ID = #{userId}
+            AND a.USER_NM = #{userNm}
+
+    </select>
+
+    <!-- ========================= -->
+    <!-- 비밀번호 재설정 -->
+    <!-- ========================= -->
+    <update id="updatePassword">
+
+        UPDATE TB_TRMA_USER_INFO
+        SET USER_PW = #{userPw}
+            ,UPDATE_USER = #{userId}
+            ,UPDATE_DT = CURRENT_TIMESTAMP
+        WHERE USER_ID = #{userId}
+
+    </update>
+
+    <!-- ========================= -->
     <!-- 회원가입_사용자정보 -->
     <!-- ========================= -->
     <insert id="insertUser"
@@ -127,24 +171,38 @@
             ,COUNT(1) AS MEMBER_CNT
             FROM TB_TRMA_MOIM_MEMBER c1
             LEFT JOIN TB_TRMA_MOIM_LIST c2 ON c1.MOIM_ID = c2.MOIM_ID
-            GROUP BY c2.MOIM_ID
-        ) c ON a.USER_ID = b.CREATE_USER
+            GROUP BY c2.CREATE_USER
+        ) c ON a.USER_ID = c.CREATE_USER
+        <!-- 받은 후기: 내가 호스트인 모임에 달린 후기 + 내가 직접 남긴 후기(테스트 계정처럼
+             본인 모임에 스스로 후기를 남기는 경우도 "받은 후기"로 집계). 자기 모임에 자기가
+             남긴 후기는 두 조건에 모두 해당하므로 UNION으로 중복 제거한다. -->
         LEFT JOIN (
-            SELECT
-            d2.CREATE_USER
-            ,COUNT(1) AS REVIRE_CNT
-            FROM TB_TRMA_MOIM_REVIEW d1
-            LEFT JOIN TB_TRMA_MOIM_LIST d2 ON d1.MOIM_ID = d2.MOIM_ID
-            GROUP BY d2.MOIM_ID
-        ) d ON a.USER_ID = b.CREATE_USER
+            SELECT owner_id AS CREATE_USER, COUNT(1) AS REVIRE_CNT
+            FROM (
+                SELECT d1.REVIEW_ID, d2.CREATE_USER AS owner_id
+                FROM TB_TRMA_MOIM_REVIEW d1
+                LEFT JOIN TB_TRMA_MOIM_LIST d2 ON d1.MOIM_ID = d2.MOIM_ID
+                WHERE d1.USE_YN = 'Y' AND d1.REVIEW_TYPE_CD = 'O'
+                UNION
+                SELECT d1.REVIEW_ID, d1.CREATE_USER AS owner_id
+                FROM TB_TRMA_MOIM_REVIEW d1
+                WHERE d1.USE_YN = 'Y' AND d1.REVIEW_TYPE_CD = 'O'
+            ) d_union
+            GROUP BY owner_id
+        ) d ON a.USER_ID = d.CREATE_USER
         LEFT JOIN (
-            SELECT
-            f2.CREATE_USER
-            ,AVG(f1.REVIEW_SCORE) AS RATING
-            FROM TB_TRMA_MOIM_REVIEW f1
-            LEFT JOIN TB_TRMA_MOIM_LIST f2 ON f1.MOIM_ID = f2.MOIM_ID
-            WHERE f1.REVIEW_TYPE_CD = 'O'
-            GROUP BY f2.CREATE_USER
+            SELECT owner_id AS CREATE_USER, AVG(REVIEW_SCORE) AS RATING
+            FROM (
+                SELECT f1.REVIEW_ID, f1.REVIEW_SCORE, f2.CREATE_USER AS owner_id
+                FROM TB_TRMA_MOIM_REVIEW f1
+                LEFT JOIN TB_TRMA_MOIM_LIST f2 ON f1.MOIM_ID = f2.MOIM_ID
+                WHERE f1.REVIEW_TYPE_CD = 'O'
+                UNION
+                SELECT f1.REVIEW_ID, f1.REVIEW_SCORE, f1.CREATE_USER AS owner_id
+                FROM TB_TRMA_MOIM_REVIEW f1
+                WHERE f1.REVIEW_TYPE_CD = 'O'
+            ) f_union
+            GROUP BY owner_id
         ) f ON a.USER_ID = f.CREATE_USER
         LEFT JOIN TB_TRMA_CMM_CD_D e ON a.LANG_CD = e.CMM_CDV AND e.CMM_CD_ID = 'LANG_CD'
         WHERE 1=1
@@ -158,6 +216,8 @@
             parameterType="com.example.backend.trma.dto.request.UserReviewRequest"
             resultType="com.example.backend.trma.dto.dataList.UserReviewData">
 
+        <!-- 받은 후기: 내가 호스트인 모임에 달린 후기 + 내가 직접 남긴 후기(테스트 계정처럼
+             본인 모임에 스스로 후기를 남기는 경우도 포함). userDetail의 카운트와 동일한 기준. -->
         SELECT
             b.REVIEW_TITLE
             ,b.REVIEW_CONTENT
@@ -165,16 +225,20 @@
             ,c.USER_NM
             ,b.IMG_URLS
             ,b.CREATE_DT
-        FROM TB_TRMA_MOIM_LIST a
-        LEFT JOIN TB_TRMA_MOIM_REVIEW b ON a.MOIM_ID = b.MOIM_ID
+        FROM TB_TRMA_MOIM_REVIEW b
+        LEFT JOIN TB_TRMA_MOIM_LIST a ON a.MOIM_ID = b.MOIM_ID
         LEFT JOIN TB_TRMA_USER_INFO c ON b.CREATE_USER = c.USER_ID
         WHERE 1=1
         AND b.USE_YN = 'Y'
+        AND b.REVIEW_TYPE_CD = 'O'
         <if test="userId != null and userId != ''">
-            AND a.CREATE_USER = #{userId}
+            AND (a.CREATE_USER = #{userId} OR b.CREATE_USER = #{userId})
         </if>
-        ORDER BY b.CREATE_DT DESC
-        LIMIT 3
+        <choose>
+            <when test="sort == 'rating'">ORDER BY b.REVIEW_SCORE DESC, b.CREATE_DT DESC</when>
+            <otherwise>ORDER BY b.CREATE_DT DESC</otherwise>
+        </choose>
+        LIMIT 10
         <if test="offset != null and offset != ''">
             OFFSET #{offset}
         </if>

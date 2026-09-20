@@ -4,6 +4,37 @@
   height: 100%;
   min-height: 0;
 }
+.chat-room-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+  padding: 8px 14px;
+  color: var(--gray-500);
+  background: var(--white);
+  border-bottom: 1px solid var(--gray-100);
+  font-size: 12px;
+}
+.chat-leave-btn {
+  color: var(--gray-500);
+  font-size: 12px;
+  text-decoration: underline;
+}
+.chat-kicked-banner {
+  flex-shrink: 0;
+  padding: 10px 14px;
+  color: var(--red-700);
+  background: var(--red-300);
+  font-size: 13px;
+  text-align: center;
+}
+.chat-room input:disabled {
+  color: var(--gray-400);
+  background: var(--white-300);
+}
+.chat-send-btn:disabled {
+  background: var(--gray-300);
+}
 .chat-messages {
   display: grid;
   align-content: start;
@@ -42,6 +73,21 @@
   border-radius: 14px 4px 14px 14px;
   color: var(--white);
   background: var(--purple-600);
+}
+.chat-bubble-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+}
+.chat-messages article.mine .chat-bubble-row {
+  flex-direction: row-reverse;
+}
+.chat-unread-badge {
+  flex-shrink: 0;
+  color: var(--yellow-500);
+  font-size: 11px;
+  font-weight: var(--fw-bold);
+  font-style: normal;
 }
 .chat-room-error {
   flex-shrink: 0;

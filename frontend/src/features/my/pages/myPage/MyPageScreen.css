@@ -151,13 +151,16 @@
   gap: var(--space-lg);
   margin-top: var(--space-4xl);
 }
-.mypage-stats div {
+.mypage-stats div,
+.mypage-stats a {
   display: grid;
   gap: 4px;
   padding: var(--space-2xl) var(--space-sm);
   border-radius: var(--radius-xl);
   background: var(--white-100);
   text-align: center;
+  color: inherit;
+  text-decoration: none;
 }
 .mypage-stats strong {
   color: var(--gray-900);

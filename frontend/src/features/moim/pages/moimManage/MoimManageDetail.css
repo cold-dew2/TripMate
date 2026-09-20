@@ -94,6 +94,25 @@
   color: var(--gray-500);
   background: var(--white-300);
 }
+.applicant-kick {
+  padding: 0 var(--space-md);
+  height: 30px;
+  border-radius: var(--radius-full);
+  color: var(--red-700);
+  background: var(--white-300);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-bold);
+  white-space: nowrap;
+}
+.member-host-badge {
+  margin-left: var(--space-sm);
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  color: var(--purple-600);
+  background: var(--purple-100);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-bold);
+}
 .manage-detail-chat-wrap {
   margin-top: var(--space-xl);
   height: 460px;
@@ -103,4 +122,70 @@
 }
 .manage-transport-trigger {
   margin-bottom: var(--space-lg);
+}
+.schedule-date-range {
+  margin-bottom: var(--space-lg);
+  color: var(--gray-600);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-bold);
+}
+.schedule-save-row {
+  margin-top: var(--space-xl);
+}
+.schedule-save-row .btn {
+  width: 100%;
+}
+.schedule-spot-search {
+  margin: -8px 0 var(--space-lg);
+  padding: var(--space-md);
+  border: 1px solid var(--gray-100);
+  border-radius: var(--radius-md);
+  background: var(--white-300);
+}
+.schedule-spot-search input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-sm);
+  font-size: var(--fs-sm);
+}
+.schedule-spot-results {
+  max-height: 220px;
+  margin-top: var(--space-sm);
+  overflow-y: auto;
+}
+.schedule-spot-results li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  padding: 10px 4px;
+  border-bottom: 1px solid var(--gray-100);
+  font-size: var(--fs-sm);
+}
+.schedule-spot-results li button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: var(--radius-full);
+  color: var(--purple-600);
+  background: var(--purple-100);
+  font-weight: var(--fw-bold);
+}
+.schedule-spot-empty {
+  padding: 10px 4px;
+  color: var(--gray-400);
+  font-size: var(--fs-sm);
+}
+.schedule-spot-done {
+  margin-top: var(--space-sm);
+  width: 100%;
+  padding: 8px 0;
+  border-radius: var(--radius-sm);
+  color: var(--gray-600);
+  background: var(--white);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-bold);
 }

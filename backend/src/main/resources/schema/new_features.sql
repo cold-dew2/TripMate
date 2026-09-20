@@ -124,3 +124,67 @@ ALTER TABLE TB_TRMA_MOIM_LIST ADD COLUMN IF NOT EXISTS MOIM_TITLE_EN VARCHAR(200
 ALTER TABLE TB_TRMA_MOIM_LIST ADD COLUMN IF NOT EXISTS MOIM_TITLE_JA VARCHAR(200) NULL;
 ALTER TABLE TB_TRMA_MOIM_LIST ADD COLUMN IF NOT EXISTS MOIM_DSCR_EN TEXT NULL;
 ALTER TABLE TB_TRMA_MOIM_LIST ADD COLUMN IF NOT EXISTS MOIM_DSCR_JA TEXT NULL;
+
+-- 15) 채팅방 멤버 참여 상태(정상/추방됨). 모임에서 추방되면 채팅방 멤버 행은 남겨두고
+--     이 값만 'K'로 바꿔서, 채팅 목록/방에는 계속 보이되 "추방됨"으로 표시하고 더 이상
+--     메시지를 보낼 수 없게 막는다. 스스로 나가는 경우는 행 자체를 삭제한다.
+ALTER TABLE TB_TRMA_CHAT_MEMBER ADD COLUMN IF NOT EXISTS STATE_CD VARCHAR(10) NOT NULL DEFAULT 'A';
+
+-- 16) 소모임 대표 이미지(MOIM_IMG_URL)를 첫 일정 관광지 이미지로 자동 채우는 기능을
+--     추가했는데, 신규 생성/일정 수정 시점부터만 채워져서 기존에 이미 만들어져 있던
+--     소모임들은 여전히 비어 있다. 한 번만 일괄로 채워준다(이후는 애플리케이션이 자동 갱신).
+UPDATE TB_TRMA_MOIM_LIST m
+SET MOIM_IMG_URL = (
+    SELECT t.FIRST_IMAGE
+    FROM TB_TRMA_MOIM_CALENDAR c
+    LEFT JOIN TB_TRMA_TOUR_LIST t ON c.TOUR_ID = t.TOUR_ID
+    WHERE c.MOIM_ID = m.MOIM_ID
+    ORDER BY c.START_DT ASC, c.RMKS ASC
+    LIMIT 1
+)
+WHERE m.MOIM_IMG_URL IS NULL;
+
+-- 17) 관광지 검색(tourSearch, 소모임 일정 추가에서 씀) 성능 개선용 인덱스.
+--     이 쿼리는 관광지별 평균 평점(TB_TRMA_MOIM_REVIEW)과 카테고리 목록
+--     (TB_TRMA_TOUR_CATE)을 TOUR_ID로 GROUP BY 해서 구하는데, TOUR_ID에 인덱스가
+--     없으면 검색할 때마다 두 테이블을 통째로 스캔해서 집계해야 해서 데이터가 쌓일수록
+--     느려진다. 인덱스를 추가하면 결과는 그대로고 속도만 개선된다.
+CREATE INDEX IF NOT EXISTS IDX_MOIM_REVIEW_TOUR_ID ON TB_TRMA_MOIM_REVIEW(TOUR_ID);
+CREATE INDEX IF NOT EXISTS IDX_TOUR_CATE_TOUR_ID ON TB_TRMA_TOUR_CATE(TOUR_ID);
+CREATE INDEX IF NOT EXISTS IDX_TOUR_LIST_USE_YN ON TB_TRMA_TOUR_LIST(USE_YN);
+
+-- 18) 후기(관광지/소모임) 번역 캐시. 지금까지는 후기가 "계속 새로 쌓이는 데이터"라는
+--     이유로 조회할 때마다 매번 Gemini로 다시 번역했는데, 그 결과 AI가 잠깐 끊기면
+--     후기 번역이 통째로 안 보였다. 관광지명/모임 제목과 동일한 방식으로 한 번 번역한
+--     결과를 여기에 캐시해두고, 이후 조회부터는 캐시를 재사용한다.
+ALTER TABLE TB_TRMA_MOIM_REVIEW ADD COLUMN IF NOT EXISTS REVIEW_TITLE_EN VARCHAR(200) NULL;
+ALTER TABLE TB_TRMA_MOIM_REVIEW ADD COLUMN IF NOT EXISTS REVIEW_TITLE_JA VARCHAR(200) NULL;
+ALTER TABLE TB_TRMA_MOIM_REVIEW ADD COLUMN IF NOT EXISTS REVIEW_CONTENT_EN TEXT NULL;
+ALTER TABLE TB_TRMA_MOIM_REVIEW ADD COLUMN IF NOT EXISTS REVIEW_CONTENT_JA TEXT NULL;
+
+-- 19) 채팅 메시지 번역 캐시. 메시지 전송 시점에 영어/일본어 번역을 한 번만 만들어
+--     여기에 저장해두고, 이후 그 메시지를 누가 다시 보든(실시간 수신 포함) 캐시된
+--     값을 그대로 쓴다. AI가 전송 당시 끊겨 있었으면 null로 남고, 조회 시 최근
+--     메시지 한정으로 재시도해서 채워넣는다.
+ALTER TABLE TB_TRMA_CHAT_MESSAGE ADD COLUMN IF NOT EXISTS CONTENT_EN TEXT NULL;
+ALTER TABLE TB_TRMA_CHAT_MESSAGE ADD COLUMN IF NOT EXISTS CONTENT_JA TEXT NULL;
+
+-- 20) 관광지 AI 이용정보(운영시간/휴무일/입장료/주차 등) 캐시. 지금까지는 조회할 때마다
+--     매번 Gemini를 호출해서 AI가 끊기면 이용정보 자체가 안 보였다. 조회에 성공하면
+--     항상 여기에 최신 결과를 저장해두고, 다음에 AI 호출이 실패했을 때는 이 저장된
+--     값을 대신 보여준다(언어별로 결과 문장이 다르므로 TOUR_ID+LANG_CD로 구분).
+CREATE TABLE IF NOT EXISTS TB_TRMA_TOUR_AI_INFO (
+    TOUR_ID               VARCHAR(50)  NOT NULL,
+    LANG_CD               VARCHAR(10)  NOT NULL,
+    OPERATING_HOURS       VARCHAR(500) NULL,
+    CLOSED_DAYS           VARCHAR(500) NULL,
+    ADMISSION_FEE_IS_FREE VARCHAR(10)  NULL,
+    ADMISSION_FEE_DETAILS VARCHAR(500) NULL,
+    WEBSITE_URL           VARCHAR(500) NULL,
+    PARKING_AVAILABLE     VARCHAR(10)  NULL,
+    PARKING_FEE_INFO      VARCHAR(500) NULL,
+    LAST_UPDATED_NOTE     VARCHAR(500) NULL,
+    UPDATE_DT             DATETIME     NOT NULL,
+
+    PRIMARY KEY (TOUR_ID, LANG_CD)
+);

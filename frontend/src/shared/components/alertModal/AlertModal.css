@@ -36,6 +36,14 @@
   white-space: pre-wrap;
 }
 
+.alert-modal-actions {
+  display: flex;
+  gap: var(--space-sm);
+}
+.alert-modal-actions .btn {
+  flex: 1;
+}
+
 @keyframes alert-dim-in {
   from { opacity: 0; }
   to { opacity: 1; }

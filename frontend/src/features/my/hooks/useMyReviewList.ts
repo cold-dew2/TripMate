@@ -10,11 +10,13 @@ export interface MyReview {
   createDt: string;
 }
 
-export const useMyReviewList = () => {
+export type MyReviewSort = "latest" | "rating";
+
+export const useMyReviewList = (sort: MyReviewSort = "latest") => {
   return useQuery({
-    queryKey: ["myReviewList"],
+    queryKey: ["myReviewList", sort],
     queryFn: async () => {
-      const result = await apiClient.get<{ data: MyReview[] }>("/login/reviewList", { page: 1 });
+      const result = await apiClient.get<{ data: MyReview[] }>("/login/reviewList", { page: 1, sort });
       if (!result.success) throw result;
       return result.data.data ?? [];
     },

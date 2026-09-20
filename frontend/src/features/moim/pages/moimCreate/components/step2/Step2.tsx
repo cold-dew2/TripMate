@@ -13,6 +13,7 @@ interface Step2Props {
   onNext: () => void;
   defaultTitle?: string;
   defaultDscr?: string;
+  defaultRegion?: string;
 }
 
 // PlaceList의 지역 탭과 동일한 지역 목록을 사용한다. 일정 추천(AI) 요청 시
@@ -24,12 +25,12 @@ const REGION_OPTIONS = [
   { value: "제주", option: "제주" },
 ];
 
-const Step2 = ({ setValue, onNext, onPrev, defaultTitle, defaultDscr }: Step2Props) => {
+const Step2 = ({ setValue, onNext, onPrev, defaultTitle, defaultDscr, defaultRegion }: Step2Props) => {
   const { t } = useTranslation();
   const [title, setTitle] = useState(defaultTitle ?? '');
   const [dscr, setDscr] = useState(defaultDscr ?? '');
   const [dateRange, setDateRange] = useState({ start: '', end: '' });
-  const [region, setRegion] = useState('');
+  const [region, setRegion] = useState(defaultRegion ?? '');
 
   const handleDateChange = (startDate: string, endDate: string) => {
     setValue("moimStartDt", startDate);
@@ -58,7 +59,10 @@ const Step2 = ({ setValue, onNext, onPrev, defaultTitle, defaultDscr }: Step2Pro
             placeholder={t("moimCreate.step2.infoPlaceholder")}
             name="moimDscr"
             defaultValue={defaultDscr}
-            onChange={(event) => setValue("moimDscr", event.target.value, { shouldValidate: true })}
+            onChange={(event) => {
+              setValue("moimDscr", event.target.value, { shouldValidate: true });
+              setDscr(event.target.value);
+            }}
           />
           <DateRangePicker label={t("moimCreate.step2.travelType")} onChange={handleDateChange} />
           <Select
@@ -67,6 +71,7 @@ const Step2 = ({ setValue, onNext, onPrev, defaultTitle, defaultDscr }: Step2Pro
             name="region"
             placeholder={t("moimCreate.step2.regionPlaceholder")}
             options={REGION_OPTIONS}
+            defaultValue={defaultRegion}
             onChange={(event) => {
               setValue("region", event.target.value, { shouldValidate: true });
               setRegion(event.target.value);

@@ -41,8 +41,8 @@ const COURSES: Record<string, Course> = {
     themeId: "theme1",
     dscr: "세종호수공원 → 국립세종수목원 → 금강보행교를 함께 걷는 코스예요. 편한 신발 신고 오세요!",
     stops: [
-      { name: "세종호수공원", address: "세종특별자치시 한누리대로 2500" },
-      { name: "국립세종수목원", address: "세종특별자치시 수목원길 136" },
+      { name: "세종호수공원", address: "세종특별자치시 세종동 1201" },
+      { name: "국립세종수목원", address: "세종특별자치시 수목원로 136" },
       { name: "금강보행교", address: "세종특별자치시 나성동" },
     ],
   },
@@ -53,8 +53,8 @@ const COURSES: Record<string, Course> = {
     themeId: "theme1",
     dscr: "세종호수공원 → 국립세종수목원 → 금강보행교를 함께 걷는 코스예요. 편한 신발 신고 오세요!",
     stops: [
-      { name: "세종호수공원", address: "세종특별자치시 한누리대로 2500" },
-      { name: "국립세종수목원", address: "세종특별자치시 수목원길 136" },
+      { name: "세종호수공원", address: "세종특별자치시 세종동 1201" },
+      { name: "국립세종수목원", address: "세종특별자치시 수목원로 136" },
       { name: "금강보행교", address: "세종특별자치시 나성동" },
     ],
   },
@@ -65,7 +65,7 @@ const COURSES: Record<string, Course> = {
     themeId: "theme6",
     dscr: "호수공원부터 금강보행교까지, 사진 찍으면서 천천히 걸어요.",
     stops: [
-      { name: "세종호수공원", address: "세종특별자치시 한누리대로 2500" },
+      { name: "세종호수공원", address: "세종특별자치시 세종동 1201" },
       { name: "금강보행교", address: "세종특별자치시 나성동" },
     ],
   },
@@ -76,9 +76,9 @@ const COURSES: Record<string, Course> = {
     themeId: "theme4",
     dscr: "공공자전거 어울링을 타고 세종시 대표 명소를 둘러보는 코스예요.",
     stops: [
-      { name: "세종호수공원", address: "세종특별자치시 한누리대로 2500" },
-      { name: "세종중앙공원", address: "세종특별자치시 한누리대로 300" },
-      { name: "국립세종수목원", address: "세종특별자치시 수목원길 136" },
+      { name: "세종호수공원", address: "세종특별자치시 세종동 1201" },
+      { name: "세종중앙공원", address: "세종특별자치시 중앙공원로 60" },
+      { name: "국립세종수목원", address: "세종특별자치시 수목원로 136" },
       { name: "금강보행교", address: "세종특별자치시 나성동" },
     ],
   },
@@ -90,7 +90,7 @@ const COURSES: Record<string, Course> = {
     dscr: "금강보행교와 국립세종수목원, 세종을 대표하는 포토스팟을 함께 담아봐요.",
     stops: [
       { name: "금강보행교", address: "세종특별자치시 나성동" },
-      { name: "국립세종수목원", address: "세종특별자치시 수목원길 136" },
+      { name: "국립세종수목원", address: "세종특별자치시 수목원로 136" },
     ],
   },
   RES: {
@@ -101,7 +101,7 @@ const COURSES: Record<string, Course> = {
     dscr: "나성동 맛집 거리를 둘러보고 호수공원까지 산책하는 코스예요.",
     stops: [
       { name: "나성동 맛집거리", address: "세종특별자치시 나성동" },
-      { name: "세종호수공원", address: "세종특별자치시 한누리대로 2500" },
+      { name: "세종호수공원", address: "세종특별자치시 세종동 1201" },
     ],
   },
   CUL: {
@@ -111,10 +111,10 @@ const COURSES: Record<string, Course> = {
     themeId: "theme2",
     dscr: "대통령기록관부터 국립세종도서관까지, 행정중심도시 세종을 둘러보는 코스예요.",
     stops: [
-      { name: "대통령기록관", address: "세종특별자치시 다솜1로 95" },
+      { name: "대통령기록관", address: "세종특별자치시 다솜로 250" },
       { name: "정부세종청사", address: "세종특별자치시 한누리대로 2130" },
       { name: "국립세종도서관", address: "세종특별자치시 다솜로 261" },
-      { name: "세종호수공원", address: "세종특별자치시 한누리대로 2500" },
+      { name: "세종호수공원", address: "세종특별자치시 세종동 1201" },
     ],
   },
 };
@@ -136,6 +136,7 @@ const SejongMatePage = () => {
     title: course.title,
     dscr: course.dscr,
     themeId: course.themeId,
+    region: "세종",
     courseStops: course.stops,
   };
 
