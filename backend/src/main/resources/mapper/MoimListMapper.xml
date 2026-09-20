@@ -653,9 +653,12 @@
             resultType="com.example.backend.trma.dto.dataList.MoimReviewData">
 
         SELECT
-            b.USER_NM
+            a.REVIEW_ID
+            ,b.USER_NM
             ,a.REVIEW_SCORE
             ,a.REVIEW_CONTENT
+            ,a.REVIEW_CONTENT_EN
+            ,a.REVIEW_CONTENT_JA
             ,a.IMG_URLS
             ,a.CREATE_DT
         FROM TB_TRMA_MOIM_REVIEW a
@@ -665,6 +668,20 @@
         ORDER BY a.CREATE_DT DESC
 
     </select>
+
+    <!-- ========================= -->
+    <!-- 모임 후기 번역 캐시 저장 -->
+    <!-- ========================= -->
+    <update id="updateReviewTranslation">
+
+        UPDATE TB_TRMA_MOIM_REVIEW
+        <set>
+            <if test="reviewContentEn != null">REVIEW_CONTENT_EN = #{reviewContentEn},</if>
+            <if test="reviewContentJa != null">REVIEW_CONTENT_JA = #{reviewContentJa},</if>
+        </set>
+        WHERE REVIEW_ID = #{reviewId}
+
+    </update>
 
     <!-- ========================= -->
     <!-- 소모임 제목/소개 번역 캐시 저장 -->

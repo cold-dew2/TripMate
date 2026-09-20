@@ -39,11 +39,11 @@
     "placeholder": "メッセージを入力してください",
     "send": "送信",
     "loadFailed": "メッセージを読み込めませんでした。",
-    "sendFailed": "メッセージの送信に失敗しました。もう一度お試しください。",
+    "sendFailed": "メッセージの送信に失敗しました。\nもう一度お試しください。",
     "leave": "退出する",
-    "leaveConfirm": "チャットルームを退出すると、グループからも脱退することになります。",
-    "leaveFailed": "退出に失敗しました。しばらくしてからもう一度お試しください。",
-    "kickedBanner": "このグループから追放され、これ以上チャットに参加できません。",
+    "leaveConfirm": "チャットルームを退出すると、\nグループからも脱退することになります。",
+    "leaveFailed": "退出に失敗しました。\nしばらくしてからもう一度お試しください。",
+    "kickedBanner": "このグループから追放され、\nこれ以上チャットに参加できません。",
     "kickedLabel": "追放済み"
   },
   "account": {
@@ -76,8 +76,8 @@
     "passwordMin": "パスワードは8文字以上で入力してください。",
     "nameRequired": "名前を入力してください。",
     "loginFailed": "IDまたはパスワードが正しくありません。",
-    "signupFailed": "会員登録に失敗しました。もう一度お試しください。",
-    "signupSuccess": "会員登録が完了しました。ログインしてください。",
+    "signupFailed": "会員登録に失敗しました。\nもう一度お試しください。",
+    "signupSuccess": "会員登録が完了しました。\nログインしてください。",
     "backToLogin": "ログインへ戻る",
     "findIdNotFound": "一致する会員情報がありません。",
     "findPwNotFound": "一致する会員情報がありません。",
@@ -85,7 +85,7 @@
     "newPasswordConfirm": "新しいパスワード確認",
     "passwordMismatch": "パスワードが一致しません。",
     "resetPwSubmit": "パスワード変更",
-    "resetPwFailed": "パスワードの変更に失敗しました。もう一度お試しください。",
+    "resetPwFailed": "パスワードの変更に失敗しました。\nもう一度お試しください。",
     "resetPwSuccess": "パスワードが変更されました。"
   },
   "common": {
@@ -93,7 +93,7 @@
     "loadError": "情報を読み込めませんでした。",
     "empty": "表示できる内容がありません。",
     "retry": "再試行",
-    "aiUnavailable": "現在AI機能を利用できません。AI機能なしで進めてください。",
+    "aiUnavailable": "現在AI機能を利用できません。\nAI機能なしで進めてください。",
     "submit": "登録",
     "confirm": "確認",
     "cancel": "キャンセル",
@@ -139,8 +139,8 @@
       "emptyView": "登録されたスケジュールがありません。",
       "addSchedule": "スケジュール追加",
       "aiRecommend": "AI日程提案を受ける",
-      "aiRecommendError": "日程提案の取得に失敗しました。しばらくしてからもう一度お試しください。",
-      "aiRecommendEmpty": "選択した地域・テーマに合う観光地が見つかりませんでした。別の地域やテーマでお試しください。",
+      "aiRecommendError": "日程提案の取得に失敗しました。\nしばらくしてからもう一度お試しください。",
+      "aiRecommendEmpty": "選択した地域・テーマに合う観光地が見つかりませんでした。\n別の地域やテーマでお試しください。",
       "timeHourLabel": "{{place}}の訪問時間（時）",
       "timeMinuteLabel": "{{place}}の訪問時間（分）"
     },
@@ -158,8 +158,8 @@
       "nameInputPlaceholder": "観光地の名前",
       "addressInputPlaceholder": "観光地の住所",
       "save": "保存",
-      "customTourNeedLogin": "ログインが必要です。ログイン後に再度登録してください。",
-      "customTourError": "観光地の登録に失敗しました。しばらくしてからもう一度お試しください。"
+      "customTourNeedLogin": "ログインが必要です。\nログイン後に再度登録してください。",
+      "customTourError": "観光地の登録に失敗しました。\nしばらくしてからもう一度お試しください。"
     },
     "step5": {
       "mapUnavailable": "地図に表示する観光地がありません。",
@@ -167,7 +167,7 @@
       "dayLabel": "DAY {{day}} ({{date}})",
       "editPlan": "プラン修正",
       "transportRecommend": "交通手段を提案してもらう",
-      "transportRecommendError": "交通手段の提案取得に失敗しました。しばらくしてからもう一度お試しください。"
+      "transportRecommendError": "交通手段の提案取得に失敗しました。\nしばらくしてからもう一度お試しください。"
     },
     "step6": {
       "photoLabel": "グループ代表写真",
@@ -177,8 +177,8 @@
       "nightsLabel": "{{nights}}泊{{count}}日",
       "memberLabel": "参加人数",
       "register": "登録する",
-      "registerError": "グループの登録に失敗しました。しばらくしてからもう一度お試しください。",
-      "needLogin": "ログインが必要です。ログイン後に再度登録してください。"
+      "registerError": "グループの登録に失敗しました。\nしばらくしてからもう一度お試しください。",
+      "needLogin": "ログインが必要です。\nログイン後に再度登録してください。"
     },
     "step7": {
       "title": "グループが登録されました！",
@@ -252,25 +252,25 @@
     "reject": "拒否",
     "kick": "追放",
     "kickConfirm": "{{name}}さんをグループから追放しますか?",
-    "kickFailed": "追放処理に失敗しました。しばらくしてからもう一度お試しください。",
+    "kickFailed": "追放処理に失敗しました。\nしばらくしてからもう一度お試しください。",
     "planSaved": "日程を保存しました。",
-    "planSaveError": "日程の保存に失敗しました。しばらくしてからもう一度お試しください。",
+    "planSaveError": "日程の保存に失敗しました。\nしばらくしてからもう一度お試しください。",
     "planEndDateInvalid": "終了日は開始日より前にできません。",
     "transportRecommend": "混雑度・交通手段を分析",
-    "transportRecommendError": "交通分析に失敗しました。しばらくしてからもう一度お試しください。",
+    "transportRecommendError": "交通分析に失敗しました。\nしばらくしてからもう一度お試しください。",
     "waitingCount": "待機 {{count}}",
     "approveSelected": "選択した{{count}}人を承認",
-    "approveFailed": "一部の承認処理に失敗しました。もう一度お試しください。",
+    "approveFailed": "一部の承認処理に失敗しました。\nもう一度お試しください。",
     "selectApplicant": "{{name}}さんを選択",
     "scheduleTitle": "旅行日程",
     "transportAnalysisTitle": "交通混雑度分析",
     "transportAnalysisBtn": "混雑度を分析する",
-    "transportAnalysisError": "混雑度の分析に失敗しました。しばらくしてからもう一度お試しください。",
+    "transportAnalysisError": "混雑度の分析に失敗しました。\nしばらくしてからもう一度お試しください。",
     "transportAnalysisEmpty": "分析する移動区間がありません。",
     "applyBtn": "申し込む",
     "manageBtn": "グループを管理する",
-    "applyError": "申し込みに失敗しました。しばらくしてからもう一度お試しください。",
-    "applyNeedLogin": "ログインが必要です。ログイン画面に移動しますか?",
+    "applyError": "申し込みに失敗しました。\nしばらくしてからもう一度お試しください。",
+    "applyNeedLogin": "ログインが必要です。\nログイン画面に移動しますか?",
     "applying": "申込中",
     "applied": "申込完了",
     "chatWithMembers": "メンバーとチャットする",
@@ -317,8 +317,14 @@
   },
   "review": {
     "score": "評価",
-    "scoreLabel1": "イマイチ", "scoreLabel2": "まあまあ", "scoreLabel3": "普通", "scoreLabel4": "良い", "scoreLabel5": "最高！",
-    "registerTitle": "レビューを登録", "moimPrompt": "レビューを書いてください、どんな旅行でしたか？", "moimContentPlaceholder": "皆さんへ一言！とても楽しかったです！また一緒に行きましょう！",
+    "scoreLabel1": "イマイチ",
+    "scoreLabel2": "まあまあ",
+    "scoreLabel3": "普通",
+    "scoreLabel4": "良い",
+    "scoreLabel5": "最高！",
+    "registerTitle": "レビューを登録",
+    "moimPrompt": "レビューを書いてください、どんな旅行でしたか？",
+    "moimContentPlaceholder": "皆さんへ一言！とても楽しかったです！また一緒に行きましょう！",
     "title": "タイトル",
     "content": "内容",
     "images": "写真（最大5枚）",
@@ -337,13 +343,17 @@
     "addAnotherTourBtn": "レビューを追加で書く",
     "selectPlace": "レビューを書く観光地を選択してください",
     "noPlaceToReview": "今回の日程に登録された観光地がありません。",
-    "flowComplete": "すべてのレビューが登録されました。貴重なご意見ありがとうございます！"
+    "flowComplete": "すべてのレビューが登録されました。\n貴重なご意見ありがとうございます！"
   },
   "transport": {
     "duration": "{{count}}分",
     "cost": "{{cost}}ウォン",
     "transfer": "乗り換え{{count}}回",
-    "congestion": { "smooth": "スムーズ", "moderate": "普通", "heavy": "混雑" },
+    "congestion": {
+      "smooth": "スムーズ",
+      "moderate": "普通",
+      "heavy": "混雑"
+    },
     "delayWarning": "混雑予想（最大{{count}}分遅延）",
     "alternative": "代替案"
   },
@@ -372,8 +382,8 @@
     "reviewCompleted": "旅行レビュー登録完了",
     "applicantCount": "申込者 {{count}}",
     "uploadPhoto": "写真を登録",
-    "uploadFailed": "写真のアップロードに失敗しました。もう一度お試しください。",
-    "saveFailed": "保存中にエラーが発生しました。もう一度お試しください。",
+    "uploadFailed": "写真のアップロードに失敗しました。\nもう一度お試しください。",
+    "saveFailed": "保存中にエラーが発生しました。\nもう一度お試しください。",
     "guestDesc": "ログインして旅行メイトに出会いましょう。"
   },
   "search": {
@@ -385,7 +395,7 @@
   },
   "safetyReport": {
     "title": "安心通報",
-    "notice": "緊急時に通報すると、管理者と関係機関に即座に通知されます。",
+    "notice": "緊急時に通報すると、\n管理者と関係機関に即座に通知されます。",
     "moimName": "通報対象のグループ",
     "safetydesc": "詳細内容",
     "placeholder": "状況を詳しく入力してください",
@@ -401,7 +411,7 @@
     "typeRude": "不快な言動",
     "typeNoshow": "無断キャンセル",
     "typeEtc": "その他",
-    "success": "通報が受け付けられました。迅速に確認いたします。"
+    "success": "通報が受け付けられました。\n迅速に確認いたします。"
   },
   "lang": {
     "ko": "韓国語",

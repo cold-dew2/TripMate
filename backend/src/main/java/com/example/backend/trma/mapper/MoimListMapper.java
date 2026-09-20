@@ -89,6 +89,11 @@ public interface MoimListMapper {
     //모임(여행) 후기 목록 조회
     List<MoimReviewData> moimReviews(String moimId);
 
+    //모임 후기 번역 캐시 저장
+    int updateReviewTranslation(@Param("reviewId") String reviewId,
+                                @Param("reviewContentEn") String reviewContentEn,
+                                @Param("reviewContentJa") String reviewContentJa);
+
     //소모임 제목/소개 번역 캐시 저장
     int updateMoimTranslation(@Param("moimId") String moimId,
                               @Param("moimTitleEn") String moimTitleEn,

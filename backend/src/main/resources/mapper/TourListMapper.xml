@@ -168,11 +168,16 @@
     <select id="tourDetailReview"
             resultType="com.example.backend.trma.dto.dataList.TourDetailReviewData">
         SELECT
-            b.MOIM_TITLE
+            a.REVIEW_ID
+            , b.MOIM_TITLE
             , b.MOIM_START_DT
             , b.MOIM_END_DT
             , a.REVIEW_TITLE
             , a.REVIEW_CONTENT
+            , a.REVIEW_TITLE_EN
+            , a.REVIEW_TITLE_JA
+            , a.REVIEW_CONTENT_EN
+            , a.REVIEW_CONTENT_JA
             , a.REVIEW_SCORE
             , a.IMG_URLS
             , a.CREATE_DT
@@ -249,6 +254,87 @@
         WHERE TOUR_ID = #{tourId}
 
     </update>
+
+    <!-- ========================= -->
+    <!-- 관광지 후기 번역 캐시 저장 -->
+    <!-- ========================= -->
+    <update id="updateReviewTranslation">
+
+        UPDATE TB_TRMA_MOIM_REVIEW
+        <set>
+            <if test="reviewTitleEn != null">REVIEW_TITLE_EN = #{reviewTitleEn},</if>
+            <if test="reviewTitleJa != null">REVIEW_TITLE_JA = #{reviewTitleJa},</if>
+            <if test="reviewContentEn != null">REVIEW_CONTENT_EN = #{reviewContentEn},</if>
+            <if test="reviewContentJa != null">REVIEW_CONTENT_JA = #{reviewContentJa},</if>
+        </set>
+        WHERE REVIEW_ID = #{reviewId}
+
+    </update>
+
+    <!-- ========================= -->
+    <!-- 관광지 AI 이용정보 캐시 조회 -->
+    <!-- ========================= -->
+    <select id="selectTourAiInfo"
+            resultType="com.example.backend.trma.dto.dataList.TourAiDetailData">
+
+        SELECT
+            OPERATING_HOURS
+            ,CLOSED_DAYS
+            ,ADMISSION_FEE_IS_FREE
+            ,ADMISSION_FEE_DETAILS
+            ,WEBSITE_URL
+            ,PARKING_AVAILABLE
+            ,PARKING_FEE_INFO
+            ,LAST_UPDATED_NOTE
+        FROM TB_TRMA_TOUR_AI_INFO
+        WHERE TOUR_ID = #{tourId}
+            AND LANG_CD = #{langCd}
+
+    </select>
+
+    <!-- ========================= -->
+    <!-- 관광지 AI 이용정보 캐시 저장(있으면 갱신) -->
+    <!-- ========================= -->
+    <insert id="upsertTourAiInfo">
+
+        INSERT INTO TB_TRMA_TOUR_AI_INFO
+        (
+            TOUR_ID
+            ,LANG_CD
+            ,OPERATING_HOURS
+            ,CLOSED_DAYS
+            ,ADMISSION_FEE_IS_FREE
+            ,ADMISSION_FEE_DETAILS
+            ,WEBSITE_URL
+            ,PARKING_AVAILABLE
+            ,PARKING_FEE_INFO
+            ,LAST_UPDATED_NOTE
+            ,UPDATE_DT
+        )VALUES(
+            #{tourId}
+            ,#{langCd}
+            ,#{data.operatingHours}
+            ,#{data.closedDays}
+            ,#{data.admissionFeeIsFree}
+            ,#{data.admissionFeeDetails}
+            ,#{data.websiteUrl}
+            ,#{data.parkingAvailable}
+            ,#{data.parkingFeeInfo}
+            ,#{data.lastUpdatedNote}
+            ,CURRENT_TIMESTAMP
+        )
+        ON DUPLICATE KEY UPDATE
+            OPERATING_HOURS = #{data.operatingHours}
+            ,CLOSED_DAYS = #{data.closedDays}
+            ,ADMISSION_FEE_IS_FREE = #{data.admissionFeeIsFree}
+            ,ADMISSION_FEE_DETAILS = #{data.admissionFeeDetails}
+            ,WEBSITE_URL = #{data.websiteUrl}
+            ,PARKING_AVAILABLE = #{data.parkingAvailable}
+            ,PARKING_FEE_INFO = #{data.parkingFeeInfo}
+            ,LAST_UPDATED_NOTE = #{data.lastUpdatedNote}
+            ,UPDATE_DT = CURRENT_TIMESTAMP
+
+    </insert>
 
     <!-- ========================= -->
     <!-- 사용자 관광지 등록(소모임 생성 시 직접 입력) -->

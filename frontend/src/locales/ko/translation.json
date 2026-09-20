@@ -39,15 +39,19 @@
     "placeholder": "메시지를 입력하세요",
     "send": "전송",
     "loadFailed": "메시지를 불러오지 못했습니다.",
-    "sendFailed": "메시지 전송에 실패했습니다. 다시 시도해 주세요.",
+    "sendFailed": "메시지 전송에 실패했습니다.\n다시 시도해 주세요.",
     "leave": "나가기",
-    "leaveConfirm": "채팅방을 나갈 경우, 소모임에서 탈퇴되게됩니다.",
-    "leaveFailed": "채팅방 나가기에 실패했어요. 잠시 후 다시 시도해 주세요.",
+    "leaveConfirm": "채팅방을 나갈 경우,\n소모임에서 탈퇴되게됩니다.",
+    "leaveFailed": "채팅방 나가기에 실패했어요.\n잠시 후 다시 시도해 주세요.",
     "kickedBanner": "이 소모임에서 추방되어 더 이상 채팅에 참여할 수 없어요.",
     "kickedLabel": "추방됨"
   },
   "account": {
-    "loading": "불러오는 중…", "edit": "프로필 편집", "activity": "내 활동", "settings": "설정", "profileSettings": "프로필 설정",
+    "loading": "불러오는 중…",
+    "edit": "프로필 편집",
+    "activity": "내 활동",
+    "settings": "설정",
+    "profileSettings": "프로필 설정",
     "loginTitle": "TripMate",
     "loginSubtitle": "여행의 순간을 함께",
     "email": "이메일",
@@ -72,8 +76,8 @@
     "passwordMin": "비밀번호는 8자 이상이어야 해요.",
     "nameRequired": "이름을 입력해 주세요.",
     "loginFailed": "아이디 또는 비밀번호가 올바르지 않습니다.",
-    "signupFailed": "회원가입에 실패했습니다. 다시 시도해 주세요.",
-    "signupSuccess": "회원가입이 완료되었습니다. 로그인해 주세요.",
+    "signupFailed": "회원가입에 실패했습니다.\n다시 시도해 주세요.",
+    "signupSuccess": "회원가입이 완료되었습니다.\n로그인해 주세요.",
     "backToLogin": "로그인으로 돌아가기",
     "findIdNotFound": "일치하는 회원 정보가 없습니다.",
     "findPwNotFound": "일치하는 회원 정보가 없습니다.",
@@ -81,7 +85,7 @@
     "newPasswordConfirm": "새 비밀번호 확인",
     "passwordMismatch": "비밀번호가 일치하지 않아요.",
     "resetPwSubmit": "비밀번호 변경",
-    "resetPwFailed": "비밀번호 변경에 실패했습니다. 다시 시도해 주세요.",
+    "resetPwFailed": "비밀번호 변경에 실패했습니다.\n다시 시도해 주세요.",
     "resetPwSuccess": "비밀번호가 변경되었습니다."
   },
   "common": {
@@ -89,7 +93,7 @@
     "loadError": "정보를 불러오지 못했습니다.",
     "empty": "표시할 내용이 없어요.",
     "retry": "다시 시도",
-    "aiUnavailable": "현재 AI 기능을 사용할 수 없어요. AI 기능 없이 진행해주세요.",
+    "aiUnavailable": "현재 AI 기능을 사용할 수 없어요.\nAI 기능 없이 진행해주세요.",
     "submit": "등록",
     "confirm": "확인",
     "cancel": "취소",
@@ -135,8 +139,8 @@
       "emptyView": "등록된 일정이 없습니다.",
       "addSchedule": "일정 추가",
       "aiRecommend": "일정 추천받기",
-      "aiRecommendError": "일정 추천에 실패했어요. 잠시 후 다시 시도해주세요.",
-      "aiRecommendEmpty": "선택한 지역/테마에 맞는 관광지를 찾지 못했어요. 다른 지역이나 테마로 다시 시도해주세요.",
+      "aiRecommendError": "일정 추천에 실패했어요.\n잠시 후 다시 시도해주세요.",
+      "aiRecommendEmpty": "선택한 지역/테마에 맞는 관광지를 찾지 못했어요.\n다른 지역이나 테마로 다시 시도해주세요.",
       "timeHourLabel": "{{place}} 방문 시(시간)",
       "timeMinuteLabel": "{{place}} 방문 시(분)"
     },
@@ -154,8 +158,8 @@
       "nameInputPlaceholder": "관광지 이름",
       "addressInputPlaceholder": "관광지 주소",
       "save": "저장",
-      "customTourNeedLogin": "로그인이 필요해요. 로그인 후 다시 등록해주세요.",
-      "customTourError": "관광지 등록에 실패했어요. 잠시 후 다시 시도해주세요."
+      "customTourNeedLogin": "로그인이 필요해요.\n로그인 후 다시 등록해주세요.",
+      "customTourError": "관광지 등록에 실패했어요.\n잠시 후 다시 시도해주세요."
     },
     "step5": {
       "mapUnavailable": "지도를 표시할 관광지가 없어요.",
@@ -163,7 +167,7 @@
       "dayLabel": "DAY {{day}} ({{date}})",
       "editPlan": "플랜 수정",
       "transportRecommend": "교통편 추천받기",
-      "transportRecommendError": "교통편 추천에 실패했어요. 잠시 후 다시 시도해주세요."
+      "transportRecommendError": "교통편 추천에 실패했어요.\n잠시 후 다시 시도해주세요."
     },
     "step6": {
       "photoLabel": "모임 대표 사진",
@@ -173,8 +177,8 @@
       "nightsLabel": "{{nights}}박 {{count}}일",
       "memberLabel": "모임 인원",
       "register": "등록하기",
-      "registerError": "소모임 등록에 실패했어요. 잠시 후 다시 시도해주세요.",
-      "needLogin": "로그인이 필요해요. 로그인 후 다시 등록해주세요."
+      "registerError": "소모임 등록에 실패했어요.\n잠시 후 다시 시도해주세요.",
+      "needLogin": "로그인이 필요해요.\n로그인 후 다시 등록해주세요."
     },
     "step7": {
       "title": "소모임이 등록되었습니다!",
@@ -188,7 +192,7 @@
     "language": "언어",
     "greeting": "안녕하세요!",
     "userName": "{{name}}님",
-    "notice": "알림",
+    "notice": "위급 상황 시 즉시 신고하면\n관리자와 관계 기관에 실시간으로 접수됩니다.",
     "mypage": "마이페이지",
     "searchLabel": "여행지, 소모임 검색",
     "searchPlaceholder": "여행지 또는 소모임을 검색해보세요",
@@ -223,7 +227,7 @@
     "beach": "해변",
     "night": "야경"
   },
-  "moim": {  
+  "moim": {
     "listTitle": "소모임 찾기",
     "searchLabel": "소모임 검색",
     "searchPlaceholder": "소모임을 검색해주세요",
@@ -248,25 +252,25 @@
     "reject": "거절",
     "kick": "추방",
     "kickConfirm": "{{name}}님을 모임에서 추방할까요?",
-    "kickFailed": "추방 처리에 실패했어요. 잠시 후 다시 시도해 주세요.",
+    "kickFailed": "추방 처리에 실패했어요.\n잠시 후 다시 시도해 주세요.",
     "planSaved": "일정을 저장했어요.",
-    "planSaveError": "일정 저장에 실패했어요. 잠시 후 다시 시도해 주세요.",
+    "planSaveError": "일정 저장에 실패했어요.\n잠시 후 다시 시도해 주세요.",
     "planEndDateInvalid": "종료일은 시작일보다 이전일 수 없어요.",
     "transportRecommend": "혼잡도 · 교통편 분석받기",
-    "transportRecommendError": "교통편 분석에 실패했어요. 잠시 후 다시 시도해주세요.",
+    "transportRecommendError": "교통편 분석에 실패했어요.\n잠시 후 다시 시도해주세요.",
     "waitingCount": "대기 {{count}}",
     "approveSelected": "선택한 {{count}}명 승인하기",
-    "approveFailed": "승인 처리 중 일부 오류가 발생했습니다. 다시 시도해 주세요.",
+    "approveFailed": "승인 처리 중 일부 오류가 발생했습니다.\n다시 시도해 주세요.",
     "selectApplicant": "{{name}}님 선택",
     "scheduleTitle": "여행 일정",
     "transportAnalysisTitle": "교통편 혼잡도 분석",
     "transportAnalysisBtn": "혼잡도 분석받기",
-    "transportAnalysisError": "혼잡도 분석에 실패했어요. 잠시 후 다시 시도해주세요.",
+    "transportAnalysisError": "혼잡도 분석에 실패했어요.\n잠시 후 다시 시도해주세요.",
     "transportAnalysisEmpty": "분석할 이동 구간이 없어요.",
     "applyBtn": "신청하기",
     "manageBtn": "모임 관리하기",
-    "applyError": "신청에 실패했어요. 잠시 후 다시 시도해주세요.",
-    "applyNeedLogin": "로그인이 필요합니다. 로그인 화면으로 이동할까요?",
+    "applyError": "신청에 실패했어요.\n잠시 후 다시 시도해주세요.",
+    "applyNeedLogin": "로그인이 필요합니다.\n로그인 화면으로 이동할까요?",
     "applying": "신청중",
     "applied": "신청완료",
     "chatWithMembers": "모임원과 채팅하기",
@@ -312,10 +316,21 @@
     "detailError": "관광지 정보를 불러오지 못했어요."
   },
   "review": {
-    "score": "평점", "title": "제목", "content": "후기", "images": "사진 (최대 5장)",
-    "scoreLabel1": "별로예요", "scoreLabel2": "그저 그래요", "scoreLabel3": "괜찮아요", "scoreLabel4": "좋아요", "scoreLabel5": "최고예요!",
-    "registerTitle": "후기 등록", "moimPrompt": "후기를 작성해주세요, 어떤 여행이었나요?", "moimContentPlaceholder": "다른 사람에게 한마디! 모두 너무 즐거웠어요! 다음에도 또 함께해요!",
-    "titleRequired": "제목을 입력해 주세요.", "contentRequired": "후기 내용을 입력해 주세요.", "imageCount": "{{count}}장 선택됨",
+    "score": "평점",
+    "title": "제목",
+    "content": "후기",
+    "images": "사진 (최대 5장)",
+    "scoreLabel1": "별로예요",
+    "scoreLabel2": "그저 그래요",
+    "scoreLabel3": "괜찮아요",
+    "scoreLabel4": "좋아요",
+    "scoreLabel5": "최고예요!",
+    "registerTitle": "후기 등록",
+    "moimPrompt": "후기를 작성해주세요, 어떤 여행이었나요?",
+    "moimContentPlaceholder": "다른 사람에게 한마디! 모두 너무 즐거웠어요! 다음에도 또 함께해요!",
+    "titleRequired": "제목을 입력해 주세요.",
+    "contentRequired": "후기 내용을 입력해 주세요.",
+    "imageCount": "{{count}}장 선택됨",
     "empty": "아직 등록된 후기가 없어요. 첫 후기를 남겨보세요!",
     "flowTitle": "여행 후기 등록",
     "choosePrompt": "어떤 후기를 남기시겠어요?",
@@ -328,13 +343,17 @@
     "addAnotherTourBtn": "추가리뷰 남기기",
     "selectPlace": "리뷰를 남길 관광지를 선택해주세요",
     "noPlaceToReview": "이번 소모임 일정에 등록된 관광지가 없어요.",
-    "flowComplete": "후기가 모두 등록되었어요. 소중한 의견 감사합니다!"
+    "flowComplete": "후기가 모두 등록되었어요.\n소중한 의견 감사합니다!"
   },
   "transport": {
     "duration": "{{count}}분",
     "cost": "{{cost}}원",
     "transfer": "환승 {{count}}회",
-    "congestion": { "smooth": "원활", "moderate": "보통", "heavy": "혼잡" },
+    "congestion": {
+      "smooth": "원활",
+      "moderate": "보통",
+      "heavy": "혼잡"
+    },
     "delayWarning": "혼잡 예상 (지연 최대 {{count}}분)",
     "alternative": "대체 추천"
   },
@@ -364,8 +383,8 @@
     "reviewCompleted": "여행 후기 등록 완료",
     "applicantCount": "신청자 {{count}}",
     "uploadPhoto": "사진 등록",
-    "uploadFailed": "사진 업로드에 실패했습니다. 다시 시도해 주세요.",
-    "saveFailed": "저장 중 오류가 발생했습니다. 다시 시도해 주세요."
+    "uploadFailed": "사진 업로드에 실패했습니다.\n다시 시도해 주세요.",
+    "saveFailed": "저장 중 오류가 발생했습니다.\n다시 시도해 주세요."
   },
   "search": {
     "title": "검색 결과",
@@ -376,7 +395,7 @@
   },
   "safetyReport": {
     "title": "안심신고",
-    "notice": "위급 상황 시 즉시 신고하면 관리자와 관계 기관에 실시간으로 접수됩니다.",
+    "notice": "위급 상황 시 즉시 신고하면\n관리자와 관계 기관에 실시간으로 접수됩니다.",
     "moimName": "신고 대상 소모임",
     "safetydesc": "상세 내용",
     "placeholder": "상황을 자세히 적어주세요",
@@ -392,7 +411,7 @@
     "typeRude": "불쾌한 언행",
     "typeNoshow": "노쇼",
     "typeEtc": "기타",
-    "success": "신고가 접수되었습니다. 빠르게 확인하겠습니다."
+    "success": "신고가 접수되었습니다.\n빠르게 확인하겠습니다."
   },
   "lang": {
     "ko": "한국어",

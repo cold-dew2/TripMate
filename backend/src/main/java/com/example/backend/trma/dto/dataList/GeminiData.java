@@ -395,15 +395,15 @@ public class GeminiData {
     }
 
     public static class ReviewTranslationItem {
-        private int index;
+        private String reviewId;
         private String reviewTitle;
         private String reviewContent;
 
-        public int getIndex() {
-            return index;
+        public String getReviewId() {
+            return reviewId;
         }
-        public void setIndex(int index) {
-            this.index = index;
+        public void setReviewId(String reviewId) {
+            this.reviewId = reviewId;
         }
 
         public String getReviewTitle() {
@@ -418,6 +418,35 @@ public class GeminiData {
         }
         public void setReviewContent(String reviewContent) {
             this.reviewContent = reviewContent;
+        }
+    }
+
+    private ChatTranslationItem chatTranslation;
+
+    public ChatTranslationItem getChatTranslation() {
+        return chatTranslation;
+    }
+
+    public void setChatTranslation(ChatTranslationItem chatTranslation) {
+        this.chatTranslation = chatTranslation;
+    }
+
+    public static class ChatTranslationItem {
+        private String contentEn;
+        private String contentJa;
+
+        public String getContentEn() {
+            return contentEn;
+        }
+        public void setContentEn(String contentEn) {
+            this.contentEn = contentEn;
+        }
+
+        public String getContentJa() {
+            return contentJa;
+        }
+        public void setContentJa(String contentJa) {
+            this.contentJa = contentJa;
         }
     }
 }

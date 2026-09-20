@@ -174,6 +174,8 @@
             ,a.SENDER_ID
             ,b.USER_NM AS SENDER_NAME
             ,a.CONTENT
+            ,a.CONTENT_EN
+            ,a.CONTENT_JA
             ,a.CREATE_DT AS CREATED_AT
             ,(
                 SELECT COUNT(1)
@@ -225,6 +227,8 @@
             ,a.SENDER_ID
             ,b.USER_NM AS SENDER_NAME
             ,a.CONTENT
+            ,a.CONTENT_EN
+            ,a.CONTENT_JA
             ,a.CREATE_DT AS CREATED_AT
             ,(
                 SELECT COUNT(1)
@@ -239,6 +243,20 @@
         WHERE a.MESSAGE_ID = #{messageId}
 
     </select>
+
+    <!-- ========================= -->
+    <!-- 채팅 메시지 번역 캐시 저장 -->
+    <!-- ========================= -->
+    <update id="updateMessageTranslation">
+
+        UPDATE TB_TRMA_CHAT_MESSAGE
+        <set>
+            <if test="contentEn != null">CONTENT_EN = #{contentEn},</if>
+            <if test="contentJa != null">CONTENT_JA = #{contentJa},</if>
+        </set>
+        WHERE MESSAGE_ID = #{messageId}
+
+    </update>
 
     <!-- ========================= -->
     <!-- 채팅방 나가기(멤버 행 삭제) -->

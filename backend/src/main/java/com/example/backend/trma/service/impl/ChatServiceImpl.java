@@ -2,11 +2,15 @@ package com.example.backend.trma.service.impl;
 
 import com.example.backend.trma.dto.dataList.ChatMessageData;
 import com.example.backend.trma.dto.dataList.ChatRoomData;
+import com.example.backend.trma.dto.dataList.ChatTranslationDelta;
 import com.example.backend.trma.dto.dataList.ChatUnreadDeltaData;
+import com.example.backend.trma.dto.dataList.GeminiData;
 import com.example.backend.trma.dto.dataList.NewChatMessage;
+import com.example.backend.trma.dto.request.GeminiRequest;
 import com.example.backend.trma.dto.request.SendChatMessageRequest;
 import com.example.backend.trma.dto.response.ChatMessagesResponse;
 import com.example.backend.trma.dto.response.ChatRoomsResponse;
+import com.example.backend.trma.dto.response.GeminiResponse;
 import com.example.backend.trma.dto.response.SendChatMessageResponse;
 import com.example.backend.trma.dto.response.LeaveChatRoomResponse;
 import com.example.backend.trma.dto.response.MarkChatReadResponse;
@@ -16,12 +20,17 @@ import com.example.backend.trma.mapper.MoimListMapper;
 import com.example.backend.trma.mapper.NotificationMapper;
 import com.example.backend.trma.service.ChatService;
 import com.example.backend.trma.service.NotificationPushService;
+import com.example.backend.trma.util.AiJsonUtil;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestClient;
 
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 @Service
 @RequiredArgsConstructor
@@ -33,6 +42,13 @@ public class ChatServiceImpl implements ChatService {
     private final NotificationMapper notificationMapper;
     private final NotificationPushService notificationPushService;
     private final SimpMessagingTemplate broker;
+    private final RestClient restClient;
+
+    @Value("${gemini.api.url}")
+    private String geminiUrl;
+
+    @Value("${gemini.api.key}")
+    private String geminiApiKey;
 
     //내 채팅방 목록 조회
     @Override
@@ -80,6 +96,10 @@ public class ChatServiceImpl implements ChatService {
             markReadAndBroadcastDelta(roomId, userId);
 
             List<ChatMessageData> messages = chatMapper.chatMessages(roomId);
+            // 전송 시점의 비동기 번역이 실패했거나 아직 끝나기 전에 AI가 끊긴 경우를 위한
+            // 안전망. 방 전체 이력을 다 훑으면 느려질 수 있으니 가장 최근 메시지 몇 개만
+            // 대상으로, 조회 시점에 한 번 더 시도해서 캐시를 채워넣는다.
+            backfillRecentChatTranslations(messages);
             int memberCount = chatMapper.roomMemberIds(roomId).size();
             String myState = chatMapper.chatMemberState(roomId, userId);
 
@@ -139,6 +159,9 @@ public class ChatServiceImpl implements ChatService {
 
             ChatMessageData saved = chatMapper.messageDetail(newMessage.getMessageId());
             broker.convertAndSend("/topic/chat/" + roomId, saved);
+            // 영어/일본어 번역은 전송 응답을 늦추지 않도록 백그라운드에서 처리하고,
+            // 끝나면 번역된 문구만 별도 채널로 다시 방송해서 화면에 채워 넣게 한다.
+            translateAndBroadcastChatMessage(saved);
             // 알림 등록/실시간 푸시는 부가 기능이라 여기서 실패해도 메시지 전송 자체는
             // 이미 완료된 것으로 처리해야 하므로, 별도로 감싸서 전송 성공 여부에 영향을 주지 않게 한다.
             try {
@@ -314,5 +337,105 @@ public class ChatServiceImpl implements ChatService {
         }
 
         return roomId;
+    }
+
+    // ========================= 채팅 메시지 번역 =========================
+    // 이 앱은 다국어 지원이 핵심이라, AI가 끊겨도 이미 번역된 메시지는 계속 보여야 한다.
+    // 그래서 전송 시점에 영어/일본어 번역을 한 번만 만들어 TB_TRMA_CHAT_MESSAGE에
+    // 캐시해두고(다른 화면들의 "최초 조회 시 번역 후 캐시" 패턴과 동일), 조회 시에는
+    // 이미 캐시된 값을 그대로 내려준다.
+
+    private GeminiResponse callGemini(GeminiRequest geminiRequest) {
+        ObjectMapper objectMapper = new ObjectMapper();
+        try {
+            System.out.println("[Gemini 요청] " + objectMapper.writeValueAsString(geminiRequest));
+        } catch (Exception ignored) {
+        }
+
+        GeminiResponse response = restClient.post()
+                .uri(geminiUrl)
+                .header("X-goog-api-key", geminiApiKey)
+                .body(geminiRequest)
+                .retrieve()
+                .body(GeminiResponse.class);
+
+        try {
+            System.out.println("[Gemini 응답] " + objectMapper.writeValueAsString(response));
+        } catch (Exception ignored) {
+        }
+        return response;
+    }
+
+    private GeminiData.ChatTranslationItem callGeminiForChatTranslation(String content) {
+        String prompt = "다음 채팅 메시지를 영어와 일본어로 자연스럽게 번역해주세요.\n"
+                + "반드시 JSON 형식으로만 응답하세요. 다른 설명은 절대 포함하지 마세요.\n"
+                + "[응답 형식]\n"
+                + "{\"chatTranslation\":{\"contentEn\":\"번역된 영어\",\"contentJa\":\"번역된 일본어\"}}\n"
+                + "[메시지]\n" + content;
+
+        GeminiRequest geminiRequest = new GeminiRequest(List.of(new GeminiRequest.Content(List.of(new GeminiRequest.Part(prompt)))));
+        GeminiResponse response = callGemini(geminiRequest);
+
+        String aiResult = "";
+        if (response != null && response.candidates() != null && !response.candidates().isEmpty()) {
+            aiResult = response.candidates().get(0).content().parts().get(0).text();
+        }
+        if (aiResult == null || aiResult.isBlank()) return null;
+
+        ObjectMapper objectMapper = new ObjectMapper();
+        try {
+            GeminiData result = objectMapper.readValue(AiJsonUtil.extractJson(aiResult), GeminiData.class);
+            return result == null ? null : result.getChatTranslation();
+        } catch (Exception e) {
+            log.warn("채팅 메시지 번역 응답 파싱에 실패했습니다.", e);
+            return null;
+        }
+    }
+
+    // 전송 응답/실시간 방송을 늦추지 않도록 별도 스레드에서 번역하고, 끝나면 가벼운
+    // 패치({messageId, contentEn, contentJa})만 별도 채널로 방송해서 화면에 채워 넣는다.
+    private void translateAndBroadcastChatMessage(ChatMessageData saved) {
+        CompletableFuture.runAsync(() -> {
+            try {
+                GeminiData.ChatTranslationItem item = callGeminiForChatTranslation(saved.getContent());
+                if (item == null) return;
+
+                chatMapper.updateMessageTranslation(Long.parseLong(saved.getMessageId()), item.getContentEn(), item.getContentJa());
+                broker.convertAndSend(
+                        "/topic/chat/" + saved.getRoomId() + "/translated",
+                        new ChatTranslationDelta(saved.getMessageId(), item.getContentEn(), item.getContentJa())
+                );
+            } catch (Exception e) {
+                log.warn("채팅 메시지 번역에 실패했습니다. messageId={}", saved.getMessageId(), e);
+            }
+        });
+    }
+
+    // 조회 시점 안전망. AI가 끊겨 있었을 가능성을 고려해 최근 메시지 몇 개로만 범위를
+    // 좁혀서 재시도한다(방 전체 이력을 매번 다시 번역하면 조회가 느려진다).
+    private static final int CHAT_BACKFILL_LIMIT = 10;
+
+    private void backfillRecentChatTranslations(List<ChatMessageData> messages) {
+        if (messages == null || messages.isEmpty()) return;
+
+        int checked = 0;
+        for (int i = messages.size() - 1; i >= 0 && checked < CHAT_BACKFILL_LIMIT; i--) {
+            ChatMessageData message = messages.get(i);
+            boolean missing = (message.getContentEn() == null || message.getContentEn().isBlank())
+                    || (message.getContentJa() == null || message.getContentJa().isBlank());
+            if (!missing) continue;
+            checked++;
+
+            try {
+                GeminiData.ChatTranslationItem item = callGeminiForChatTranslation(message.getContent());
+                if (item == null) continue;
+
+                chatMapper.updateMessageTranslation(Long.parseLong(message.getMessageId()), item.getContentEn(), item.getContentJa());
+                if (item.getContentEn() != null && !item.getContentEn().isBlank()) message.setContentEn(item.getContentEn());
+                if (item.getContentJa() != null && !item.getContentJa().isBlank()) message.setContentJa(item.getContentJa());
+            } catch (Exception e) {
+                log.warn("채팅 메시지 번역 백필에 실패했습니다. messageId={}", message.getMessageId(), e);
+            }
+        }
     }
 }

@@ -289,6 +289,8 @@ public class TourListServicelmpl implements TourListService {
     //관광지 상세조회(AI)
     public TourAiDetailResponse tourAiDetail(TourAiDetailRequest request) {
 
+        String langCd = (request.getLang() == null || request.getLang().isBlank()) ? "ko" : request.getLang();
+
         try {
             StringBuilder tourListPrompt = new StringBuilder();
             TourDetailData tourDetail = tourListMapper.tourDetail(request.getTourId());
@@ -355,7 +357,7 @@ public class TourListServicelmpl implements TourListService {
 
             ObjectMapper objectMapper = new ObjectMapper();
             GeminiData.Recommendation3 recommend =
-                    objectMapper.readValue(aiResult, GeminiData.Recommendation3.class);
+                    objectMapper.readValue(AiJsonUtil.extractJson(aiResult), GeminiData.Recommendation3.class);
 
             TourAiDetailData tourAiDetail = new TourAiDetailData();
 
@@ -368,6 +370,14 @@ public class TourListServicelmpl implements TourListService {
             tourAiDetail.setParkingFeeInfo(recommend.getParkingFeeInfo());
             tourAiDetail.setLastUpdatedNote(recommend.getLastUpdatedNote());
 
+            // AI 응답이 정상일 때마다 캐시를 최신 상태로 갱신해둔다. 이렇게 해야 다음에
+            // AI가 끊겼을 때 지금 이 결과를 대신 보여줄 수 있다.
+            try {
+                tourListMapper.upsertTourAiInfo(request.getTourId(), langCd, tourAiDetail);
+            } catch (Exception cacheEx) {
+                log.warn("관광지 AI 이용정보 캐시 저장에 실패했습니다. tourId={}", request.getTourId(), cacheEx);
+            }
+
             return new TourAiDetailResponse(
                     true,
                     200,
@@ -379,6 +389,20 @@ public class TourListServicelmpl implements TourListService {
             );
         } catch (Exception e) {
             log.error("처리 중 오류가 발생했습니다.", e);
+
+            // AI 호출/응답 파싱이 실패해도, 이전에 저장해둔 이용정보가 있으면 그걸로 대신 보여준다.
+            TourAiDetailData cached = tourListMapper.selectTourAiInfo(request.getTourId(), langCd);
+            if (cached != null) {
+                return new TourAiDetailResponse(
+                        true,
+                        200,
+                        "SUCCESS",
+                        "AI 응답에 실패해 이전에 저장된 이용정보를 보여드려요.",
+                        "/tourList/tourAiDetail",
+                        "",
+                        cached
+                );
+            }
 
             if (AiErrorUtil.isAiOverloaded(e)) {
                 return new TourAiDetailResponse(
@@ -991,19 +1015,31 @@ public class TourListServicelmpl implements TourListService {
     }
 
     // ========================= 후기 번역 =========================
-    // 후기는 사용자가 계속 새로 작성하는 데이터라 이름/개요처럼 DB에 캐시하지 않고,
-    // 조회 시점에 해당 페이지(최대 10건)만 매번 번역한다. 후기에는 안정적인 ID가 없으므로
-    // 요청 시 배열 순서(index)로 보내고 그대로 매칭해서 되돌려 받는다.
+    // 관광지명/모임 제목과 동일하게, 최초 조회 시 번역한 결과를 REVIEW_ID 기준으로
+    // TB_TRMA_MOIM_REVIEW에 캐시해두고 이후에는 캐시된 값을 재사용한다. 이렇게 하면
+    // AI가 끊겨도 이미 한 번 번역된 후기는 계속 정상적으로 보인다.
     private void applyReviewTranslations(List<TourDetailReviewData> reviews, String lang) {
         if (!"en".equals(lang) && !"ja".equals(lang)) return;
         if (reviews == null || reviews.isEmpty()) return;
 
+        List<TourDetailReviewData> uncached = new ArrayList<>();
+        for (TourDetailReviewData review : reviews) {
+            String cachedTitle = "en".equals(lang) ? review.getReviewTitleEn() : review.getReviewTitleJa();
+            String cachedContent = "en".equals(lang) ? review.getReviewContentEn() : review.getReviewContentJa();
+            if (cachedContent != null && !cachedContent.isBlank()) {
+                if (cachedTitle != null && !cachedTitle.isBlank()) review.setReviewTitle(cachedTitle);
+                review.setReviewContent(cachedContent);
+            } else {
+                uncached.add(review);
+            }
+        }
+        if (uncached.isEmpty()) return;
+
         try {
             StringBuilder listPrompt = new StringBuilder();
-            for (int i = 0; i < reviews.size(); i++) {
-                TourDetailReviewData review = reviews.get(i);
-                listPrompt.append("[index %d]\n제목: %s\n내용: %s\n\n".formatted(
-                        i,
+            for (TourDetailReviewData review : uncached) {
+                listPrompt.append("[reviewId %s]\n제목: %s\n내용: %s\n\n".formatted(
+                        review.getReviewId(),
                         review.getReviewTitle() == null ? "" : review.getReviewTitle(),
                         review.getReviewContent() == null ? "" : review.getReviewContent()
                 ));
@@ -1011,24 +1047,36 @@ public class TourListServicelmpl implements TourListService {
 
             String langLabel = "en".equals(lang) ? "영어" : "일본어";
             String prompt = "다음은 여행 후기 목록입니다. 각 후기의 제목과 내용을 " + langLabel + "로 자연스럽게 번역해주세요.\n"
-                    + "반드시 JSON 형식으로만 응답하고, 요청받은 index를 그대로 포함해서 응답하세요.\n"
+                    + "반드시 JSON 형식으로만 응답하고, 요청받은 reviewId를 그대로 포함해서 응답하세요.\n"
                     + "[응답 형식]\n"
-                    + "{\"reviewTranslations\":[{\"index\":0,\"reviewTitle\":\"번역된 제목\",\"reviewContent\":\"번역된 내용\"}]}\n"
+                    + "{\"reviewTranslations\":[{\"reviewId\":\"R0001\",\"reviewTitle\":\"번역된 제목\",\"reviewContent\":\"번역된 내용\"}]}\n"
                     + "[후기 목록]\n" + listPrompt;
 
             GeminiData result = callGeminiForTranslation(prompt);
             if (result == null || result.getReviewTranslations() == null) return;
 
+            Map<String, GeminiData.ReviewTranslationItem> translated = new HashMap<>();
             for (GeminiData.ReviewTranslationItem item : result.getReviewTranslations()) {
-                if (item.getIndex() < 0 || item.getIndex() >= reviews.size()) continue;
+                if (item.getReviewId() != null) translated.put(item.getReviewId(), item);
+            }
 
-                TourDetailReviewData review = reviews.get(item.getIndex());
-                if (item.getReviewTitle() != null && !item.getReviewTitle().isBlank()) {
-                    review.setReviewTitle(item.getReviewTitle());
-                }
-                if (item.getReviewContent() != null && !item.getReviewContent().isBlank()) {
-                    review.setReviewContent(item.getReviewContent());
-                }
+            for (TourDetailReviewData review : uncached) {
+                GeminiData.ReviewTranslationItem item = translated.get(review.getReviewId());
+                if (item == null) continue;
+
+                String title = item.getReviewTitle();
+                String content = item.getReviewContent();
+                if (content == null || content.isBlank()) continue;
+
+                tourListMapper.updateReviewTranslation(
+                        review.getReviewId(),
+                        "en".equals(lang) && title != null && !title.isBlank() ? title : null,
+                        "ja".equals(lang) && title != null && !title.isBlank() ? title : null,
+                        "en".equals(lang) ? content : null,
+                        "ja".equals(lang) ? content : null
+                );
+                if (title != null && !title.isBlank()) review.setReviewTitle(title);
+                review.setReviewContent(content);
             }
         } catch (Exception e) {
             log.warn("후기 번역에 실패해 한국어로 표시합니다. lang={}", lang, e);

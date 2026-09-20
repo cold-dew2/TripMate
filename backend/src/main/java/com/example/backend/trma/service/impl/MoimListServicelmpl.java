@@ -21,7 +21,9 @@ import org.springframework.web.client.RestClient;
 import tools.jackson.databind.ObjectMapper;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -927,34 +929,58 @@ public class MoimListServicelmpl implements MoimListService {
         }
     }
 
+    // 관광지 후기와 동일하게 REVIEW_ID 기준으로 캐시한다.
     private void applyMoimReviewTranslations(List<MoimReviewData> reviews, String lang) {
         if (!"en".equals(lang) && !"ja".equals(lang)) return;
         if (reviews == null || reviews.isEmpty()) return;
 
+        List<MoimReviewData> uncached = new ArrayList<>();
+        for (MoimReviewData review : reviews) {
+            String cached = "en".equals(lang) ? review.getReviewContentEn() : review.getReviewContentJa();
+            if (cached != null && !cached.isBlank()) {
+                review.setReviewContent(cached);
+            } else {
+                uncached.add(review);
+            }
+        }
+        if (uncached.isEmpty()) return;
+
         try {
             StringBuilder listPrompt = new StringBuilder();
-            for (int i = 0; i < reviews.size(); i++) {
-                listPrompt.append("[index %d]\n내용: %s\n\n".formatted(
-                        i,
-                        reviews.get(i).getReviewContent() == null ? "" : reviews.get(i).getReviewContent()
+            for (MoimReviewData review : uncached) {
+                listPrompt.append("[reviewId %s]\n내용: %s\n\n".formatted(
+                        review.getReviewId(),
+                        review.getReviewContent() == null ? "" : review.getReviewContent()
                 ));
             }
 
             String langLabel = "en".equals(lang) ? "영어" : "일본어";
             String prompt = "다음은 여행 후기 목록입니다. 각 후기 내용을 " + langLabel + "로 자연스럽게 번역해주세요.\n"
-                    + "반드시 JSON 형식으로만 응답하고, 요청받은 index를 그대로 포함해서 응답하세요.\n"
+                    + "반드시 JSON 형식으로만 응답하고, 요청받은 reviewId를 그대로 포함해서 응답하세요.\n"
                     + "[응답 형식]\n"
-                    + "{\"reviewTranslations\":[{\"index\":0,\"reviewContent\":\"번역된 내용\"}]}\n"
+                    + "{\"reviewTranslations\":[{\"reviewId\":\"R0001\",\"reviewContent\":\"번역된 내용\"}]}\n"
                     + "[후기 목록]\n" + listPrompt;
 
             GeminiData result = callGeminiForTranslation(prompt);
             if (result == null || result.getReviewTranslations() == null) return;
 
+            Map<String, String> translatedContents = new HashMap<>();
             for (GeminiData.ReviewTranslationItem item : result.getReviewTranslations()) {
-                if (item.getIndex() < 0 || item.getIndex() >= reviews.size()) continue;
-                if (item.getReviewContent() != null && !item.getReviewContent().isBlank()) {
-                    reviews.get(item.getIndex()).setReviewContent(item.getReviewContent());
+                if (item.getReviewId() != null && item.getReviewContent() != null) {
+                    translatedContents.put(item.getReviewId(), item.getReviewContent());
                 }
+            }
+
+            for (MoimReviewData review : uncached) {
+                String content = translatedContents.get(review.getReviewId());
+                if (content == null || content.isBlank()) continue;
+
+                moimListMapper.updateReviewTranslation(
+                        review.getReviewId(),
+                        "en".equals(lang) ? content : null,
+                        "ja".equals(lang) ? content : null
+                );
+                review.setReviewContent(content);
             }
         } catch (Exception e) {
             log.warn("모임 후기 번역에 실패해 한국어로 표시합니다. lang={}", lang, e);

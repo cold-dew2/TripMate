@@ -1,5 +1,6 @@
 package com.example.backend.trma.mapper;
 
+import com.example.backend.trma.dto.dataList.TourAiDetailData;
 import com.example.backend.trma.dto.dataList.TourAiSearchData;
 import com.example.backend.trma.dto.dataList.TourDetailData;
 import com.example.backend.trma.dto.dataList.TourDetailReviewData;
@@ -41,4 +42,14 @@ public interface TourListMapper {
                                @Param("roadAddrJa") String roadAddrJa,
                                @Param("detailAddrEn") String detailAddrEn,
                                @Param("detailAddrJa") String detailAddrJa);
+    //관광지 후기 번역 캐시 저장
+    int updateReviewTranslation(@Param("reviewId") String reviewId,
+                                 @Param("reviewTitleEn") String reviewTitleEn,
+                                 @Param("reviewTitleJa") String reviewTitleJa,
+                                 @Param("reviewContentEn") String reviewContentEn,
+                                 @Param("reviewContentJa") String reviewContentJa);
+    //관광지 AI 이용정보 캐시 조회
+    TourAiDetailData selectTourAiInfo(@Param("tourId") String tourId, @Param("langCd") String langCd);
+    //관광지 AI 이용정보 캐시 저장(있으면 갱신)
+    int upsertTourAiInfo(@Param("tourId") String tourId, @Param("langCd") String langCd, @Param("data") TourAiDetailData data);
 }

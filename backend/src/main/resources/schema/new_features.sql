@@ -152,3 +152,39 @@ WHERE m.MOIM_IMG_URL IS NULL;
 CREATE INDEX IF NOT EXISTS IDX_MOIM_REVIEW_TOUR_ID ON TB_TRMA_MOIM_REVIEW(TOUR_ID);
 CREATE INDEX IF NOT EXISTS IDX_TOUR_CATE_TOUR_ID ON TB_TRMA_TOUR_CATE(TOUR_ID);
 CREATE INDEX IF NOT EXISTS IDX_TOUR_LIST_USE_YN ON TB_TRMA_TOUR_LIST(USE_YN);
+
+-- 18) 후기(관광지/소모임) 번역 캐시. 지금까지는 후기가 "계속 새로 쌓이는 데이터"라는
+--     이유로 조회할 때마다 매번 Gemini로 다시 번역했는데, 그 결과 AI가 잠깐 끊기면
+--     후기 번역이 통째로 안 보였다. 관광지명/모임 제목과 동일한 방식으로 한 번 번역한
+--     결과를 여기에 캐시해두고, 이후 조회부터는 캐시를 재사용한다.
+ALTER TABLE TB_TRMA_MOIM_REVIEW ADD COLUMN IF NOT EXISTS REVIEW_TITLE_EN VARCHAR(200) NULL;
+ALTER TABLE TB_TRMA_MOIM_REVIEW ADD COLUMN IF NOT EXISTS REVIEW_TITLE_JA VARCHAR(200) NULL;
+ALTER TABLE TB_TRMA_MOIM_REVIEW ADD COLUMN IF NOT EXISTS REVIEW_CONTENT_EN TEXT NULL;
+ALTER TABLE TB_TRMA_MOIM_REVIEW ADD COLUMN IF NOT EXISTS REVIEW_CONTENT_JA TEXT NULL;
+
+-- 19) 채팅 메시지 번역 캐시. 메시지 전송 시점에 영어/일본어 번역을 한 번만 만들어
+--     여기에 저장해두고, 이후 그 메시지를 누가 다시 보든(실시간 수신 포함) 캐시된
+--     값을 그대로 쓴다. AI가 전송 당시 끊겨 있었으면 null로 남고, 조회 시 최근
+--     메시지 한정으로 재시도해서 채워넣는다.
+ALTER TABLE TB_TRMA_CHAT_MESSAGE ADD COLUMN IF NOT EXISTS CONTENT_EN TEXT NULL;
+ALTER TABLE TB_TRMA_CHAT_MESSAGE ADD COLUMN IF NOT EXISTS CONTENT_JA TEXT NULL;
+
+-- 20) 관광지 AI 이용정보(운영시간/휴무일/입장료/주차 등) 캐시. 지금까지는 조회할 때마다
+--     매번 Gemini를 호출해서 AI가 끊기면 이용정보 자체가 안 보였다. 조회에 성공하면
+--     항상 여기에 최신 결과를 저장해두고, 다음에 AI 호출이 실패했을 때는 이 저장된
+--     값을 대신 보여준다(언어별로 결과 문장이 다르므로 TOUR_ID+LANG_CD로 구분).
+CREATE TABLE IF NOT EXISTS TB_TRMA_TOUR_AI_INFO (
+    TOUR_ID               VARCHAR(50)  NOT NULL,
+    LANG_CD               VARCHAR(10)  NOT NULL,
+    OPERATING_HOURS       VARCHAR(500) NULL,
+    CLOSED_DAYS           VARCHAR(500) NULL,
+    ADMISSION_FEE_IS_FREE VARCHAR(10)  NULL,
+    ADMISSION_FEE_DETAILS VARCHAR(500) NULL,
+    WEBSITE_URL           VARCHAR(500) NULL,
+    PARKING_AVAILABLE     VARCHAR(10)  NULL,
+    PARKING_FEE_INFO      VARCHAR(500) NULL,
+    LAST_UPDATED_NOTE     VARCHAR(500) NULL,
+    UPDATE_DT             DATETIME     NOT NULL,
+
+    PRIMARY KEY (TOUR_ID, LANG_CD)
+);

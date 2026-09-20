@@ -6,6 +6,7 @@ import { Client } from '@stomp/stompjs';
 import { apiClient } from '@/shared/api/client';
 import useUser from '@/shared/hooks/useUser';
 import { useAlert } from '@/shared/contexts/AlertContext';
+import { getApiLang } from '@/shared/utils/lang';
 import './ChatRoom.css';
 
 interface Message {
@@ -13,6 +14,10 @@ interface Message {
   senderId: string;
   senderName: string;
   content: string;
+  // 전송 시점에 백그라운드로 번역해서 채워지는 캐시. 아직 번역 전이거나 AI가
+  // 끊겨 있었으면 비어 있고, 그때는 content(원문)를 그대로 보여준다.
+  contentEn?: string;
+  contentJa?: string;
   createdAt: string;
   // 이 메시지를 아직 안 읽은 참여자 수(카카오톡의 "1" 배지와 같은 의미). 0이 되면
   // 모두 읽은 것이라 배지를 숨긴다.
@@ -26,6 +31,23 @@ interface UnreadDelta {
   messageId: number;
   unreadCount: number;
 }
+
+// 메시지 번역이 끝났을 때 서버가 별도 채널로 보내주는 패치 — 번역된 문구만 담겨 있어
+// 이 값으로 기존 메시지의 contentEn/contentJa만 채워 넣는다.
+interface TranslationDelta {
+  messageId: string;
+  contentEn: string;
+  contentJa: string;
+}
+
+// 현재 화면 언어에 맞는 메시지 문구를 고른다. 번역이 아직 없으면(전송 직후이거나
+// AI가 끊겨 있었으면) 원문(한국어)을 그대로 보여준다.
+const pickDisplayContent = (message: Message): string => {
+  const lang = getApiLang();
+  if (lang === 'en' && message.contentEn) return message.contentEn;
+  if (lang === 'ja' && message.contentJa) return message.contentJa;
+  return message.content;
+};
 
 interface ChatRoomProps {
   roomId: string;
@@ -78,6 +100,14 @@ export default function ChatRoom({ roomId, title, showLeave = true }: ChatRoomPr
     }));
   };
 
+  const applyTranslationDelta = (delta: TranslationDelta) => {
+    setMessages((current) => current.map((m) => (
+      m.messageId === delta.messageId
+        ? { ...m, contentEn: delta.contentEn || m.contentEn, contentJa: delta.contentJa || m.contentJa }
+        : m
+    )));
+  };
+
   useEffect(() => {
     void load();
     const api = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
@@ -98,6 +128,11 @@ export default function ChatRoom({ roomId, title, showLeave = true }: ChatRoomPr
         stomp.subscribe(`/topic/chat/${roomId}/read`, (packet) => {
           const delta = JSON.parse(packet.body) as UnreadDelta[];
           applyUnreadDelta(delta);
+        });
+        // 전송 직후 백그라운드로 진행되는 번역이 끝나면, 해당 메시지의 문구만
+        // 채워 넣는다(전체 메시지 재조회 없음).
+        stomp.subscribe(`/topic/chat/${roomId}/translated`, (packet) => {
+          applyTranslationDelta(JSON.parse(packet.body) as TranslationDelta);
         });
       },
     });
@@ -157,7 +192,7 @@ export default function ChatRoom({ roomId, title, showLeave = true }: ChatRoomPr
               <b>{mine ? t('chat.me') : m.senderName}</b>
               <span className="chat-bubble-row">
                 {mine && unread > 0 && <em className="chat-unread-badge">{unread}</em>}
-                <p>{m.content}</p>
+                <p>{pickDisplayContent(m)}</p>
                 {!mine && unread > 0 && <em className="chat-unread-badge">{unread}</em>}
               </span>
             </article>
