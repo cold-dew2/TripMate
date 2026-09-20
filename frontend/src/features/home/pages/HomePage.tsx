@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import ContentTitle from '@/shared/components/contentTitle/ContentTitle';
@@ -7,6 +8,10 @@ import SpotCard from '@/shared/components/spotCard/SpotCard';
 import usePlace from '@/features/home/hooks/usePlace';
 import MoimCard from '@/shared/components/moimCard/MoimCard';
 import useMoim from '@/features/home/hooks/useMoim';
+import useUser from '@/shared/hooks/useUser';
+import useMyTodaySchedule from '@/features/moim/hooks/useMyTodaySchedule';
+import TodayScheduleSheet from '@/features/home/components/todayScheduleSheet/TodayScheduleSheet';
+import { resolveImageUrl } from '@/shared/utils/url';
 
 const HomePage = () => {
   const { t } = useTranslation();
@@ -14,8 +19,32 @@ const HomePage = () => {
   const { data: moims = [], isLoading: isMoimLoading,
     isError: isMoimError, } = useMoim();
 
+  const { data: user } = useUser();
+  // 동시에 여러 모임이 오늘 진행 중일 수 있어 배열로 받는다.
+  const { data: todaySchedule = [] } = useMyTodaySchedule(!!user);
+  const [isTodaySheetOpen, setIsTodaySheetOpen] = useState(false);
+
+  const bannerLabel = todaySchedule.length === 1
+    ? t(todaySchedule[0].moimTitle)
+    : t('home.todayScheduleCount', { count: todaySchedule.length });
+
   return (
     <>
+      {todaySchedule.length > 0 && (
+        <button type="button" className="home-today-banner" onClick={() => setIsTodaySheetOpen(true)}>
+          <span className="home-today-banner-badge">{t('home.todayScheduleBadge')}</span>
+          <span className="home-today-banner-title">{bannerLabel}</span>
+          <span className="home-today-banner-cta">{t('home.todayScheduleViewBtn')}</span>
+        </button>
+      )}
+
+      {isTodaySheetOpen && todaySchedule.length > 0 && (
+        <TodayScheduleSheet
+          moims={todaySchedule}
+          onClose={() => setIsTodaySheetOpen(false)}
+        />
+      )}
+
       <section className="home-banner-section">
         <RegionBanner
           eyebrow={t("home.sejongEyebrow")}
@@ -65,7 +94,7 @@ const HomePage = () => {
             moims.slice(0, 4)?.map(moim => (
               <li key={moim.moimId}>
                 <Link to={`/moim/${moim.moimId}`}>
-                  <MoimCard badge={t(moim.cateNm)} imageUrl={`/images/places/M001.jpeg`} title={moim.moimTitle} date={moim.moimStartDt} member={moim.memberCnt} views={moim.visitCnt}/>
+                  <MoimCard badge={t(moim.cateNm)} imageUrl={resolveImageUrl(moim.imageUrl)} title={moim.moimTitle} date={moim.moimStartDt} member={moim.memberCnt} views={moim.visitCnt}/>
                 </Link>
               </li>
             ))

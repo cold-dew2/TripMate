@@ -14,5 +14,5 @@ public class UpdateProfileRequest {
     private String areaNm;
     private String description;
     private String profileImageUrl;
-    private List<String> langCds;
+    private List<LanguageInput> languages;
 }

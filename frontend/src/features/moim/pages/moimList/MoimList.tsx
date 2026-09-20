@@ -8,6 +8,7 @@ import { Link, useNavigate } from "react-router-dom";
 import FilterTabs, { type FilterOption } from "@/shared/components/filterTabs/FilterTabs";
 import Button from "@/shared/components/button/Button";
 import RegionBanner from "@/shared/components/regionBanner/RegionBanner";
+import { resolveImageUrl } from "@/shared/utils/url";
 
 const MoimFilter: FilterOption[] = [
   { id: "all", label: "전체" },
@@ -114,7 +115,7 @@ const MoimList = () => {
                       <Link to={`/moim/${moim.moimId}`}>
                         <MoimCard
                             badge={moim.cateNm}
-                            imageUrl={`/images/places/no-image.png`}
+                            imageUrl={resolveImageUrl(moim.imageUrl)}
                             title={moim.moimTitle}
                             desc={moim.moimDscr}
                             date={moim.moimStartDt}

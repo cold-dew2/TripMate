@@ -53,6 +53,32 @@
     </insert>
 
     <!-- ========================= -->
+    <!-- 소모임 채팅방 기본 제목용 모임 이름 조회 -->
+    <!-- ========================= -->
+    <select id="moimTitle"
+            parameterType="String"
+            resultType="String">
+
+        SELECT MOIM_TITLE
+        FROM TB_TRMA_MOIM_LIST
+        WHERE MOIM_ID = #{moimId}
+
+    </select>
+
+    <!-- ========================= -->
+    <!-- 예전 버그로 roomId가 그대로 제목으로 저장된 방을 바로잡음 -->
+    <!-- ========================= -->
+    <update id="fixRoomTitleIfStale">
+
+        UPDATE TB_TRMA_CHAT_ROOM
+        SET TITLE = #{title}
+            ,UPDATE_DT = CURRENT_TIMESTAMP
+        WHERE ROOM_ID = #{roomId}
+            AND TITLE = #{roomId}
+
+    </update>
+
+    <!-- ========================= -->
     <!-- 채팅방 멤버 계정 목록 조회 -->
     <!-- ========================= -->
     <select id="roomMemberIds"
@@ -62,6 +88,7 @@
         SELECT USER_ID
         FROM TB_TRMA_CHAT_MEMBER
         WHERE ROOM_ID = #{roomId}
+            AND STATE_CD = 'A'
 
     </select>
 
@@ -76,6 +103,7 @@
             ,a.TITLE
             ,m.CONTENT AS LAST_MESSAGE
             ,COALESCE(u.UNREAD_COUNT, 0) AS UNREAD_COUNT
+            ,b.STATE_CD AS MY_STATE
         FROM TB_TRMA_CHAT_ROOM a
         INNER JOIN TB_TRMA_CHAT_MEMBER b ON a.ROOM_ID = b.ROOM_ID
         LEFT JOIN (
@@ -147,6 +175,14 @@
             ,b.USER_NM AS SENDER_NAME
             ,a.CONTENT
             ,a.CREATE_DT AS CREATED_AT
+            ,(
+                SELECT COUNT(1)
+                FROM TB_TRMA_CHAT_MEMBER m
+                WHERE m.ROOM_ID = a.ROOM_ID
+                    AND m.USER_ID != a.SENDER_ID
+                    AND m.STATE_CD = 'A'
+                    AND (m.LAST_READ_DT IS NULL OR m.LAST_READ_DT &lt; a.CREATE_DT)
+            ) AS UNREAD_COUNT
         FROM TB_TRMA_CHAT_MESSAGE a
         LEFT JOIN TB_TRMA_USER_INFO b ON a.SENDER_ID = b.USER_ID
         WHERE a.ROOM_ID = #{roomId}
@@ -190,9 +226,75 @@
             ,b.USER_NM AS SENDER_NAME
             ,a.CONTENT
             ,a.CREATE_DT AS CREATED_AT
+            ,(
+                SELECT COUNT(1)
+                FROM TB_TRMA_CHAT_MEMBER m
+                WHERE m.ROOM_ID = a.ROOM_ID
+                    AND m.USER_ID != a.SENDER_ID
+                    AND m.STATE_CD = 'A'
+                    AND (m.LAST_READ_DT IS NULL OR m.LAST_READ_DT &lt; a.CREATE_DT)
+            ) AS UNREAD_COUNT
         FROM TB_TRMA_CHAT_MESSAGE a
         LEFT JOIN TB_TRMA_USER_INFO b ON a.SENDER_ID = b.USER_ID
         WHERE a.MESSAGE_ID = #{messageId}
+
+    </select>
+
+    <!-- ========================= -->
+    <!-- 채팅방 나가기(멤버 행 삭제) -->
+    <!-- ========================= -->
+    <delete id="deleteChatMember">
+
+        DELETE FROM TB_TRMA_CHAT_MEMBER
+        WHERE ROOM_ID = #{roomId}
+            AND USER_ID = #{userId}
+
+    </delete>
+
+    <!-- ========================= -->
+    <!-- 모임 추방/거절 시 채팅방 멤버 상태를 추방으로 표시 -->
+    <!-- ========================= -->
+    <update id="markChatMemberKicked">
+
+        UPDATE TB_TRMA_CHAT_MEMBER
+        SET STATE_CD = 'K'
+        WHERE ROOM_ID = #{roomId}
+            AND USER_ID = #{userId}
+
+    </update>
+
+    <!-- ========================= -->
+    <!-- 채팅방에서 나의 참여 상태 조회 -->
+    <!-- ========================= -->
+    <select id="chatMemberState"
+            resultType="String">
+
+        SELECT STATE_CD
+        FROM TB_TRMA_CHAT_MEMBER
+        WHERE ROOM_ID = #{roomId}
+            AND USER_ID = #{userId}
+
+    </select>
+
+    <!-- ========================= -->
+    <!-- 읽음 처리 후 바뀐 안읽은 사람 수만 가볍게 조회(전체 메시지 재조회 대신 사용) -->
+    <!-- ========================= -->
+    <select id="unreadCountsForRoom"
+            resultType="com.example.backend.trma.dto.dataList.ChatUnreadDeltaData">
+
+        SELECT
+            a.MESSAGE_ID
+            ,(
+                SELECT COUNT(1)
+                FROM TB_TRMA_CHAT_MEMBER m
+                WHERE m.ROOM_ID = a.ROOM_ID
+                    AND m.USER_ID != a.SENDER_ID
+                    AND m.STATE_CD = 'A'
+                    AND (m.LAST_READ_DT IS NULL OR m.LAST_READ_DT &lt; a.CREATE_DT)
+            ) AS UNREAD_COUNT
+        FROM TB_TRMA_CHAT_MESSAGE a
+        WHERE a.ROOM_ID = #{roomId}
+            AND a.SENDER_ID != #{userId}
 
     </select>
 </mapper>

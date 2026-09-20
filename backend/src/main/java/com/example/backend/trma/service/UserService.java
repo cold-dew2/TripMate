@@ -8,6 +8,15 @@ public interface UserService {
     //아이디 중복확인
     ExistsUserIdResponse existsUserId(ExistsUserIdRequest request);
 
+    //아이디 찾기
+    FindIdResponse findId(FindIdRequest request);
+
+    //비밀번호 재설정 대상자 확인
+    VerifyResetResponse verifyReset(VerifyResetRequest request);
+
+    //비밀번호 재설정
+    ResetPasswordResponse resetPassword(ResetPasswordRequest request);
+
     //회원가입
     SignupResponse signup(SignupRequest request);
 

@@ -1,23 +1,37 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { useQueryClient } from '@tanstack/react-query';
 import FilterTabs from '@/shared/components/filterTabs/FilterTabs';
 import ChatRoom from '@/features/chat/components/ChatRoom';
 import useMoimDetail from '../../hooks/useMoimDetail';
 import useMoimMembers from '../../hooks/useMoimMembers';
 import useUpdateMoimMember from '../../hooks/useUpdateMoimMember';
 import { useTransportRecommend, type TransportLeg } from '../../hooks/useTransportRecommend';
-import DaySchedule from '@/shared/components/daySchedule/DaySchedule';
+import DaySchedule, { type ScheduleItem } from '@/shared/components/daySchedule/DaySchedule';
 import TransportLegView from '@/shared/components/transportLeg/TransportLegView';
 import Button from '@/shared/components/button/Button';
 import { useAlert } from '@/shared/contexts/AlertContext';
+import { apiClient } from '@/shared/api/client';
+import { addDays, formatMonthDay } from '@/shared/utils/date';
+import type { Place } from '@/types/place';
 import './MoimManageDetail.css';
 
-type ManageTab = 'applicants' | 'chat' | 'schedule';
+// 일정이 바뀔 때마다(추가/삭제/시간 변경) 날짜는 이미 day 단위로 묶여 있으니, 하루 안에서는
+// 시간(rmks) 순으로 다시 정렬해서 보여준다 — "일자+시간 순으로 조회".
+const sortByTime = (items: ScheduleItem[]) => [...items].sort((a, b) => a.time.localeCompare(b.time));
+
+const nextTime = (count: number) => {
+  const hour = (10 + count * 3) % 24;
+  return `${String(hour).padStart(2, '0')}:00`;
+};
+
+type ManageTab = 'applicants' | 'members' | 'chat' | 'schedule';
 
 const MoimManageDetail = () => {
   const { t } = useTranslation();
-  const { showAlert } = useAlert();
+  const { showAlert, showConfirm } = useAlert();
+  const queryClient = useQueryClient();
   const { moimId } = useParams<{ moimId: string }>();
   const [tab, setTab] = useState<ManageTab>('applicants');
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -27,8 +41,33 @@ const MoimManageDetail = () => {
   const [actionError, setActionError] = useState('');
   const updateMember = useUpdateMoimMember(moimId!);
 
+  // 채팅과 마찬가지로, 알림을 거치지 않고 모임 관리 화면에 바로 들어와 신청자 목록을
+  // 조회한 것만으로도 그 모임의 가입 신청 알림이 읽음 처리되도록 한다.
+  useEffect(() => {
+    if (!moimId) return;
+    void apiClient.put(`/moimList/${moimId}/applicantsRead`, {}).then((res) => {
+      if (res.success) {
+        queryClient.invalidateQueries({ queryKey: ['unreadNotificationCount'] });
+        queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      }
+    });
+  }, [moimId, queryClient]);
+
   const pendingMembers = (members ?? []).filter((m) => m.roleCd !== 'A' && m.stateCd !== 'Y');
+  const approvedMembers = (members ?? []).filter((m) => m.stateCd === 'Y');
   const allSelected = pendingMembers.length > 0 && selected.size === pendingMembers.length;
+
+  const kickMember = (member: { userId: string; userNm: string }) => {
+    showConfirm(t('moim.kickConfirm', { name: member.userNm }), {
+      confirmText: t('moim.kick'),
+      onConfirm: () => {
+        setActionError('');
+        updateMember.mutate({ userId: member.userId, approve: false }, {
+          onError: () => setActionError(t('moim.kickFailed')),
+        });
+      },
+    });
+  };
 
   const toggleSelectAll = () => {
     setSelected(allSelected ? new Set() : new Set(pendingMembers.map((m) => m.userId)));
@@ -52,12 +91,113 @@ const MoimManageDetail = () => {
       setActionError(t('moim.approveFailed'));
     }
   };
-  const plan = result?.plan ?? [];
-  const planByDay = plan.reduce<Record<string, typeof plan>>((acc, item) => {
-    (acc[item.startDt] ??= []).push(item);
-    return acc;
-  }, {});
-  const days = Object.keys(planByDay).sort();
+  const moimStartDt = result?.data.moimStartDt;
+  const moimEndDt = result?.data.moimEndDt;
+
+  const [itemsByDay, setItemsByDay] = useState<Record<number, ScheduleItem[]> | null>(null);
+  const [addingDay, setAddingDay] = useState<number | null>(null);
+  const [searchKeyword, setSearchKeyword] = useState('');
+  const [searchResults, setSearchResults] = useState<Place[]>([]);
+  const [planSaving, setPlanSaving] = useState(false);
+  const [planError, setPlanError] = useState('');
+
+  // 여행 일자(시작일/종료일) 자체는 여기서 바꿀 수 없고, 모임 등록 시 정해진 기간에
+  // 맞춰 며칠짜리 일정인지만 계산한다. 일정(장소/시간)만 추가·삭제·변경할 수 있다.
+  const dayCount = moimStartDt && moimEndDt
+    ? Math.max(1, Math.round((new Date(moimEndDt).getTime() - new Date(moimStartDt).getTime()) / 86400000) + 1)
+    : 1;
+
+  // 조회된 저장 일정을 한 번만 편집 가능한 로컬 상태로 옮겨온다(그 뒤로는 이 상태가
+  // 편집의 기준이 되고, 저장 성공 시 서버 데이터를 다시 불러와 갱신한다).
+  useEffect(() => {
+    if (!result || itemsByDay !== null) return;
+
+    const grouped: Record<number, ScheduleItem[]> = {};
+    (result.plan ?? []).forEach((item) => {
+      const dayIndex = moimStartDt
+        ? Math.round((new Date(item.startDt).getTime() - new Date(moimStartDt).getTime()) / 86400000) + 1
+        : 1;
+      const list = grouped[dayIndex] ?? [];
+      list.push({ id: `${item.tourId}-${item.startDt}-${item.rmks}`, time: item.rmks, placeName: item.tourNm, tourId: item.tourId });
+      grouped[dayIndex] = list;
+    });
+
+    Object.keys(grouped).forEach((day) => {
+      grouped[Number(day)] = sortByTime(grouped[Number(day)]);
+    });
+
+    setItemsByDay(grouped);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [result]);
+
+  const removeItem = (day: number, id: string) => {
+    setItemsByDay((prev) => (prev ? { ...prev, [day]: (prev[day] ?? []).filter((item) => item.id !== id) } : prev));
+  };
+
+  const changeItemTime = (day: number, id: string, time: string) => {
+    setItemsByDay((prev) => (prev
+      ? { ...prev, [day]: sortByTime((prev[day] ?? []).map((item) => (item.id === id ? { ...item, time } : item))) }
+      : prev));
+  };
+
+  const openSpotSearch = (day: number) => {
+    setAddingDay(day);
+    setSearchKeyword('');
+    setSearchResults([]);
+  };
+
+  useEffect(() => {
+    if (addingDay === null) return;
+    const timer = window.setTimeout(async () => {
+      const res = await apiClient.get<{ data: Place[] }>('/tourList/tourSearch', { page: 1, keyword: searchKeyword.trim() });
+      if (res.success) setSearchResults(res.data.data ?? []);
+    }, 300);
+    return () => window.clearTimeout(timer);
+  }, [addingDay, searchKeyword]);
+
+  const addSpot = (place: Place) => {
+    if (addingDay === null) return;
+    setItemsByDay((prev) => {
+      const base = prev ?? {};
+      const dayItems = base[addingDay] ?? [];
+      const newItem: ScheduleItem = {
+        id: `${place.tourId}-${Date.now()}`,
+        time: nextTime(dayItems.length),
+        placeName: place.tourNm,
+        imageUrl: place.firstImage,
+        tourId: place.tourId,
+      };
+      return { ...base, [addingDay]: sortByTime([...dayItems, newItem]) };
+    });
+  };
+
+  const savePlan = async () => {
+    if (!itemsByDay || !moimStartDt || !moimId) return;
+    setPlanSaving(true);
+    setPlanError('');
+    try {
+      const items = Object.entries(itemsByDay)
+        .filter(([day]) => Number(day) <= dayCount)
+        .flatMap(([day, list]) =>
+          list.map((item) => ({
+            startDt: addDays(moimStartDt, Number(day) - 1),
+            rmks: item.time,
+            tourId: item.tourId ?? '',
+          }))
+        );
+      const res = await apiClient.put(`/moimList/${moimId}/plan`, { items });
+      if (!res.success) {
+        setPlanError(t('moim.planSaveError'));
+        return;
+      }
+      queryClient.invalidateQueries({ queryKey: ['moimDetail', moimId] });
+      showAlert(t('moim.planSaved'));
+    } finally {
+      setPlanSaving(false);
+    }
+  };
+
+  const totalItemCount = Object.values(itemsByDay ?? {}).reduce((sum, list) => sum + list.length, 0);
 
   const transportRecommend = useTransportRecommend();
   const legsByKey = useMemo(() => {
@@ -69,13 +209,14 @@ const MoimManageDetail = () => {
   }, [transportRecommend.data]);
 
   const handleTransportRecommend = () => {
-    const items = days.flatMap((date, dayIndex) =>
-      planByDay[date].map((item) => ({
-        day: dayIndex + 1,
-        time: item.rmks,
-        tourId: item.tourId,
-        tourNm: item.tourNm,
-        roadAddr: item.roadAddr,
+    if (!itemsByDay) return;
+    const items = Object.entries(itemsByDay).flatMap(([day, list]) =>
+      list.map((item) => ({
+        day: Number(day),
+        time: item.time,
+        tourId: item.tourId ?? '',
+        tourNm: item.placeName,
+        roadAddr: '',
       }))
     );
     transportRecommend.mutate(items, {
@@ -94,6 +235,7 @@ const MoimManageDetail = () => {
       <FilterTabs
         options={[
           { id: 'applicants', label: t('moim.applicantList') },
+          { id: 'members', label: t('moim.memberList') },
           { id: 'chat', label: t('moim.moimChat') },
           { id: 'schedule', label: t('moim.scheduleEdit') },
         ]}
@@ -179,19 +321,62 @@ const MoimManageDetail = () => {
         </section>
       )}
 
+      {tab === 'members' && (
+        <section className="manage-detail-section">
+          {isLoading ? (
+            <p className="manage-loading">{t('account.loading')}</p>
+          ) : isError ? (
+            <p className="manage-loading">{t('common.loadError')}</p>
+          ) : approvedMembers.length === 0 ? (
+            <p className="manage-loading">{t('moim.noMembers')}</p>
+          ) : (
+            <>
+              {actionError && <p className="manage-action-error" role="alert">{actionError}</p>}
+              <ul className="applicant-list">
+                {approvedMembers.map((member) => (
+                  <li key={member.userId}>
+                    <div className="applicant-avatar" aria-hidden="true">🙂</div>
+                    <span className="applicant-name">
+                      {member.userNm}
+                      {member.roleCd === 'A' && <span className="member-host-badge">{t('moim.hostBadge')}</span>}
+                    </span>
+                    {member.roleCd !== 'A' && (
+                      <div className="applicant-actions">
+                        <button
+                          type="button"
+                          className="applicant-kick"
+                          aria-label={t('moim.kick')}
+                          disabled={updateMember.isPending}
+                          onClick={() => kickMember(member)}
+                        >
+                          {t('moim.kick')}
+                        </button>
+                      </div>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
+        </section>
+      )}
+
       {tab === 'chat' && (
         <section className="manage-detail-chat-wrap">
-          <ChatRoom roomId={`moim-${moimId}`} title={result ? result.data.moimTitle : undefined} />
+          <ChatRoom roomId={`moim-${moimId}`} title={result ? result.data.moimTitle : undefined} showLeave={false} />
         </section>
       )}
 
       {tab === 'schedule' && (
         <section className="manage-detail-section">
-          {days.length === 0 ? (
-            <p className="manage-loading">{t('moim.step3.emptyView')}</p>
+          {!itemsByDay ? (
+            <p className="manage-loading">{t('account.loading')}</p>
           ) : (
             <>
-              {plan.length >= 2 && (
+              <p className="schedule-date-range">{moimStartDt} ~ {moimEndDt}</p>
+              {planError && <p className="manage-action-error" role="alert">{planError}</p>}
+
+              {totalItemCount >= 2 && (
                 <div className="manage-transport-trigger">
                   <Button
                     text={transportRecommend.isPending ? t('common.saving') : t('moim.transportRecommend')}
@@ -207,24 +392,62 @@ const MoimManageDetail = () => {
                   )}
                 </div>
               )}
-              {days.map((date, index) => (
-                <DaySchedule
-                  key={date}
-                  day={index + 1}
-                  date={date}
-                  items={planByDay[date].map((item) => ({
-                    id: `${date}-${item.tourNm}`,
-                    time: item.rmks,
-                    placeName: item.tourNm,
-                    tourId: item.tourId,
-                  }))}
-                  renderBetween={(prev, item) => {
-                    if (!prev.tourId || !item.tourId) return null;
-                    const leg = legsByKey.get(`${index + 1}-${prev.tourId}-${item.tourId}`);
-                    return leg ? <TransportLegView leg={leg} /> : null;
-                  }}
+
+              {Array.from({ length: dayCount }, (_, index) => index + 1).map((day) => {
+                const date = moimStartDt ? addDays(moimStartDt, day - 1) : '';
+                return (
+                  <div key={day}>
+                    <DaySchedule
+                      day={day}
+                      date={date ? formatMonthDay(date) : `${day}`}
+                      items={itemsByDay[day] ?? []}
+                      mode="edit"
+                      onRemove={(id) => removeItem(day, id)}
+                      onAddClick={() => openSpotSearch(day)}
+                      onTimeChange={(id, time) => changeItemTime(day, id, time)}
+                      renderBetween={(prev, item) => {
+                        if (!prev.tourId || !item.tourId) return null;
+                        const leg = legsByKey.get(`${day}-${prev.tourId}-${item.tourId}`);
+                        return leg ? <TransportLegView leg={leg} /> : null;
+                      }}
+                    />
+                    {addingDay === day && (
+                      <div className="schedule-spot-search">
+                        <input
+                          type="text"
+                          value={searchKeyword}
+                          onChange={(event) => setSearchKeyword(event.target.value)}
+                          placeholder={t('moimCreate.step4.searchPlaceholder')}
+                          aria-label={t('moimCreate.step4.searchPlaceholder')}
+                        />
+                        <ul className="schedule-spot-results">
+                          {searchResults.length === 0 ? (
+                            <li className="schedule-spot-empty">{t('moimCreate.step4.empty')}</li>
+                          ) : (
+                            searchResults.map((place) => (
+                              <li key={place.tourId}>
+                                <span>{place.tourNm}</span>
+                                <button type="button" onClick={() => addSpot(place)} aria-label={t('moimCreate.step3.addSchedule')}>+</button>
+                              </li>
+                            ))
+                          )}
+                        </ul>
+                        <button type="button" className="schedule-spot-done" onClick={() => setAddingDay(null)}>
+                          {t('common.confirm')}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+
+              <div className="schedule-save-row">
+                <Button
+                  text={planSaving ? t('common.saving') : t('common.submit')}
+                  onClick={savePlan}
+                  disabled={planSaving}
                 />
-              ))}
+              </div>
             </>
           )}
         </section>

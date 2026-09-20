@@ -14,4 +14,7 @@ public class ChatMessageData {
     private String senderName;
     private String content;
     private String createdAt;
+    // 이 메시지를 아직 안 읽은 참여자 수(발신자 본인 제외). 카카오톡처럼 0이 되면
+    // 프론트에서 배지를 숨기는 방식으로 쓴다.
+    private Integer unreadCount;
 }

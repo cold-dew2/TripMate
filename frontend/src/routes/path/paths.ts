@@ -123,6 +123,14 @@ export const noLayoutRoutes: (RouteObject & { handle?: RouteHandle })[] = [
     lazy: () => import("@/features/auth/pages/SignupPage").then((m) => ({ Component: m.default })),
   },
   {
+    path: "/auth/find-id",
+    lazy: () => import("@/features/auth/pages/FindIdPage").then((m) => ({ Component: m.default })),
+  },
+  {
+    path: "/auth/find-password",
+    lazy: () => import("@/features/auth/pages/FindPasswordPage").then((m) => ({ Component: m.default })),
+  },
+  {
     path: "/chat/:roomId",
     lazy: () => import("@/features/chat/pages/ChatRoomPage").then((m) => ({ Component: m.default })),
   },

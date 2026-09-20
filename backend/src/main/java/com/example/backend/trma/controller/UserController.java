@@ -45,6 +45,24 @@ public class UserController {
         return userService.existsUserId(request);
     }
 
+    //아이디 찾기
+    @PostMapping("/findId")
+    public FindIdResponse findId(@RequestBody FindIdRequest request){
+        return userService.findId(request);
+    }
+
+    //비밀번호 재설정 대상자 확인
+    @PostMapping("/verifyReset")
+    public VerifyResetResponse verifyReset(@RequestBody VerifyResetRequest request){
+        return userService.verifyReset(request);
+    }
+
+    //비밀번호 재설정
+    @PostMapping("/resetPassword")
+    public ResetPasswordResponse resetPassword(@RequestBody ResetPasswordRequest request){
+        return userService.resetPassword(request);
+    }
+
     //회원가입
     @PostMapping("/signup")
     public SignupResponse signup(@RequestBody SignupRequest request){

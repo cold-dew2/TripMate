@@ -6,6 +6,7 @@ import com.example.backend.trma.dto.response.*;
 import com.example.backend.trma.mapper.TourListMapper;
 import com.example.backend.trma.service.TourListService;
 import com.example.backend.trma.util.AiErrorUtil;
+import com.example.backend.trma.util.AiJsonUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -102,119 +103,66 @@ public class TourListServicelmpl implements TourListService {
             }
 
             TourSearchRequest request2 = new TourSearchRequest();
-            if(request.getKeyword() == null || request.getKeyword().equals("")){
-                request2.setKeyword("여름");
-            }else{
-                request2.setKeyword(request.getKeyword());
-            }
+            request2.setKeyword(request.getKeyword());
             request2.setCateCd(request.getCateCd());
 
             List<TourSearchData> tourSearch = tourListMapper.tourSearch(request2);
-            if (tourSearch == null || tourSearch.isEmpty()) {
-                // 테스트
-                prompt = prompt + "[관광지 목록]\n" +
-                        "[관광지 번호 001]\n" +
-                        "관광지ID : tour001\n" +
-                        "관광지명 : 경복궁\n" +
-                        "도로명주소 : 서울특별시 종로구 사직로 161\n" +
-                        "카테고리 : 역사, 한복체험\n\n" +
 
-                        "[관광지 번호 002]\n" +
-                        "관광지ID : tour002\n" +
-                        "관광지명 : 남이섬\n" +
-                        "도로명주소 : 강원특별자치도 춘천시 남산면 남이섬길 1\n" +
-                        "카테고리 : 자연, 산책\n\n" +
-
-                        "[관광지 번호 003]\n" +
-                        "관광지ID : tour003\n" +
-                        "관광지명 : 설악산국립공원\n" +
-                        "도로명주소 : 강원특별자치도 속초시 설악산로 1091\n" +
-                        "카테고리 : 자연, 등산\n\n" +
-
-                        "[관광지 번호 004]\n" +
-                        "관광지ID : tour004\n" +
-                        "관광지명 : 아쿠아플라넷 여수\n" +
-                        "도로명주소 : 전라남도 여수시 오동도로 61-11\n" +
-                        "카테고리 : 가족, 실내\n\n" +
-
-                        "[관광지 번호 005]\n" +
-                        "관광지ID : tour005\n" +
-                        "관광지명 : 전주한옥마을\n" +
-                        "도로명주소 : 전북특별자치도 전주시 완산구 기린대로 99\n" +
-                        "카테고리 : 한옥, 전통문화\n\n" +
-
-                        "[관광지 번호 006]\n" +
-                        "관광지ID : tour006\n" +
-                        "관광지명 : 해운대해수욕장\n" +
-                        "도로명주소 : 부산광역시 해운대구 해운대해변로 264\n" +
-                        "카테고리 : 바다, 해수욕\n\n" +
-
-                        "[관광지 번호 007]\n" +
-                        "관광지ID : tour007\n" +
-                        "관광지명 : 제주 성산일출봉\n" +
-                        "도로명주소 : 제주특별자치도 서귀포시 성산읍 일출로 284-12\n" +
-                        "카테고리 : 자연, 일출\n\n" +
-
-                        "[관광지 번호 008]\n" +
-                        "관광지ID : tour008\n" +
-                        "관광지명 : 안동 하회마을\n" +
-                        "도로명주소 : 경상북도 안동시 풍천면 전서로 186\n" +
-                        "카테고리 : 전통마을, 문화유산\n\n" +
-
-                        "[관광지 번호 009]\n" +
-                        "관광지ID : tour009\n" +
-                        "관광지명 : 에버랜드\n" +
-                        "도로명주소 : 경기도 용인시 처인구 포곡읍 에버랜드로 199\n" +
-                        "카테고리 : 테마파크, 가족\n\n" +
-
-                        "[관광지 번호 010]\n" +
-                        "관광지ID : tour010\n" +
-                        "관광지명 : 순천만국가정원\n" +
-                        "도로명주소 : 전라남도 순천시 국가정원1호길 47\n" +
-                        "카테고리 : 정원, 자연\n";
-
-            } else {
-                StringBuilder tourListPrompt = new StringBuilder();
-
-                prompt = prompt + "[관광지 목록]\n";
-
-                int no = 1;
-
-                for (TourSearchData tour : tourSearch) {
-                    tourListPrompt.append("""
-                            [관광지 번호 %03d]
-                            관광지ID : %s
-                            관광지명 : %s
-                            도로명주소 : %s
-                            카테고리 : %s
-                            """.formatted(
-                            no++,
-                            tour.getTourId(),
-                            tour.getTourNm(),
-                            tour.getRoadAddr(),
-                            tour.getCateNm()
-                    ));
-                }
-
-                prompt = prompt + tourListPrompt;
+            // 검색어+테마 조합에 맞는 관광지가 없으면 검색어를 빼고 테마만으로, 그래도
+            // 없으면 테마도 빼고 평점 높은 순으로 다시 찾는다. 예전에는 여기서 DB에
+            // 존재하지 않는 가짜 관광지 목록을 프롬프트에 넣었는데, Gemini가 그 가짜
+            // ID를 추천하면 이후 실제 DB 조회에서 매칭되는 게 없어 이름/주소 등이 전부
+            // 비어 보이는 문제가 있었다. 항상 실제 DB에 있는 관광지만 후보로 준다.
+            if ((tourSearch == null || tourSearch.isEmpty())
+                    && request2.getKeyword() != null && !request2.getKeyword().isBlank()) {
+                TourSearchRequest cateOnly = new TourSearchRequest();
+                cateOnly.setCateCd(request.getCateCd());
+                tourSearch = tourListMapper.tourSearch(cateOnly);
             }
+            if (tourSearch == null || tourSearch.isEmpty()) {
+                tourSearch = tourListMapper.tourSearch(new TourSearchRequest());
+            }
+
+            StringBuilder tourListPrompt = new StringBuilder();
+
+            prompt = prompt + "[관광지 목록]\n";
+
+            int no = 1;
+
+            for (TourSearchData tour : tourSearch) {
+                tourListPrompt.append("""
+                        [관광지 번호 %03d]
+                        관광지ID : %s
+                        관광지명 : %s
+                        도로명주소 : %s
+                        카테고리 : %s
+                        """.formatted(
+                        no++,
+                        tour.getTourId(),
+                        tour.getTourNm(),
+                        tour.getRoadAddr(),
+                        tour.getCateNm()
+                ));
+            }
+
+            prompt = prompt + tourListPrompt;
 
                 prompt = prompt + "응답 예시\n" +
                         "{\n" +
                         "  \"recommendations\":[\n" +
                         "    {\n" +
                         "      \"tourId\":\"T0001\",\n" +
-                        "      \"score\":\"4.8\"" +
+                        "      \"score\":\"4.8\",\n" +
                         "      \"reason\":\"자연경관이 뛰어나며 가족과 함께 산책하기 좋습니다.\"\n" +
                         "    },\n" +
                         "    {\n" +
                         "      \"tourId\":\"T0005\",\n" +
-                        "      \"score\":\"4.3\"" +
+                        "      \"score\":\"4.3\",\n" +
                         "      \"reason\":\"아이들과 체험하기 좋은 실내 관광지입니다.\"\n" +
                         "    },\n" +
                         "    {\n" +
                         "      \"tourId\":\"T0012\",\n" +
-                        "      \"score\":\"3.7\"" +
+                        "      \"score\":\"3.7\",\n" +
                         "      \"reason\":\"야경이 아름답고 커플 여행에 적합합니다.\"\n" +
                         "    }\n" +
                         "  ]\n" +
@@ -222,12 +170,7 @@ public class TourListServicelmpl implements TourListService {
 
             GeminiRequest geminiRequest = new GeminiRequest(List.of(new GeminiRequest.Content(List.of(new GeminiRequest.Part(prompt)))));
 
-            GeminiResponse response = restClient.post()
-                    .uri(url)
-                    .header("X-goog-api-key", apiKey)
-                    .body(geminiRequest)
-                    .retrieve()
-                    .body(GeminiResponse.class);
+            GeminiResponse response = callGemini(geminiRequest);
 
             String aiResult = "";
 
@@ -392,12 +335,7 @@ public class TourListServicelmpl implements TourListService {
 
             GeminiRequest geminiRequest = new GeminiRequest(List.of(new GeminiRequest.Content(List.of(new GeminiRequest.Part(prompt)))));
 
-            GeminiResponse response = restClient.post()
-                    .uri(url)
-                    .header("X-goog-api-key", apiKey)
-                    .body(geminiRequest)
-                    .retrieve()
-                    .body(GeminiResponse.class);
+            GeminiResponse response = callGemini(geminiRequest);
 
             String aiResult = "";
 
@@ -540,9 +478,34 @@ public class TourListServicelmpl implements TourListService {
             searchRequest.setKeyword(request.getKeyword());
 
             List<TourSearchData> tourList = tourListMapper.tourSearch(searchRequest);
+
+            // 검색어+테마 조합에 맞는 관광지가 없으면 테마만으로, 그래도 없으면 테마도 빼고
+            // 평점 높은 순으로 다시 찾는다(항상 실제 DB에 있는 관광지만 후보로 준다).
+            // 예전에는 키워드만 "여행"으로 바꿔 재시도했는데 테마(cateCd) 필터가 그대로
+            // 남아있어서 "여행"이라는 단어와 그 테마를 동시에 만족하는 관광지가 없으면
+            // 여전히 0건이었고, 그 상태로 빈 관광지 목록을 그대로 Gemini에 보내고 있었다.
             if (tourList == null || tourList.isEmpty()) {
-                searchRequest.setKeyword("여행");
-                tourList = tourListMapper.tourSearch(searchRequest);
+                TourSearchRequest cateOnly = new TourSearchRequest();
+                cateOnly.setCateCd(request.getCateCd());
+                tourList = tourListMapper.tourSearch(cateOnly);
+            }
+            if (tourList == null || tourList.isEmpty()) {
+                tourList = tourListMapper.tourSearch(new TourSearchRequest());
+            }
+
+            List<AiScheduleExistingItem> existingItems = request.getExistingItems() != null
+                    ? request.getExistingItems()
+                    : List.of();
+            // 이미 일정에 들어가 있는 관광지는 추천 후보에서 빼서, 같은 곳을 또 추천하지
+            // 않게 한다.
+            if (!existingItems.isEmpty()) {
+                java.util.Set<String> existingTourIds = new java.util.HashSet<>();
+                for (AiScheduleExistingItem item : existingItems) {
+                    existingTourIds.add(item.getTourId());
+                }
+                tourList = tourList.stream()
+                        .filter(tour -> !existingTourIds.contains(tour.getTourId()))
+                        .toList();
             }
 
             StringBuilder tourListPrompt = new StringBuilder();
@@ -554,6 +517,18 @@ public class TourListServicelmpl implements TourListService {
                         관광지명 : %s
                         카테고리 : %s
                         """.formatted(no++, tour.getTourId(), tour.getTourNm(), tour.getCateNm()));
+            }
+
+            // 사용자가 화면에서 이미 직접 추가해둔 일정이 있으면, 그 일정은 그대로 두고
+            // 빈 시간대만 채우도록 Gemini에게 알려준다.
+            StringBuilder existingSchedulePrompt = new StringBuilder();
+            if (!existingItems.isEmpty()) {
+                for (AiScheduleExistingItem item : existingItems) {
+                    TourSearchData tourInfo = tourListMapper.tourInfo(item.getTourId());
+                    String tourNm = tourInfo != null ? tourInfo.getTourNm() : item.getTourId();
+                    existingSchedulePrompt.append("%s일차 %s : %s\n"
+                            .formatted(item.getDay(), item.getTime(), tourNm));
+                }
             }
 
             StringBuilder conditionPrompt = new StringBuilder();
@@ -573,28 +548,32 @@ public class TourListServicelmpl implements TourListService {
                 conditionPrompt.append("동행 인원: ").append(request.getMaxMember()).append("명\n");
             }
 
+            boolean hasExisting = !existingItems.isEmpty();
+
             String prompt = "당신은 대한민국 여행 일정 플래너입니다.\n"
                     + "다음 관광지 목록 중에서만 골라, 아래 조건에 맞는 " + dayCount + "일 여행 일정을 만들어주세요.\n"
                     + "[여행 조건]\n" + conditionPrompt
+                    + (hasExisting
+                            ? "[이미 확정된 일정 - 그대로 유지, 수정/삭제하지 말 것]\n" + existingSchedulePrompt
+                            : "")
                     + "[규칙]\n"
                     + "1. 반드시 제공된 목록에 있는 관광지ID만 사용하세요.\n"
                     + "2. 하루에 2~3개의 관광지를 배정하세요.\n"
                     + "3. 시간은 09:00~18:00 사이로, 이동 시간을 고려해 배정하세요.\n"
                     + "4. 하루 안에서는 시간 순서대로 정렬하세요.\n"
                     + "5. 관심 테마/여행 목적과 동행 인원을 고려해 어울리는 관광지 위주로 배정하세요.\n"
-                    + "6. 반드시 JSON 형식으로만 응답하세요. 다른 설명은 절대 포함하지 마세요.\n"
+                    + (hasExisting
+                            ? "6. 위 [이미 확정된 일정]과 겹치지 않는 시간대만 추가로 채우세요. 이미 확정된"
+                                    + " 일정 자체는 응답에 절대 포함하지 말고, 새로 추가할 항목만 응답하세요.\n"
+                                    + "7. 반드시 JSON 형식으로만 응답하세요. 다른 설명은 절대 포함하지 마세요.\n"
+                            : "6. 반드시 JSON 형식으로만 응답하세요. 다른 설명은 절대 포함하지 마세요.\n")
                     + "[응답 형식]\n"
                     + "{\"recommendations4\":[{\"day\":1,\"time\":\"10:00\",\"tourId\":\"T0001\"}]}\n"
                     + "[관광지 목록]\n" + tourListPrompt;
 
             GeminiRequest geminiRequest = new GeminiRequest(List.of(new GeminiRequest.Content(List.of(new GeminiRequest.Part(prompt)))));
 
-            GeminiResponse response = restClient.post()
-                    .uri(url)
-                    .header("X-goog-api-key", apiKey)
-                    .body(geminiRequest)
-                    .retrieve()
-                    .body(GeminiResponse.class);
+            GeminiResponse response = callGemini(geminiRequest);
 
             String aiResult = "";
             if (response != null && response.candidates() != null && !response.candidates().isEmpty()) {
@@ -602,7 +581,7 @@ public class TourListServicelmpl implements TourListService {
             }
 
             ObjectMapper objectMapper = new ObjectMapper();
-            GeminiData recommend = objectMapper.readValue(aiResult, GeminiData.class);
+            GeminiData recommend = objectMapper.readValue(AiJsonUtil.extractJson(aiResult), GeminiData.class);
 
             List<AiScheduleItemData> schedule = new ArrayList<>();
             if (recommend.getRecommendations4() != null) {
@@ -779,12 +758,7 @@ public class TourListServicelmpl implements TourListService {
 
             GeminiRequest geminiRequest = new GeminiRequest(List.of(new GeminiRequest.Content(List.of(new GeminiRequest.Part(prompt)))));
 
-            GeminiResponse response = restClient.post()
-                    .uri(url)
-                    .header("X-goog-api-key", apiKey)
-                    .body(geminiRequest)
-                    .retrieve()
-                    .body(GeminiResponse.class);
+            GeminiResponse response = callGemini(geminiRequest);
 
             String aiResult = "";
             if (response != null && response.candidates() != null && !response.candidates().isEmpty()) {
@@ -792,7 +766,7 @@ public class TourListServicelmpl implements TourListService {
             }
 
             ObjectMapper objectMapper = new ObjectMapper();
-            GeminiData recommend = objectMapper.readValue(aiResult, GeminiData.class);
+            GeminiData recommend = objectMapper.readValue(AiJsonUtil.extractJson(aiResult), GeminiData.class);
 
             List<TransportLegData> legs = new ArrayList<>();
             if (recommend.getTransportLegs() != null) {
@@ -864,8 +838,11 @@ public class TourListServicelmpl implements TourListService {
     // 한국관광공사 데이터는 한국어만 제공하므로, 최초 조회 시 Gemini로 번역해
     // TB_TRMA_TOUR_LIST에 캐시해두고 이후에는 캐시된 값을 재사용한다.
 
-    private GeminiData callGeminiForTranslation(String prompt) {
-        GeminiRequest geminiRequest = new GeminiRequest(List.of(new GeminiRequest.Content(List.of(new GeminiRequest.Part(prompt)))));
+    // Gemini 호출 시 주고받은 JSON을 그대로 콘솔에 남긴다. AI 응답이 비거나 이상할 때
+    // 이 로그를 보면 실제로 어떤 프롬프트를 보냈고 Gemini가 뭐라고 답했는지 바로 확인할 수 있다.
+    private GeminiResponse callGemini(GeminiRequest geminiRequest) {
+        ObjectMapper objectMapper = new ObjectMapper();
+        System.out.println("[Gemini 요청] " + objectMapper.writeValueAsString(geminiRequest));
 
         GeminiResponse response = restClient.post()
                 .uri(url)
@@ -873,6 +850,16 @@ public class TourListServicelmpl implements TourListService {
                 .body(geminiRequest)
                 .retrieve()
                 .body(GeminiResponse.class);
+
+        System.out.println("[Gemini 응답] " + objectMapper.writeValueAsString(response));
+
+        return response;
+    }
+
+    private GeminiData callGeminiForTranslation(String prompt) {
+        GeminiRequest geminiRequest = new GeminiRequest(List.of(new GeminiRequest.Content(List.of(new GeminiRequest.Part(prompt)))));
+
+        GeminiResponse response = callGemini(geminiRequest);
 
         String aiResult = "";
         if (response != null && response.candidates() != null && !response.candidates().isEmpty()) {

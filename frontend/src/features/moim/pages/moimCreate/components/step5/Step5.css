@@ -28,7 +28,10 @@
   font-size: var(--fs-sm);
 }
 .step5-items li {
-  padding: var(--space-sm) 0;
+ padding: var(--space-sm) 0;
+}
+.step5-items:has(.transport-leg) li {
+ padding: 0;
 }
 .step5-item-row {
   display: flex;

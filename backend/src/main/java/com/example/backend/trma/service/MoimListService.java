@@ -16,6 +16,9 @@ public interface MoimListService {
     //내 모임 목록 조회
     MyMoimResponse myMoim(String userId);
 
+    //내가 가입한 모임 중 오늘 진행 중인 모임들의 오늘 일정
+    MyTodayScheduleResponse myTodaySchedule(String userId);
+
     //내 모임 목록 조회
     MoimCateSearchResponse moimCateSearch();
 
@@ -31,9 +34,16 @@ public interface MoimListService {
     //모임 멤버 상태 변경(승인/거절)
     UpdateMoimMemberResponse updateMoimMember(String moimId, String targetUserId, UpdateMoimMemberRequest request, String userId);
 
+    UpdateMoimPlanResponse updateMoimPlan(String moimId, UpdateMoimPlanRequest request, String userId);
+
+    MarkApplicantsReadResponse markApplicantsRead(String moimId, String userId);
+
     //모임(여행) 후기 등록
     CreateMoimReviewResponse createMoimReview(String moimId, CreateMoimReviewRequest request, String userId);
 
     //모임(여행) 후기 목록 조회
     MoimReviewsResponse moimReviews(String moimId, String lang);
+
+    //모임 일정 기반 교통편 혼잡도 분석(가입된 멤버만)
+    TransportRecommendResponse moimTransportRecommend(String moimId, String userId);
 }

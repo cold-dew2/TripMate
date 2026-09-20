@@ -1,4 +1,5 @@
-import { useRef, useState } from "react";
+import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { DayPicker, type DateRange } from "react-day-picker";
 import { format } from "date-fns";
 import { ko, ja } from "date-fns/locale";
@@ -14,69 +15,31 @@ interface DateRangePickerProps {
 }
 
 const DateRangePicker = ({ label, onChange }: DateRangePickerProps) => {
+  const { t } = useTranslation();
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
   const [isOpen, setIsOpen] = useState(false);
-  const [activeField, setActiveField] = useState<"start" | "end">();
 
-  const startButtonRef = useRef<HTMLButtonElement>(null);
-  const endButtonRef = useRef<HTMLButtonElement>(null);
-
+  // react-day-picker의 range 모드는 이미 선택된 시작일/종료일을 기준으로 새로
+  // 클릭한 날짜가 시작일을 바꾸는지 종료일을 바꾸는지 스스로 판단한다(클릭한
+  // 날짜가 기존 시작일보다 이르면 시작일을, 그 사이거나 이후면 종료일을 바꾼다).
+  // 이 판단과 별도로 "지금 시작일/종료일 중 뭘 고르는 중인지" 상태를 두고 강제로
+  // 라우팅하면 오히려 값이 초기화되거나 엉뚱하게 바뀌므로, 라이브러리가 계산한
+  // 결과를 그대로 신뢰한다. 단, 아직 아무 것도 선택하지 않은 첫 클릭만은
+  // 라이브러리 기본값(from=to=클릭한 날짜)대로 두면 곧장 range가 완성돼 버려
+  // 종료일을 고를 기회 없이 캘린더가 닫히므로, 그때만 종료일을 비워둔다.
   const handleSelect = (range: DateRange | undefined) => {
-    if (!range) return;
+    const isFirstPick = !dateRange?.from;
+    const nextRange = isFirstPick && range?.from ? { from: range.from, to: undefined } : range;
 
-    // 시작일 선택 중
-    if (activeField === "start") {
-      setDateRange({
-        from: range.from,
-        to: undefined,
-      });
+    setDateRange(nextRange);
+    onChange(
+      nextRange?.from ? format(nextRange.from, "yyyy-MM-dd") : "",
+      nextRange?.to ? format(nextRange.to, "yyyy-MM-dd") : ""
+    );
 
-      if (range.from) {
-        const startDate = format(range.from, "yyyy-MM-dd");
-
-        onChange(startDate, "");
-
-        setActiveField("end");
-
-        // 종료일 버튼으로 포커스 이동
-        endButtonRef.current?.focus();
-      }
-
-      return;
+    if (nextRange?.from && nextRange?.to) {
+      setIsOpen(false);
     }
-
-    // 종료일 선택 중
-    if (activeField === "end") {
-      setDateRange({
-        from: dateRange?.from,
-        to: range.to,
-      });
-
-      const startDate = dateRange?.from
-        ? format(dateRange.from, "yyyy-MM-dd")
-        : "";
-
-      const endDate = range.to
-        ? format(range.to, "yyyy-MM-dd")
-        : "";
-
-      onChange(startDate, endDate);
-
-      if (range.to) {
-        setIsOpen(false);
-        setActiveField(undefined);
-      }
-    }
-  };
-
-  const handleStartClick = () => {
-    setActiveField("start");
-    setIsOpen(true);
-  };
-
-  const handleEndClick = () => {
-    setActiveField("end");
-    setIsOpen(true);
   };
 
   return (
@@ -85,25 +48,19 @@ const DateRangePicker = ({ label, onChange }: DateRangePickerProps) => {
 
       <div className="date-inputs">
         <button
-          ref={startButtonRef}
           type="button"
-          className={`btn-datePicker date-start ${activeField === "start" ? "active" : ""}`}
-          onClick={handleStartClick}
+          className="btn-datePicker date-start"
+          onClick={() => setIsOpen(true)}
         >
-          {dateRange?.from
-            ? format(dateRange.from, "yyyy-MM-dd")
-            : "시작일 선택"}
+          {dateRange?.from ? format(dateRange.from, "yyyy-MM-dd") : t('common.startDateSelect')}
         </button>
 
         <button
-          ref={endButtonRef}
           type="button"
-          className={`btn-datePicker date-start ${activeField === "end" ? "active" : ""}`}
-          onClick={handleEndClick}
+          className="btn-datePicker date-start"
+          onClick={() => setIsOpen(true)}
         >
-          {dateRange?.to
-            ? format(dateRange.to, "yyyy-MM-dd")
-            : "종료일 선택"}
+          {dateRange?.to ? format(dateRange.to, "yyyy-MM-dd") : t('common.endDateSelect')}
         </button>
       </div>
 

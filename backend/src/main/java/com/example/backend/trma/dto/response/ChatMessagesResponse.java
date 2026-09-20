@@ -17,4 +17,8 @@ public class ChatMessagesResponse {
     private String token;
 
     private List<ChatMessageData> data;
+    // 채팅방 참여 인원 수(카카오톡처럼 "N명 참여중"을 보여주기 위함).
+    private int memberCount;
+    // 이 방에서 나의 참여 상태('A' 정상 / 'K' 추방됨).
+    private String myState;
 }

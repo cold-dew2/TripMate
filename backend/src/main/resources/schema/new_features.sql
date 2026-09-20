@@ -124,3 +124,31 @@ ALTER TABLE TB_TRMA_MOIM_LIST ADD COLUMN IF NOT EXISTS MOIM_TITLE_EN VARCHAR(200
 ALTER TABLE TB_TRMA_MOIM_LIST ADD COLUMN IF NOT EXISTS MOIM_TITLE_JA VARCHAR(200) NULL;
 ALTER TABLE TB_TRMA_MOIM_LIST ADD COLUMN IF NOT EXISTS MOIM_DSCR_EN TEXT NULL;
 ALTER TABLE TB_TRMA_MOIM_LIST ADD COLUMN IF NOT EXISTS MOIM_DSCR_JA TEXT NULL;
+
+-- 15) 채팅방 멤버 참여 상태(정상/추방됨). 모임에서 추방되면 채팅방 멤버 행은 남겨두고
+--     이 값만 'K'로 바꿔서, 채팅 목록/방에는 계속 보이되 "추방됨"으로 표시하고 더 이상
+--     메시지를 보낼 수 없게 막는다. 스스로 나가는 경우는 행 자체를 삭제한다.
+ALTER TABLE TB_TRMA_CHAT_MEMBER ADD COLUMN IF NOT EXISTS STATE_CD VARCHAR(10) NOT NULL DEFAULT 'A';
+
+-- 16) 소모임 대표 이미지(MOIM_IMG_URL)를 첫 일정 관광지 이미지로 자동 채우는 기능을
+--     추가했는데, 신규 생성/일정 수정 시점부터만 채워져서 기존에 이미 만들어져 있던
+--     소모임들은 여전히 비어 있다. 한 번만 일괄로 채워준다(이후는 애플리케이션이 자동 갱신).
+UPDATE TB_TRMA_MOIM_LIST m
+SET MOIM_IMG_URL = (
+    SELECT t.FIRST_IMAGE
+    FROM TB_TRMA_MOIM_CALENDAR c
+    LEFT JOIN TB_TRMA_TOUR_LIST t ON c.TOUR_ID = t.TOUR_ID
+    WHERE c.MOIM_ID = m.MOIM_ID
+    ORDER BY c.START_DT ASC, c.RMKS ASC
+    LIMIT 1
+)
+WHERE m.MOIM_IMG_URL IS NULL;
+
+-- 17) 관광지 검색(tourSearch, 소모임 일정 추가에서 씀) 성능 개선용 인덱스.
+--     이 쿼리는 관광지별 평균 평점(TB_TRMA_MOIM_REVIEW)과 카테고리 목록
+--     (TB_TRMA_TOUR_CATE)을 TOUR_ID로 GROUP BY 해서 구하는데, TOUR_ID에 인덱스가
+--     없으면 검색할 때마다 두 테이블을 통째로 스캔해서 집계해야 해서 데이터가 쌓일수록
+--     느려진다. 인덱스를 추가하면 결과는 그대로고 속도만 개선된다.
+CREATE INDEX IF NOT EXISTS IDX_MOIM_REVIEW_TOUR_ID ON TB_TRMA_MOIM_REVIEW(TOUR_ID);
+CREATE INDEX IF NOT EXISTS IDX_TOUR_CATE_TOUR_ID ON TB_TRMA_TOUR_CATE(TOUR_ID);
+CREATE INDEX IF NOT EXISTS IDX_TOUR_LIST_USE_YN ON TB_TRMA_TOUR_LIST(USE_YN);

@@ -21,4 +21,5 @@ public class MyMoimData {
     private String stateCd;
     private String cateCd;
     private String cateNm;
+    private String reviewedYn;
 }

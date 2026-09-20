@@ -1,10 +1,15 @@
-import { Link, useParams } from 'react-router-dom'
+import { useMemo } from 'react';
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next';
 import useMoimDetail from '../../hooks/useMoimDetail'
 import useApplyMoim from '../../hooks/useApplyMoim';
 import useMoimReviews from '../../hooks/useMoimReviews';
+import useMoimTransportRecommend from '../../hooks/useMoimTransportRecommend';
+import type { TransportLeg } from '../../hooks/useTransportRecommend';
+import useUser from '@/shared/hooks/useUser';
 import Header from './components/header/Header';
 import DaySchedule from '@/shared/components/daySchedule/DaySchedule';
+import TransportLegView from '@/shared/components/transportLeg/TransportLegView';
 import Button from '@/shared/components/button/Button';
 import PageState from '@/shared/components/pageState/PageState';
 import { useAlert } from '@/shared/contexts/AlertContext';
@@ -13,11 +18,21 @@ import './MoimDetail.css';
 
 const MoimDetail = () => {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const { moimId } = useParams<{ moimId: string }>();
   const { data: result, isLoading, isError, refetch } = useMoimDetail(moimId!);
   const applyMoim = useApplyMoim(moimId!);
   const { data: reviews } = useMoimReviews(moimId!);
-  const { showAlert } = useAlert();
+  const { data: user } = useUser();
+  const { showAlert, showConfirm } = useAlert();
+  const transportRecommend = useMoimTransportRecommend(moimId!);
+  const legsByKey = useMemo(() => {
+    const map = new Map<string, TransportLeg>();
+    (transportRecommend.data ?? []).forEach((leg) => {
+      map.set(`${leg.day}-${leg.fromTourId}-${leg.toTourId}`, leg);
+    });
+    return map;
+  }, [transportRecommend.data]);
 
   if (isLoading) return <PageState status="loading" />;
   if (isError || !result) return <PageState status="error" onRetry={() => refetch()} />;
@@ -28,6 +43,7 @@ const MoimDetail = () => {
   const joinStatus = result.joinStatus;
   const hasApplied = !!joinStatus;
   const isApproved = joinStatus?.stateCd === 'Y';
+  const isHost = !!user && user.userId === moim.userId;
 
   const planByDay = plan.reduce<Record<string, typeof plan>>((acc, item) => {
     (acc[item.startDt] ??= []).push(item);
@@ -66,18 +82,44 @@ const MoimDetail = () => {
       </Link>
 
       <section className="moim-detail-plan">
-        <h2>{t('moim.scheduleTitle')}</h2>
+        <div className="moim-detail-plan-header">
+          <h2>{t('moim.scheduleTitle')}</h2>
+          {isApproved && plan.length >= 2 && (
+            <Button
+              size="sm"
+              variant="secondary"
+              text={transportRecommend.isPending ? t('common.saving') : t('moim.transportAnalysisBtn')}
+              onClick={() => transportRecommend.mutate(undefined, {
+                onError: (error) => {
+                  const code = (error as { code?: string } | null)?.code;
+                  showAlert(code === 'AI_UNAVAILABLE' ? t('common.aiUnavailable') : t('moim.transportAnalysisError'));
+                },
+              })}
+              disabled={transportRecommend.isPending}
+            />
+          )}
+        </div>
+        {transportRecommend.isSuccess && transportRecommend.data.length === 0 && (
+          <p className="moim-detail-transport-empty">{t('moim.transportAnalysisEmpty')}</p>
+        )}
         {days.length === 0 ? (
           <p className="moim-detail-empty">{t('moim.step3.emptyView')}</p>
         ) : (
-          days.map((date, index) => (
-            <DaySchedule
-              key={date}
-              day={index + 1}
-              date={date}
-              items={planByDay[date].map((item) => ({ id: `${date}-${item.tourNm}`, time: item.rmks, placeName: item.tourNm }))}
-            />
-          ))
+          days.map((date, index) => {
+            const day = index + 1;
+            return (
+              <DaySchedule
+                key={date}
+                day={day}
+                date={date}
+                items={planByDay[date].map((item) => ({ id: `${date}-${item.tourNm}`, time: item.rmks, placeName: item.tourNm, tourId: item.tourId }))}
+                renderBetween={(prevItem, item) => {
+                  const leg = legsByKey.get(`${day}-${prevItem.tourId}-${item.tourId}`);
+                  return leg ? <TransportLegView leg={leg} /> : null;
+                }}
+              />
+            );
+          })
         )}
       </section>
 
@@ -107,7 +149,9 @@ const MoimDetail = () => {
       )}
 
       <div className="moim-detail-actions">
-        {hasApplied ? (
+        {isHost ? (
+          <Button as={Link} to={`/moimManage/${moimId}`} text={t('moim.manageBtn')} />
+        ) : hasApplied ? (
           <>
             <Button text={isApproved ? t('moim.applied') : t('moim.applying')} variant="secondary" disabled />
             {isApproved ? (
@@ -120,7 +164,17 @@ const MoimDetail = () => {
           <Button
             text={applyMoim.isPending ? t('common.saving') : t('moim.applyBtn')}
             onClick={() => applyMoim.mutate(undefined, {
-              onError: () => showAlert(t('moim.applyError')),
+              onError: (error) => {
+                const code = (error as { code?: string })?.code;
+                if (code === 'NEED_LOGIN') {
+                  showConfirm(t('moim.applyNeedLogin'), {
+                    confirmText: t('account.login'),
+                    onConfirm: () => navigate('/auth'),
+                  });
+                } else {
+                  showAlert(t('moim.applyError'));
+                }
+              },
             })}
             disabled={applyMoim.isPending}
           />

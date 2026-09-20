@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState, type Dispatch, type SetStateAction } from "react";
 import Button from "@/shared/components/button/Button";
 import ContentTitle from "@/shared/components/contentTitle/ContentTitle";
-import Select from "@/shared/components/select/Select";
 import DaySchedule from "@/shared/components/daySchedule/DaySchedule";
 import { apiClient } from "@/shared/api/client";
 import { addDays, formatMonthDay } from "@/shared/utils/date";
@@ -40,30 +39,21 @@ const Step3 = ({ watch, setValue, itemsByDay, setItemsByDay, onAddDay, onPrev, o
   const maxMember = watch("maxMember");
   const region = watch("region");
 
-  const maxDays = useMemo(() => {
+  // 일정은 항상 여행 시작일~종료일(Step2에서 정한 기간)만큼만 존재한다. 예전에는
+  // 이와 별개로 "며칠 일정"을 따로 고를 수 있게 해뒀는데, 실제 여행 기간과 어긋나는
+  // 일정을 만들 수 있어 혼란스러워서 없애고 여행 기간에서 그대로 계산한다.
+  const dayCount = useMemo(() => {
     if (!moimStartDt || !moimEndDt) return 1;
     const diff = Math.round((new Date(moimEndDt).getTime() - new Date(moimStartDt).getTime()) / 86400000) + 1;
     return Math.max(1, diff);
   }, [moimStartDt, moimEndDt]);
 
-  const [dayCount, setDayCount] = useState(maxDays);
   const [isRecommending, setIsRecommending] = useState(false);
   const [recommendError, setRecommendError] = useState<string | null>(null);
 
   useEffect(() => {
-    setDayCount(maxDays);
-    setValue("dayCount", maxDays);
-  }, [maxDays, setValue]);
-
-  const dayOptions = Array.from({ length: 10 }, (_, index) => {
-    const count = index + 1;
-    return {
-      value: String(count),
-      option: count === 1
-        ? t("moimCreate.step3.daysOptionOne")
-        : t("moimCreate.step3.daysOptionMulti", { count, nights: count - 1 }),
-    };
-  });
+    setValue("dayCount", dayCount);
+  }, [dayCount, setValue]);
 
   const removeItem = (day: number, id: string) => {
     setItemsByDay((prev) => ({ ...prev, [day]: (prev[day] ?? []).filter((item) => item.id !== id) }));
@@ -80,6 +70,12 @@ const Step3 = ({ watch, setValue, itemsByDay, setItemsByDay, onAddDay, onPrev, o
     setIsRecommending(true);
     setRecommendError(null);
     try {
+      // 이미 사용자가 직접 추가해둔 일정을 함께 보내서, AI가 그 일정은 그대로 두고
+      // 비어있는 시간대만 추가로 채우도록 한다.
+      const existingItems = Object.entries(itemsByDay).flatMap(([day, items]) =>
+        items.map((item) => ({ day: Number(day), time: item.time, tourId: item.tourId }))
+      );
+
       const result = await apiClient.post<{ data: AiScheduleItem[] }>("/tourList/aiSchedule", {
         cateCd: moimCateData?.[0]?.cateCd,
         cateNms: (moimCateData ?? []).map((c) => c.cateNm).filter(Boolean).join(", "),
@@ -88,39 +84,39 @@ const Step3 = ({ watch, setValue, itemsByDay, setItemsByDay, onAddDay, onPrev, o
         maxMember,
         moimStartDt,
         moimEndDt,
+        existingItems,
       });
       if (!result.success) {
-        if (result.code === "AI_UNAVAILABLE") {
-          showAlert(t("common.aiUnavailable"));
-        }
-        setRecommendError(
-          result.code === "AI_UNAVAILABLE"
-            ? t("common.aiUnavailable")
-            : t("moimCreate.step3.aiRecommendError")
-        );
+        const message = result.code === "AI_UNAVAILABLE"
+          ? t("common.aiUnavailable")
+          : t("moimCreate.step3.aiRecommendError");
+        showAlert(message);
+        setRecommendError(message);
         return;
       }
 
-      const grouped: Record<number, PlanItem[]> = {};
-      result.data.data?.forEach((item) => {
-        const list = grouped[item.day] ?? [];
-        list.push({
-          id: `${item.tourId}-${item.day}-${item.time}`,
-          time: item.time,
-          placeName: item.tourNm,
-          tourId: item.tourId,
-          imageUrl: item.firstImage,
-          roadAddr: item.roadAddr,
-        });
-        grouped[item.day] = list;
-      });
-
-      if (Object.keys(grouped).length === 0) {
+      if (!result.data.data?.length) {
+        showAlert(t("moimCreate.step3.aiRecommendEmpty"));
         setRecommendError(t("moimCreate.step3.aiRecommendEmpty"));
         return;
       }
 
-      setItemsByDay(grouped);
+      // 기존 일정은 그대로 두고 AI가 새로 추천한 항목만 추가한다.
+      setItemsByDay((prev) => {
+        const next: Record<number, PlanItem[]> = { ...prev };
+        result.data.data.forEach((item) => {
+          const list = next[item.day] ?? [];
+          next[item.day] = [...list, {
+            id: `${item.tourId}-${item.day}-${item.time}`,
+            time: item.time,
+            placeName: item.tourNm,
+            tourId: item.tourId,
+            imageUrl: item.firstImage,
+            roadAddr: item.roadAddr,
+          }];
+        });
+        return next;
+      });
     } finally {
       setIsRecommending(false);
     }
@@ -130,19 +126,6 @@ const Step3 = ({ watch, setValue, itemsByDay, setItemsByDay, onAddDay, onPrev, o
     <div className="create-content">
       <div className="step3-header">
         <ContentTitle title={t("moim.step3.title")} />
-        <Select
-          label={t("moimCreate.step3.daysLabel")}
-          blind
-          id="dayCount"
-          name="dayCount"
-          value={String(dayCount)}
-          options={dayOptions}
-          onChange={(event) => {
-            const next = Number(event.target.value);
-            setDayCount(next);
-            setValue("dayCount", next);
-          }}
-        />
       </div>
 
       {Array.from({ length: dayCount }, (_, index) => index + 1).map((day) => {

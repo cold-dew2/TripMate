@@ -13,9 +13,10 @@ interface Step6Props {
   setValue: UseFormSetValue<MoimCreateForm>;
   itemsByDay: Record<number, PlanItem[]>;
   onPrev: () => void;
+  isSubmitting: boolean;
 }
 
-const Step6 = ({ watch, setValue, itemsByDay, onPrev }: Step6Props) => {
+const Step6 = ({ watch, setValue, itemsByDay, onPrev, isSubmitting }: Step6Props) => {
   const { t } = useTranslation();
   const moimTitle = watch("moimTitle");
   const moimStartDt = watch("moimStartDt");
@@ -104,8 +105,12 @@ const Step6 = ({ watch, setValue, itemsByDay, onPrev }: Step6Props) => {
       </ul>
 
       <div className="buttons fixed">
-        <Button text={t("common.previous")} variant="secondary" onClick={onPrev} />
-        <Button text={t("moimCreate.step6.register")} type="submit" />
+        <Button text={t("common.previous")} variant="secondary" onClick={onPrev} disabled={isSubmitting} />
+        <Button
+          text={isSubmitting ? t("common.saving") : t("moimCreate.step6.register")}
+          type="submit"
+          disabled={isSubmitting}
+        />
       </div>
     </div>
   );

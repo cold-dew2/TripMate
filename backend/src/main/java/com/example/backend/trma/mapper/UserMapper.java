@@ -20,6 +20,15 @@ public interface UserMapper {
     //아이디 중복 확인
     int existsUserId(String userId);
 
+    //아이디 찾기(이름으로 조회)
+    java.util.List<String> findIdByUserNm(String userNm);
+
+    //비밀번호 재설정 대상자 확인(아이디+이름 일치 여부)
+    int existsUserForReset(@Param("userId") String userId, @Param("userNm") String userNm);
+
+    //비밀번호 재설정
+    int updatePassword(@Param("userId") String userId, @Param("userPw") String userPw);
+
     //회원가입
     int insertUser(SignupRequest request);
     SignupResponse insertUserCenter(SignupRequest request);

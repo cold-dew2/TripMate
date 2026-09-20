@@ -199,6 +199,7 @@
         (
             REVIEW_ID
             ,TOUR_ID
+            ,MOIM_ID
             ,REVIEW_TYPE_CD
             ,REVIEW_TITLE
             ,REVIEW_CONTENT
@@ -213,6 +214,7 @@
         )VALUES(
             #{reviewId}
             ,#{request.tourId}
+            ,#{request.moimId}
             ,'T'
             ,#{request.reviewTitle}
             ,#{request.reviewContent}

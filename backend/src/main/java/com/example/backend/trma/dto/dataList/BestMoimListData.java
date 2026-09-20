@@ -9,8 +9,8 @@ import lombok.Setter;
 @Setter
 public class BestMoimListData {
     private String moimId;
-    private String moinTitle;
-    private String moinDscr;
+    private String moimTitle;
+    private String moimDscr;
     private String moimStartDt;
     private String moimEndDt;
     private String userId;
@@ -19,4 +19,5 @@ public class BestMoimListData {
     private String cateNm;
     private String memberCnt;
     private int visitCnt;
+    private String imageUrl;
 }

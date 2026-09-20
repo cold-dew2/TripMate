@@ -15,7 +15,7 @@ const HomeHeader = () => {
   const { data: user, isError, error } = useUser();
   const { data: unreadCount = 0 } = useUnreadNotificationCount();
 
-  const status = (error as Error & { status?: number } | undefined)?.status;
+  const needsLogin = (error as { code?: string } | undefined)?.code === "NEED_LOGIN";
 
   const handleSearchSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -31,7 +31,7 @@ const HomeHeader = () => {
             {t("home.greeting")}
           </span>
           <p className="name">
-            {isError && status !== 401 ? (
+            {isError && !needsLogin ? (
               <span>{t("home.userError")}</span>
             ) : user ? (
                 t("home.userName", { name: user.userNm })
