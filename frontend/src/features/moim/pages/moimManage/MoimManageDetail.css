@@ -7,6 +7,9 @@
 .manage-detail-section {
   margin-top: var(--space-xl);
 }
+.manage-detail-section > div {
+  margin-top: var(--space-xl);
+}
 .manage-action-error {
   margin-bottom: var(--space-md);
   padding: 8px 14px;
@@ -139,7 +142,7 @@
   width: 100%;
 }
 .schedule-spot-search {
-  margin: -8px 0 var(--space-lg);
+  margin: 8px 0 var(--space-lg);
   padding: var(--space-md);
   border: 1px solid var(--gray-100);
   border-radius: var(--radius-md);

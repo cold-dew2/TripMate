@@ -10,6 +10,9 @@
   border: 1px solid var(--gray-100);
   border-radius: var(--radius-lg);
 }
+.review-image-grid li {
+  
+}
 .my-review-avatar {
   flex-shrink: 0;
   width: 32px;
