@@ -15,8 +15,8 @@ public interface TrmaHomeService {
     TourCategoryResponse tourCategory(TourCategoryRequest request);
 
     //인기 모임(클릭 수 많은 모임)
-    BestTourListResponse bestTourList();
+    BestTourListResponse bestTourList(String lang);
 
     //인기 모임(클릭 수 많은 모임)
-    BestMoimListResponse bestMoimList();
+    BestMoimListResponse bestMoimList(String lang);
 }

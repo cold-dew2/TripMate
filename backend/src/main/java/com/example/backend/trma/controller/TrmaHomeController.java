@@ -60,18 +60,18 @@ public class TrmaHomeController {
 
     //인기 여행지(리뷰기반)
     @GetMapping("/bestTourList")
-    public BestTourListResponse bestTourList() {
+    public BestTourListResponse bestTourList(@RequestParam(required = false) String lang) {
 
-        return trmaHomeService.bestTourList();
+        return trmaHomeService.bestTourList(lang);
 
     }
 
 
     //인기 모임(클릭 수 많은 모임)
     @GetMapping("/bestMoimList")
-    public BestMoimListResponse bestMoimList() {
+    public BestMoimListResponse bestMoimList(@RequestParam(required = false) String lang) {
 
-        return trmaHomeService.bestMoimList();
+        return trmaHomeService.bestMoimList(lang);
 
     }
 

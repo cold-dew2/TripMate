@@ -12,4 +12,5 @@ public class MoimSearchRequest {
     private String cateCd;
     private int page;
     private int offset;
+    private String lang;
 }

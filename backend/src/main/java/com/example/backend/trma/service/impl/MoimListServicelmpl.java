@@ -18,6 +18,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientException;
 import tools.jackson.databind.ObjectMapper;
 
 import java.util.ArrayList;
@@ -49,6 +50,7 @@ public class MoimListServicelmpl implements MoimListService {
             request.setOffset(offset);
 
             List<MoimSearchData> moimSearch = moimListMapper.moimSearch(request);
+            applyMoimSearchTranslations(moimSearch, request.getLang());
             return new MoimSearchResponse(
                     true,
                     200,
@@ -378,10 +380,18 @@ public class MoimListServicelmpl implements MoimListService {
     }
 
     //내 모임 목록 조회
-    public MyMoimResponse myMoim(String userId) {
+    public MyMoimResponse myMoim(String userId, String lang) {
 
         try {
             List<MyMoimData> myMoimList = moimListMapper.myMoim(userId);
+            if ("en".equals(lang) || "ja".equals(lang)) {
+                List<String> moimIds = myMoimList.stream().map(MyMoimData::getMoimId).toList();
+                Map<String, String> titles = translateMoimTitles(moimIds, lang);
+                for (MyMoimData moim : myMoimList) {
+                    String title = titles.get(moim.getMoimId());
+                    if (title != null && !title.isBlank()) moim.setMoimTitle(title);
+                }
+            }
 
             return new MyMoimResponse(
                     true,
@@ -408,21 +418,31 @@ public class MoimListServicelmpl implements MoimListService {
 
     //내가 가입한 모임 중 오늘 진행 중인 모임들의 오늘 일정
     @Override
-    public MyTodayScheduleResponse myTodaySchedule(String userId) {
+    public MyTodayScheduleResponse myTodaySchedule(String userId, String lang) {
 
         try {
             String today = java.time.LocalDate.now(java.time.ZoneId.of("Asia/Seoul")).toString();
             List<MyTodayScheduleRowData> rows = moimListMapper.myTodaySchedule(userId, today);
+
+            Map<String, String> translatedTitles = "en".equals(lang) || "ja".equals(lang)
+                    ? translateMoimTitles(rows.stream().map(MyTodayScheduleRowData::getMoimId).distinct().toList(), lang)
+                    : Map.of();
+            Map<String, String> translatedPlaceNames = "en".equals(lang) || "ja".equals(lang)
+                    ? tourListService.translateTourNames(
+                            rows.stream().map(MyTodayScheduleRowData::getTourId).filter(java.util.Objects::nonNull).distinct().toList(), lang)
+                    : Map.of();
 
             // MOIM_ID 기준으로 묶는다. 쿼리가 이미 MOIM_ID로 정렬돼 있어 LinkedHashMap으로
             // 순서를 그대로 유지한다.
             java.util.LinkedHashMap<String, String> titleByMoimId = new java.util.LinkedHashMap<>();
             java.util.Map<String, List<MyTodayScheduleItemData>> itemsByMoimId = new java.util.LinkedHashMap<>();
             for (MyTodayScheduleRowData row : rows) {
-                titleByMoimId.putIfAbsent(row.getMoimId(), row.getMoimTitle());
+                String title = translatedTitles.getOrDefault(row.getMoimId(), row.getMoimTitle());
+                titleByMoimId.putIfAbsent(row.getMoimId(), title);
                 List<MyTodayScheduleItemData> items = itemsByMoimId.computeIfAbsent(row.getMoimId(), k -> new ArrayList<>());
                 if (row.getTime() != null && row.getPlaceName() != null) {
-                    items.add(new MyTodayScheduleItemData(row.getTime(), row.getPlaceName()));
+                    String placeName = translatedPlaceNames.getOrDefault(row.getTourId(), row.getPlaceName());
+                    items.add(new MyTodayScheduleItemData(row.getTime(), placeName));
                 }
             }
 
@@ -814,7 +834,7 @@ public class MoimListServicelmpl implements MoimListService {
 
     //모임 일정 기반 교통편 혼잡도 분석(가입된 멤버만)
     @Override
-    public TransportRecommendResponse moimTransportRecommend(String moimId, String userId) {
+    public TransportRecommendResponse moimTransportRecommend(String moimId, String userId, String lang) {
 
         if (userId == null) {
             return new TransportRecommendResponse(
@@ -876,6 +896,7 @@ public class MoimListServicelmpl implements MoimListService {
 
             TransportRecommendRequest request = new TransportRecommendRequest();
             request.setItems(stops);
+            request.setLang(lang);
 
             TransportRecommendResponse result = tourListService.transportRecommend(request);
 
@@ -912,16 +933,34 @@ public class MoimListServicelmpl implements MoimListService {
         ObjectMapper objectMapper = new ObjectMapper();
         System.out.println("[Gemini 요청] " + objectMapper.writeValueAsString(geminiRequest));
 
-        GeminiResponse response = restClient.post()
-                .uri(url)
-                .header("X-goog-api-key", apiKey)
-                .body(geminiRequest)
-                .retrieve()
-                .body(GeminiResponse.class);
+        // Gemini가 일시적으로 과부하(503)이거나 요청이 몰려 제한(429)에 걸리는 경우가 잦아,
+        // 한 번 실패했다고 바로 포기하면 제목/후기 등 번역이 자주 안 되고 한국어 원문만
+        // 보이는 문제가 있었다. 과부하성 오류에 한해 짧게 두 번 더 재시도한다.
+        RestClientException lastError = null;
+        for (int attempt = 1; attempt <= 4; attempt++) {
+            try {
+                GeminiResponse response = restClient.post()
+                        .uri(url)
+                        .header("X-goog-api-key", apiKey)
+                        .body(geminiRequest)
+                        .retrieve()
+                        .body(GeminiResponse.class);
 
-        System.out.println("[Gemini 응답] " + objectMapper.writeValueAsString(response));
-
-        return response;
+                System.out.println("[Gemini 응답] " + objectMapper.writeValueAsString(response));
+                return response;
+            } catch (RestClientException e) {
+                lastError = e;
+                if (attempt == 4 || !AiErrorUtil.isAiOverloaded(e)) throw e;
+                log.warn("Gemini 호출이 일시적으로 실패해 재시도합니다({}/3).", attempt, e);
+                try {
+                    Thread.sleep(500L * attempt);
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                    throw e;
+                }
+            }
+        }
+        throw lastError;
     }
 
     private GeminiData callGeminiForTranslation(String prompt) {
@@ -1037,5 +1076,124 @@ public class MoimListServicelmpl implements MoimListService {
         } catch (Exception e) {
             log.warn("모임 후기 번역에 실패해 한국어로 표시합니다. lang={}", lang, e);
         }
+    }
+
+    // 소모임 목록(moimSearch)에서 제목/설명을 함께 번역한다. moimSearch 쿼리가 이미
+    // MOIM_TITLE_EN/JA, MOIM_DSCR_EN/JA 캐시 값을 같이 내려주므로 별도 조회 없이 바로
+    // 캐시를 확인하고, 캐시가 없는 것만 모아 한 번의 Gemini 호출로 번역 후 캐시에 저장한다.
+    private void applyMoimSearchTranslations(List<MoimSearchData> moims, String lang) {
+        if (!"en".equals(lang) && !"ja".equals(lang)) return;
+        if (moims == null || moims.isEmpty()) return;
+
+        List<MoimSearchData> uncachedTitle = new ArrayList<>();
+        List<MoimSearchData> uncachedDscr = new ArrayList<>();
+        for (MoimSearchData moim : moims) {
+            String cachedTitle = "en".equals(lang) ? moim.getMoimTitleEn() : moim.getMoimTitleJa();
+            if (cachedTitle != null && !cachedTitle.isBlank()) {
+                moim.setMoimTitle(cachedTitle);
+            } else {
+                uncachedTitle.add(moim);
+            }
+
+            if (moim.getMoimDscr() != null && !moim.getMoimDscr().isBlank()) {
+                String cachedDscr = "en".equals(lang) ? moim.getMoimDscrEn() : moim.getMoimDscrJa();
+                if (cachedDscr != null && !cachedDscr.isBlank()) {
+                    moim.setMoimDscr(cachedDscr);
+                } else {
+                    uncachedDscr.add(moim);
+                }
+            }
+        }
+        if (uncachedTitle.isEmpty() && uncachedDscr.isEmpty()) return;
+
+        try {
+            Map<String, String> toTranslate = new java.util.LinkedHashMap<>();
+            for (MoimSearchData moim : uncachedTitle) toTranslate.put(moim.getMoimId() + "#title", moim.getMoimTitle());
+            for (MoimSearchData moim : uncachedDscr) toTranslate.put(moim.getMoimId() + "#dscr", moim.getMoimDscr());
+
+            Map<String, String> translated = tourListService.translateFreeTexts(toTranslate, lang);
+            if (translated.isEmpty()) return;
+
+            java.util.Set<String> touchedIds = new java.util.LinkedHashSet<>();
+            uncachedTitle.forEach(moim -> touchedIds.add(moim.getMoimId()));
+            uncachedDscr.forEach(moim -> touchedIds.add(moim.getMoimId()));
+
+            Map<String, MoimSearchData> byId = new HashMap<>();
+            for (MoimSearchData moim : moims) byId.put(moim.getMoimId(), moim);
+
+            for (String moimId : touchedIds) {
+                MoimSearchData moim = byId.get(moimId);
+                String translatedTitle = translated.get(moimId + "#title");
+                String translatedDscr = translated.get(moimId + "#dscr");
+                if ((translatedTitle == null || translatedTitle.isBlank())
+                        && (translatedDscr == null || translatedDscr.isBlank())) continue;
+
+                moimListMapper.updateMoimTranslation(
+                        moimId,
+                        "en".equals(lang) ? translatedTitle : null,
+                        "ja".equals(lang) ? translatedTitle : null,
+                        "en".equals(lang) ? translatedDscr : null,
+                        "ja".equals(lang) ? translatedDscr : null
+                );
+                if (translatedTitle != null && !translatedTitle.isBlank()) moim.setMoimTitle(translatedTitle);
+                if (translatedDscr != null && !translatedDscr.isBlank()) moim.setMoimDscr(translatedDscr);
+            }
+        } catch (Exception e) {
+            log.warn("소모임 목록 번역에 실패했습니다. lang={}", lang, e);
+        }
+    }
+
+    //관광지의 translateTourNames와 동일한 용도로, 홈 화면처럼 소모임 제목만 필요한
+    //다른 화면에서 재사용한다. MOIM_TITLE_EN/JA 캐시를 우선 쓰고, 없는 것만 모아
+    //tourListService의 범용 텍스트 번역기로 한 번에 번역한 뒤 캐시에 저장한다.
+    @Override
+    public Map<String, String> translateMoimTitles(List<String> moimIds, String lang) {
+        if (!"en".equals(lang) && !"ja".equals(lang)) return Map.of();
+        if (moimIds == null || moimIds.isEmpty()) return Map.of();
+
+        List<String> distinctIds = moimIds.stream()
+                .filter(id -> id != null && !id.isBlank())
+                .distinct()
+                .toList();
+        if (distinctIds.isEmpty()) return Map.of();
+
+        List<MoimTitleTranslationData> moims = moimListMapper.moimTitlesByIds(distinctIds);
+
+        Map<String, String> result = new HashMap<>();
+        List<MoimTitleTranslationData> uncached = new ArrayList<>();
+        for (MoimTitleTranslationData moim : moims) {
+            String cached = "en".equals(lang) ? moim.getMoimTitleEn() : moim.getMoimTitleJa();
+            if (cached != null && !cached.isBlank()) {
+                result.put(moim.getMoimId(), cached);
+            } else {
+                uncached.add(moim);
+            }
+        }
+        if (uncached.isEmpty()) return result;
+
+        try {
+            Map<String, String> toTranslate = new java.util.LinkedHashMap<>();
+            for (MoimTitleTranslationData moim : uncached) {
+                toTranslate.put(moim.getMoimId(), moim.getMoimTitle());
+            }
+
+            Map<String, String> translated = tourListService.translateFreeTexts(toTranslate, lang);
+            for (MoimTitleTranslationData moim : uncached) {
+                String title = translated.get(moim.getMoimId());
+                if (title == null || title.isBlank()) continue;
+
+                moimListMapper.updateMoimTranslation(
+                        moim.getMoimId(),
+                        "en".equals(lang) ? title : null,
+                        "ja".equals(lang) ? title : null,
+                        null,
+                        null
+                );
+                result.put(moim.getMoimId(), title);
+            }
+        } catch (Exception e) {
+            log.warn("소모임 제목 일괄 번역에 실패했습니다. lang={}", lang, e);
+        }
+        return result;
     }
 }

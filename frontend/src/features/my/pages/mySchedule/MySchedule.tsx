@@ -43,7 +43,7 @@ const MySchedule = () => {
                   <Link to={`/moim/${moim.moimId}`} className="schedule-card-main">
                     <div className="schedule-thumb" aria-hidden="true" />
                     <div className="schedule-info">
-                      <p className="schedule-title">{t(moim.moimTitle)}</p>
+                      <p className="schedule-title">{moim.moimTitle}</p>
                       <p className="schedule-meta">{formatDateWithDow(moim.moimStartDt)} · {moim.memberCnt}/{moim.maxMember}{t("명")}</p>
                     </div>
                   </Link>

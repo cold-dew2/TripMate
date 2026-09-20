@@ -1,8 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import type { TourReview } from '@/types/reviews';
+import ReviewImageGrid from '@/shared/components/reviewImageGrid/ReviewImageGrid';
 import './ReviewsList.css'
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 interface ReviewsProps {
   reviews?: TourReview[];
@@ -40,13 +39,7 @@ const ReviewsList = ({ reviews }: ReviewsProps) => {
             </div>
           </div>
           <div className="review-content">{review.reviewContent}</div>
-          {review.imgUrls && (
-            <ul className="review-images">
-              {review.imgUrls.split(',').map((url, index) => (
-                <li key={url}><img src={`${API_BASE_URL}${url}`} alt={t('image.reviewPhoto', { index: index + 1 })} /></li>
-              ))}
-            </ul>
-          )}
+          {review.imgUrls && <ReviewImageGrid urls={review.imgUrls.split(',')} />}
         </li>
       ))}
     </ul>

@@ -2,7 +2,9 @@
   position: relative;
   z-index: 1;
 }
-
+.home-banner-section .region-banner {
+  border: none;
+}
 .home-today-banner {
   position: relative;
   isolation: isolate;
@@ -14,11 +16,11 @@
   width: 100%;
   padding: var(--space-lg) var(--space-2xl);
 
-  border: 1.5px solid var(--purple-300);
+  border: 2px solid var(--purple-100);
   border-radius: var(--radius-lg);
 
   background: var(--white);
-  box-shadow: var(--shadow-card);
+  box-shadow: var(--shadow-card-lg);
 
   text-align: left;
 
@@ -73,13 +75,13 @@
 @keyframes home-today-banner-pulse {
   0%,
   100% {
-    border-color: var(--purple-300);
-    box-shadow: var(--shadow-card);
+    border-color: var(--purple-100);
+    box-shadow: var(--shadow-card-lg);
   }
 
   50% {
     border-color: var(--purple-600);
-    box-shadow: var(--shadow-button);
+    box-shadow: var(--shadow-card-lg);
   }
 }
 

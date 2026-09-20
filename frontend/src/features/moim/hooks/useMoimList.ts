@@ -1,4 +1,5 @@
 import { apiClient } from "@/shared/api/client";
+import { getApiLang } from "@/shared/utils/lang";
 import type { MoimResponse } from "@/types/moim";
 import { useInfiniteQuery } from "@tanstack/react-query";
 
@@ -8,10 +9,11 @@ const isMock = (import.meta.env.VITE_API_BASE_URL ?? "").startsWith("/data");
 
 const useMoimList = (category?: string, keyword?: string) => {
   return useInfiniteQuery({
-    queryKey: ["moimList", category, keyword ?? ""],
+    queryKey: ["moimList", category, keyword ?? "", getApiLang()],
     queryFn: async ({ pageParam = 1 }) => {
       const queryParams = new URLSearchParams({
         page: String(pageParam),
+        lang: getApiLang(),
       });
 
       if (category && category !== "all") {

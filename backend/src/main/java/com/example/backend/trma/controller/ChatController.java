@@ -22,7 +22,7 @@ public class ChatController {
 
     //내 채팅방 목록 조회
     @GetMapping("/rooms")
-    public ChatRoomsResponse chatRooms(Authentication authentication) {
+    public ChatRoomsResponse chatRooms(@RequestParam(required = false) String lang, Authentication authentication) {
 
         if (authentication == null || !authentication.isAuthenticated()
                 || "anonymousUser".equals(authentication.getName())) {
@@ -30,7 +30,7 @@ public class ChatController {
             return new ChatRoomsResponse(false, 500, "NEED_LOGIN", "로그인이 필요합니다.", "/chat/rooms", "", null);
         }
 
-        return chatService.chatRooms(authentication.getName());
+        return chatService.chatRooms(authentication.getName(), lang);
     }
 
     //채팅 메시지 목록 조회

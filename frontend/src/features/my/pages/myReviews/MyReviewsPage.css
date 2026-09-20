@@ -45,15 +45,3 @@
   color: var(--gray-700);
   font-size: var(--fs-sm);
 }
-.my-review-images {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-sm);
-  margin-top: var(--space-sm);
-}
-.my-review-images img {
-  width: 52px;
-  height: 52px;
-  border-radius: var(--radius-sm);
-  object-fit: cover;
-}

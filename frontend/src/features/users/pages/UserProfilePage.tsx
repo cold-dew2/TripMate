@@ -80,7 +80,7 @@ const UserProfilePage = () => {
               {moims.map((moim) => (
                 <li key={moim.moimId}>
                   <Link to={`/moim/${moim.moimId}`}>
-                    <strong>{t(moim.moimTitle)}</strong>
+                    <strong>{moim.moimTitle}</strong>
                     <span>{formatDateWithDow(moim.moimStartDt)}</span>
                   </Link>
                 </li>

@@ -114,6 +114,7 @@
     "declaration": "신고하기",
     "remove": "삭제",
     "close": "닫기",
+    "serviceDown": "현재 서비스 점검중이에요.\n나중에 다시 접속해주세요.",
     "selectAll": "전체 선택",
     "deselectAll": "선택 해제"
   },
@@ -167,7 +168,8 @@
       "addressInputPlaceholder": "관광지 주소",
       "save": "저장",
       "customTourNeedLogin": "로그인이 필요해요.\n로그인 후 다시 등록해주세요.",
-      "customTourError": "관광지 등록에 실패했어요.\n잠시 후 다시 시도해주세요."
+      "customTourError": "관광지 등록에 실패했어요.\n잠시 후 다시 시도해주세요.",
+      "removeSchedule": "일정에서 빼기"
     },
     "step5": {
       "mapUnavailable": "지도를 표시할 관광지가 없어요.",
@@ -363,7 +365,14 @@
       "heavy": "혼잡"
     },
     "delayWarning": "혼잡 예상 (지연 최대 {{count}}분)",
-    "alternative": "대체 추천"
+    "alternative": "대체 추천",
+    "mode": {
+      "지하철": "지하철",
+      "버스": "버스",
+      "도보": "도보",
+      "택시": "택시",
+      "자가용/렌터카": "자가용/렌터카"
+    }
   },
   "my": {
     "moiming": "진행 중 소모임",

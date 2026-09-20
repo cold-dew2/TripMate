@@ -16,13 +16,14 @@ const TransportLegView = ({ leg }: { leg: TransportLeg }) => {
   const { t } = useTranslation();
   const congestion = leg.congestionLevel ? CONGESTION_STYLE[leg.congestionLevel] : undefined;
   const isHeavy = leg.congestionLevel === '혼잡';
+  const modeLabel = (mode: string) => t(`transport.mode.${mode}`, mode);
 
   return (
     <div className={`transport-leg ${isHeavy ? 'transport-leg-heavy' : ''}`}>
       <div className="transport-leg-main">
         <span aria-hidden="true">{TRANSPORT_ICON[leg.mode] ?? '🧭'}</span>
         <span>
-          {leg.mode}
+          {modeLabel(leg.mode)}
           {leg.durationMinutes != null && ` · ${t('transport.duration', { count: leg.durationMinutes })}`}
           {leg.cost != null && ` · ${t('transport.cost', { cost: leg.cost.toLocaleString() })}`}
           {leg.transferCount != null && ` · ${t('transport.transfer', { count: leg.transferCount })}`}
@@ -41,7 +42,7 @@ const TransportLegView = ({ leg }: { leg: TransportLeg }) => {
           </p>
           {leg.alternativeMode && (
             <p className="transport-alert-alt">
-              {t('transport.alternative')}: <strong>{TRANSPORT_ICON[leg.alternativeMode] ?? '🧭'} {leg.alternativeMode}</strong>
+              {t('transport.alternative')}: <strong>{TRANSPORT_ICON[leg.alternativeMode] ?? '🧭'} {modeLabel(leg.alternativeMode)}</strong>
               {leg.alternativeReason && ` — ${leg.alternativeReason}`}
             </p>
           )}

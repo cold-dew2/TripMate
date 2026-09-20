@@ -2,6 +2,7 @@
   color: var(--gray-900);
   font-size: var(--fs-lg);
   font-weight: var(--fw-ebold);
+  height: 24px;
 }
 .manage-detail-section {
   margin-top: var(--space-xl);
@@ -82,7 +83,7 @@
   justify-content: center;
   width: 30px;
   height: 30px;
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-xl);
   font-size: var(--fs-sm);
   font-weight: var(--fw-bold);
 }
@@ -97,7 +98,7 @@
 .applicant-kick {
   padding: 0 var(--space-md);
   height: 30px;
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-xl);
   color: var(--red-700);
   background: var(--white-300);
   font-size: var(--fs-xs);
@@ -114,10 +115,10 @@
   font-weight: var(--fw-bold);
 }
 .manage-detail-chat-wrap {
-  margin-top: var(--space-xl);
-  height: 460px;
+  margin: var(--space-xl) -20px 0;
+  padding: 0 0 var(--space-xl);
+  height: calc(100vh - 233.5px);
   border: 1px solid var(--gray-100);
-  border-radius: var(--radius-lg);
   overflow: hidden;
 }
 .manage-transport-trigger {

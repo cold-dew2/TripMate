@@ -124,8 +124,8 @@ const PlaceList = () => {
                       <Link to={`/place/${place.tourId}`}>
                         <SpotCard
                             imageUrl={place.firstImage || `/images/places/no-image.svg`}
-                            title={t(place.tourNm)}
-                            place={t(place.roadAddr)}
+                            title={place.tourNm}
+                            place={place.roadAddr}
                             rating={place.avgScore}
                             badge={translateCategoryList(place.cateNm, t)}
                         />

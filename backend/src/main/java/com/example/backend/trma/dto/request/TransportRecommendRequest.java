@@ -11,6 +11,7 @@ import java.util.List;
 @Setter
 public class TransportRecommendRequest {
     private List<TransportStopInput> items;
+    private String lang;
 
     @Getter
     @NoArgsConstructor

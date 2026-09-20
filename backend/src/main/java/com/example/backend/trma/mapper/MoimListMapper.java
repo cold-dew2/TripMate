@@ -17,6 +17,8 @@ public interface MoimListMapper {
     MoimSearchData moimInfo(String moimId);
     //모임장(생성자) 계정 조회
     String moimHostUserId(String moimId);
+    //소모임 제목 일괄 조회(번역 캐시 확인용)
+    List<MoimTitleTranslationData> moimTitlesByIds(@Param("moimIds") List<String> moimIds);
     //모임 상세조회(기본)
     MoimDetailData moimDetail(String moimId);
     //모임 카테고리 조회

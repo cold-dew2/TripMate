@@ -63,7 +63,7 @@ const TodayScheduleSheet = ({ moims, onClose }: TodayScheduleSheetProps) => {
                 className={`today-schedule-tab${index === activeIndex ? ' active' : ''}`}
                 onClick={() => setActiveIndex(index)}
               >
-                {t(moim.moimTitle)}
+                {moim.moimTitle}
               </button>
             ))}
           </div>
@@ -71,7 +71,7 @@ const TodayScheduleSheet = ({ moims, onClose }: TodayScheduleSheetProps) => {
 
         <div className="today-schedule-panel" key={activeMoim.moimId}>
           {moims.length === 1 && (
-            <p className="today-schedule-moim-title">{t(activeMoim.moimTitle)}</p>
+            <p className="today-schedule-moim-title">{activeMoim.moimTitle}</p>
           )}
 
           {activeMoim.items.length === 0 ? (

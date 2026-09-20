@@ -12,6 +12,7 @@ import com.example.backend.trma.dto.request.*;
 import com.example.backend.trma.dto.response.*;
 import com.example.backend.trma.mapper.MoimListMapper;
 import com.example.backend.trma.mapper.UserMapper;
+import com.example.backend.trma.service.MoimListService;
 import com.example.backend.trma.service.TourListService;
 import com.example.backend.trma.service.UserService;
 import lombok.RequiredArgsConstructor;
@@ -34,6 +35,7 @@ public class UserServiceImpl implements UserService {
 
     private final UserMapper userMapper;
     private final MoimListMapper moimListMapper;
+    private final MoimListService moimListService;
     private final TourListService tourListService;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
@@ -561,6 +563,14 @@ public class UserServiceImpl implements UserService {
             List<UserReviewData> reviews = userMapper.reviewList(reviewRequest);
 
             List<MyMoimData> moims = moimListMapper.myMoim(targetUserId);
+            if ("en".equals(lang) || "ja".equals(lang)) {
+                List<String> moimIds = moims.stream().map(MyMoimData::getMoimId).toList();
+                Map<String, String> titles = moimListService.translateMoimTitles(moimIds, lang);
+                for (MyMoimData moim : moims) {
+                    String title = titles.get(moim.getMoimId());
+                    if (title != null && !title.isBlank()) moim.setMoimTitle(title);
+                }
+            }
 
             PublicProfileData profile = new PublicProfileData(
                     targetUserId,

@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import useMyReviewList, { type MyReviewSort } from '../../hooks/useMyReviewList';
 import FilterTabs from '@/shared/components/filterTabs/FilterTabs';
 import PageState from '@/shared/components/pageState/PageState';
-import { resolveImageUrl } from '@/shared/utils/url';
+import ReviewImageGrid from '@/shared/components/reviewImageGrid/ReviewImageGrid';
 import './MyReviewsPage.css';
 
 const MyReviewsPage = () => {
@@ -39,13 +39,7 @@ const MyReviewsPage = () => {
                   <time>{review.createDt}</time>
                 </div>
                 <p>{review.reviewContent}</p>
-                {review.imgUrls && (
-                  <ul className="my-review-images">
-                    {review.imgUrls.split(',').map((url, index) => (
-                      <li key={url}><img src={resolveImageUrl(url)} alt={t('image.reviewPhoto', { index: index + 1 })} /></li>
-                    ))}
-                  </ul>
-                )}
+                {review.imgUrls && <ReviewImageGrid urls={review.imgUrls.split(',')} />}
               </div>
             </li>
           ))}

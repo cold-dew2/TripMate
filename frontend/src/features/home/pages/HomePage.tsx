@@ -13,6 +13,7 @@ import useMyTodaySchedule from '@/features/moim/hooks/useMyTodaySchedule';
 import TodayScheduleSheet from '@/features/home/components/todayScheduleSheet/TodayScheduleSheet';
 import { resolveImageUrl } from '@/shared/utils/url';
 import { translateCategoryList } from '@/shared/utils/category';
+import Card from '@/shared/components/card/Card';
 
 const HomePage = () => {
   const { t } = useTranslation();
@@ -26,7 +27,7 @@ const HomePage = () => {
   const [isTodaySheetOpen, setIsTodaySheetOpen] = useState(false);
 
   const bannerLabel = todaySchedule.length === 1
-    ? t(todaySchedule[0].moimTitle)
+    ? todaySchedule[0].moimTitle
     : t('home.todayScheduleCount', { count: todaySchedule.length });
 
   return (
@@ -66,12 +67,14 @@ const HomePage = () => {
               </li>
             ))
           ) : isPlaceError ? (
-            <li className="spot-error">{t("home.errorMsg")}</li>
+            <li>
+              <Card error={t("home.errorMsg")}/>
+            </li>
           ) : (
             spots.slice(0, 4)?.map(spot => (
               <li key={spot.tourId}>
                 <Link to={`/place/${spot.tourId}`}>
-                  <SpotCard imageUrl={spot.firstImage} title={t(spot.tourNm)} place={`${t(spot.roadAddr)}`} rating={spot.avgScore} badge={translateCategoryList(spot.cateNm, t)} />
+                  <SpotCard imageUrl={spot.firstImage} title={spot.tourNm} place={spot.roadAddr} rating={spot.avgScore} badge={translateCategoryList(spot.cateNm, t)} />
                 </Link>
               </li>
             ))
@@ -90,7 +93,9 @@ const HomePage = () => {
               </li>
             ))
           ) : isMoimError ? (
-            <li className="spot-error">{t("home.errorMsg")}</li>
+            <li>
+              <Card error={t("home.errorMsg")}/>
+            </li>
           ) : (
             moims.slice(0, 4)?.map(moim => (
               <li key={moim.moimId}>

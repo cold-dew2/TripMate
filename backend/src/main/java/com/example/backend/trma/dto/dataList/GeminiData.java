@@ -421,6 +421,35 @@ public class GeminiData {
         }
     }
 
+    private List<ChatRoomTranslationItem> chatRoomTranslations;
+
+    public List<ChatRoomTranslationItem> getChatRoomTranslations() {
+        return chatRoomTranslations;
+    }
+
+    public void setChatRoomTranslations(List<ChatRoomTranslationItem> chatRoomTranslations) {
+        this.chatRoomTranslations = chatRoomTranslations;
+    }
+
+    public static class ChatRoomTranslationItem {
+        private String roomId;
+        private String title;
+
+        public String getRoomId() {
+            return roomId;
+        }
+        public void setRoomId(String roomId) {
+            this.roomId = roomId;
+        }
+
+        public String getTitle() {
+            return title;
+        }
+        public void setTitle(String title) {
+            this.title = title;
+        }
+    }
+
     private ChatTranslationItem chatTranslation;
 
     public ChatTranslationItem getChatTranslation() {

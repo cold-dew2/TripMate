@@ -115,7 +115,8 @@
     "remove": "Remove",
     "selectAll": "Select all",
     "deselectAll": "Deselect all",
-    "close": "Close"
+    "close": "Close",
+    "serviceDown": "The service is currently under maintenance.\nPlease try again later."
   },
   "moimCreate": {
     "title": "Create a Group",
@@ -167,7 +168,8 @@
       "addressInputPlaceholder": "Address",
       "save": "Save",
       "customTourNeedLogin": "Please log in and try\nregistering the place again.",
-      "customTourError": "Couldn't register the place.\nPlease try again."
+      "customTourError": "Couldn't register the place.\nPlease try again.",
+      "removeSchedule": "Remove from schedule"
     },
     "step5": {
       "mapUnavailable": "No destinations to show on the map yet.",
@@ -363,7 +365,14 @@
       "heavy": "Heavy"
     },
     "delayWarning": "Congestion expected (up to {{count}} min delay)",
-    "alternative": "Suggested alternative"
+    "alternative": "Suggested alternative",
+    "mode": {
+      "지하철": "Subway",
+      "버스": "Bus",
+      "도보": "Walk",
+      "택시": "Taxi",
+      "자가용/렌터카": "Car/Rental car"
+    }
   },
   "my": {
     "moiming": "Ongoing Groups",

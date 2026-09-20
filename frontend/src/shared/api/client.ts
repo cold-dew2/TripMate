@@ -1,3 +1,5 @@
+import { notifyBackendUnreachable } from "./networkStatus";
+
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 interface ApiSuccess<T> {
@@ -51,6 +53,9 @@ const req = async<T>(endpoint: string, options?: RequestInit): Promise<ApiResult
 
   } catch (error) {
     console.error(`API 요청 에러: ${endpoint}`, error);
+    // fetch 자체가 예외를 던졌다는 건 응답 자체를 못 받았다는 뜻(서버 다운, 네트워크
+    // 단절 등)이라, 개별 화면의 에러 메시지 대신 앱 전체에 한 번 점검 안내를 띄운다.
+    notifyBackendUnreachable();
     return {
       success: false,
       status: 0,

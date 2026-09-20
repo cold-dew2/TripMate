@@ -10,7 +10,7 @@ import com.example.backend.trma.dto.response.UnreadCountResponse;
 
 public interface ChatService {
     //내 채팅방 목록 조회
-    ChatRoomsResponse chatRooms(String userId);
+    ChatRoomsResponse chatRooms(String userId, String lang);
 
     //채팅 메시지 목록 조회(조회 시 자동 입장 및 읽음 처리)
     ChatMessagesResponse chatMessages(String roomId, String userId);

@@ -76,8 +76,8 @@ const SearchResultPage = () => {
                 <Link to={`/place/${place.tourId}`}>
                   <SpotCard
                     imageUrl={place.firstImage || "/images/places/no-image.svg"}
-                    title={t(place.tourNm)}
-                    place={t(place.roadAddr)}
+                    title={place.tourNm}
+                    place={place.roadAddr}
                     rating={place.avgScore}
                     badge={translateCategoryList(place.cateNm, t)}
                   />
@@ -101,10 +101,10 @@ const SearchResultPage = () => {
                   <MoimCard
                     badge={translateCategoryList(moim.cateNm, t)}
                     imageUrl="/images/places/no-image.svg"
-                    title={t(moim.moimTitle)}
-                    desc={t(moim.moimDscr)}
+                    title={moim.moimTitle}
+                    desc={moim.moimDscr}
                     date={moim.moimStartDt}
-                    place={t(moim.region)}
+                    place={moim.region}
                     member={moim.memberCnt}
                     maxMember={String(moim.maxMember ?? "")}
                     userNm={moim.userNm}

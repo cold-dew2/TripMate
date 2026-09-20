@@ -12,6 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientException;
 import tools.jackson.databind.ObjectMapper;
 
 import java.util.ArrayList;
@@ -41,6 +42,7 @@ public class TourListServicelmpl implements TourListService {
 
             List<TourSearchData> tourSearch = tourListMapper.tourSearch(request);
             applySearchTranslations(tourSearch, request.getLang());
+            applySearchAddressTranslations(tourSearch, request.getLang());
             return new TourSearchResponse(
                     true,
                     200,
@@ -827,6 +829,8 @@ public class TourListServicelmpl implements TourListService {
                 );
             }
 
+            String legLangLabel = "en".equals(request.getLang()) ? "영어" : "ja".equals(request.getLang()) ? "일본어" : null;
+
             String prompt = "당신은 대한민국 대중교통과 도로 혼잡 패턴에 정통한 여행 이동 전문가입니다.\n"
                     + "다음은 하루 일정 안에서 연속으로 방문하는 관광지 구간 목록입니다.\n"
                     + "각 구간마다 두 관광지의 주소와 방문 시각을 바탕으로 가장 적절한 이동수단, 예상 소요시간(분), "
@@ -840,6 +844,9 @@ public class TourListServicelmpl implements TourListService {
                     + "5. congestionLevel이 \"혼잡\"일 때만 delayRiskMinutes(예상 지연 분)와 alternativeMode(대체 이동수단), "
                     + "alternativeReason(대체를 추천하는 이유, 한 문장)을 채우고, 그 외에는 모두 null로 두세요.\n"
                     + "6. 반드시 JSON 형식으로만 응답하고, 요청받은 day와 관광지ID를 그대로 포함해서 응답하세요.\n"
+                    + (legLangLabel != null
+                        ? "7. mode, alternativeMode, congestionLevel 값은 반드시 지하철/버스/도보/택시/자가용/렌터카/원활/보통/혼잡 중 하나의 한국어 표기 그대로 쓰고(화면에서 별도로 번역합니다), alternativeReason만 " + legLangLabel + "로 작성해주세요.\n"
+                        : "")
                     + "[응답 형식]\n"
                     + "{\"transportLegs\":[{\"day\":1,\"fromTourId\":\"T0001\",\"toTourId\":\"T0002\","
                     + "\"mode\":\"지하철\",\"durationMinutes\":20,\"cost\":1500,\"transferCount\":0,"
@@ -935,16 +942,34 @@ public class TourListServicelmpl implements TourListService {
         ObjectMapper objectMapper = new ObjectMapper();
         System.out.println("[Gemini 요청] " + objectMapper.writeValueAsString(geminiRequest));
 
-        GeminiResponse response = restClient.post()
-                .uri(url)
-                .header("X-goog-api-key", apiKey)
-                .body(geminiRequest)
-                .retrieve()
-                .body(GeminiResponse.class);
+        // Gemini가 일시적으로 과부하(503)이거나 요청이 몰려 제한(429)에 걸리는 경우가 잦아,
+        // 한 번 실패했다고 바로 포기하면 이름/주소 등 번역이 자주 안 되고 한국어 원문만
+        // 보이는 문제가 있었다. 과부하성 오류에 한해 짧게 두 번 더 재시도한다.
+        RestClientException lastError = null;
+        for (int attempt = 1; attempt <= 4; attempt++) {
+            try {
+                GeminiResponse response = restClient.post()
+                        .uri(url)
+                        .header("X-goog-api-key", apiKey)
+                        .body(geminiRequest)
+                        .retrieve()
+                        .body(GeminiResponse.class);
 
-        System.out.println("[Gemini 응답] " + objectMapper.writeValueAsString(response));
-
-        return response;
+                System.out.println("[Gemini 응답] " + objectMapper.writeValueAsString(response));
+                return response;
+            } catch (RestClientException e) {
+                lastError = e;
+                if (attempt == 4 || !AiErrorUtil.isAiOverloaded(e)) throw e;
+                log.warn("Gemini 호출이 일시적으로 실패해 재시도합니다({}/3).", attempt, e);
+                try {
+                    Thread.sleep(500L * attempt);
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                    throw e;
+                }
+            }
+        }
+        throw lastError;
     }
 
     private GeminiData callGeminiForTranslation(String prompt) {
@@ -1023,6 +1048,28 @@ public class TourListServicelmpl implements TourListService {
             }
         } catch (Exception e) {
             log.warn("관광지명 번역에 실패해 한국어로 표시합니다. lang={}", lang, e);
+        }
+    }
+
+    // 목록 화면(tourSearch)은 이름만 캐시해서 번역하고 주소는 다루지 않아 목록에서
+    // 주소가 계속 한국어로 남는 문제가 있었다. 주소는 검색 결과마다 달라 캐시 효율이
+    // 낮으므로(페이지당 최대 10건) 캐시 없이 범용 번역기로 그때그때 번역한다.
+    private void applySearchAddressTranslations(List<TourSearchData> tours, String lang) {
+        if (!"en".equals(lang) && !"ja".equals(lang)) return;
+        if (tours == null || tours.isEmpty()) return;
+
+        Map<String, String> addrsInput = new LinkedHashMap<>();
+        for (TourSearchData tour : tours) {
+            // 한국관광공사 공식 데이터로 이미 채워진 주소는 다시 번역하지 않는다.
+            if ("Y".equals(tour.getNativeMatchYn())) continue;
+            addrsInput.put(tour.getTourId(), tour.getRoadAddr());
+        }
+        if (addrsInput.isEmpty()) return;
+
+        Map<String, String> addrs = translateFreeTexts(addrsInput, lang);
+        for (TourSearchData tour : tours) {
+            String addr = addrs.get(tour.getTourId());
+            if (addr != null && !addr.isBlank()) tour.setRoadAddr(addr);
         }
     }
 

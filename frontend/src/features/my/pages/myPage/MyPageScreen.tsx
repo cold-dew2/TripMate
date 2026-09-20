@@ -36,6 +36,9 @@ interface MyProfile {
 }
 
 const FLAG_BY_LANG: Record<string, string> = { ko: '🇰🇷', en: '🇺🇸', ja: '🇯🇵' };
+// 서버의 LANG_NM은 공통코드명이라 항상 한국어로 내려온다. 언어 코드 자체는 ko/en/ja로
+// 고정돼 있으므로 AI 번역 없이 프론트 i18n 키로 바로 옮긴다(다른 화면의 언어 선택 드롭다운과 동일한 키).
+const LANG_NAME_KEY: Record<string, string> = { ko: 'lang.ko', en: 'lang.en', ja: 'lang.jp' };
 
 const MyPageScreen = () => {
   const { t } = useTranslation();
@@ -113,7 +116,8 @@ const MyPageScreen = () => {
   const p = profile.data;
   const languages = p?.languages ?? [];
   const reviews = p?.recentReviews ?? [];
-  const langSummary = languages.map((lang) => lang.langNm).join(', ');
+  const langLabel = (lang: LanguageCard) => (LANG_NAME_KEY[lang.langCd] ? t(LANG_NAME_KEY[lang.langCd]) : lang.langNm);
+  const langSummary = languages.map(langLabel).join(', ');
 
   return (
     <main className="mypage-screen">
@@ -169,7 +173,7 @@ const MyPageScreen = () => {
             {languages.map((lang) => (
               <div key={lang.langCd} className="mypage-lang-card">
                 <span className="flag" aria-hidden="true">{FLAG_BY_LANG[lang.langCd] ?? '🌐'}</span>
-                <strong>{lang.langNm}</strong>
+                <strong>{langLabel(lang)}</strong>
                 <span className="level" aria-label={t('my.langLevel', { level: Number(lang.levelNm) || 0 })}>
                   {'★'.repeat(Number(lang.levelNm) || 0)}
                   {'☆'.repeat(Math.max(0, 5 - (Number(lang.levelNm) || 0)))}

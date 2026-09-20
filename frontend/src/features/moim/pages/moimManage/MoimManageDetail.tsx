@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
 import FilterTabs from '@/shared/components/filterTabs/FilterTabs';
@@ -12,6 +12,7 @@ import DaySchedule, { type ScheduleItem } from '@/shared/components/daySchedule/
 import TransportLegView from '@/shared/components/transportLeg/TransportLegView';
 import Button from '@/shared/components/button/Button';
 import PageState from '@/shared/components/pageState/PageState';
+import Skeleton from '@/shared/components/skeleton/Skeleton';
 import { useAlert } from '@/shared/contexts/AlertContext';
 import { apiClient } from '@/shared/api/client';
 import { addDays, formatMonthDay } from '@/shared/utils/date';
@@ -28,13 +29,27 @@ const nextTime = (count: number) => {
 };
 
 type ManageTab = 'applicants' | 'members' | 'chat' | 'schedule';
+const MANAGE_TABS: ManageTab[] = ['applicants', 'members', 'chat', 'schedule'];
 
 const MoimManageDetail = () => {
   const { t } = useTranslation();
   const { showAlert, showConfirm } = useAlert();
   const queryClient = useQueryClient();
   const { moimId } = useParams<{ moimId: string }>();
-  const [tab, setTab] = useState<ManageTab>('applicants');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tabFromUrl = searchParams.get('tab') as ManageTab | null;
+  const [tab, setTab] = useState<ManageTab>(
+    tabFromUrl && MANAGE_TABS.includes(tabFromUrl) ? tabFromUrl : 'applicants'
+  );
+
+  const changeTab = (id: ManageTab) => {
+    setTab(id);
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.set('tab', id);
+      return next;
+    });
+  };
   const [selected, setSelected] = useState<Set<string>>(new Set());
 
   const { data: result } = useMoimDetail(moimId!);
@@ -231,7 +246,9 @@ const MoimManageDetail = () => {
 
   return (
     <div className="manage-detail">
-      {result && <h2 className="manage-detail-title">{result.data.moimTitle}</h2>}
+      <h2 className="manage-detail-title">
+        {result ? result.data.moimTitle : <Skeleton width="60%" height="20px" />}
+      </h2>
 
       <FilterTabs
         options={[
@@ -241,7 +258,7 @@ const MoimManageDetail = () => {
           { id: 'schedule', label: t('moim.scheduleEdit') },
         ]}
         activeId={tab}
-        onChange={(id) => setTab(id as ManageTab)}
+        onChange={(id) => changeTab(id as ManageTab)}
       />
 
       {tab === 'applicants' && (

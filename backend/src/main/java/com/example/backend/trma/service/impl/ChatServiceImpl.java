@@ -28,8 +28,13 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientException;
+import com.example.backend.trma.util.AiErrorUtil;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 @Service
@@ -52,10 +57,11 @@ public class ChatServiceImpl implements ChatService {
 
     //내 채팅방 목록 조회
     @Override
-    public ChatRoomsResponse chatRooms(String userId) {
+    public ChatRoomsResponse chatRooms(String userId, String lang) {
 
         try {
             List<ChatRoomData> rooms = chatMapper.chatRooms(userId);
+            applyChatRoomTranslations(rooms, lang);
 
             return new ChatRoomsResponse(
                     true,
@@ -339,6 +345,78 @@ public class ChatServiceImpl implements ChatService {
         return roomId;
     }
 
+    // ========================= 채팅방 제목 번역 =========================
+    // 모임 제목/후기와 동일한 "조회 시점에 요청 언어로만 번역해서 DB에 캐시(재사용)" 방식.
+    // 채팅 메시지처럼 전송 시점에 두 언어를 미리 다 만들어둘 필요는 없다 — 방 제목은
+    // 거의 바뀌지 않고, 그 방을 실제로 보는 언어로만 번역해두면 충분하기 때문이다.
+    private void applyChatRoomTranslations(List<ChatRoomData> rooms, String lang) {
+        if (!"en".equals(lang) && !"ja".equals(lang)) return;
+        if (rooms == null || rooms.isEmpty()) return;
+
+        List<ChatRoomData> uncached = new ArrayList<>();
+        for (ChatRoomData room : rooms) {
+            String cached = "en".equals(lang) ? room.getTitleEn() : room.getTitleJa();
+            if (cached != null && !cached.isBlank()) {
+                room.setTitle(cached);
+            } else {
+                uncached.add(room);
+            }
+        }
+        if (uncached.isEmpty()) return;
+
+        try {
+            StringBuilder listPrompt = new StringBuilder();
+            for (ChatRoomData room : uncached) {
+                listPrompt.append("[roomId %s]\n제목: %s\n\n".formatted(room.getRoomId(), room.getTitle()));
+            }
+
+            String langLabel = "en".equals(lang) ? "영어" : "일본어";
+            String prompt = "다음은 채팅방 제목 목록입니다. 각 제목을 " + langLabel + "로 자연스럽게 번역해주세요.\n"
+                    + "반드시 JSON 형식으로만 응답하고, 요청받은 roomId를 그대로 포함해서 응답하세요.\n"
+                    + "[응답 형식]\n"
+                    + "{\"chatRoomTranslations\":[{\"roomId\":\"R0001\",\"title\":\"번역된 제목\"}]}\n"
+                    + "[채팅방 목록]\n" + listPrompt;
+
+            GeminiData result = callGeminiForRoomTitleTranslations(prompt);
+            if (result == null || result.getChatRoomTranslations() == null) return;
+
+            Map<String, String> translatedTitles = new HashMap<>();
+            for (GeminiData.ChatRoomTranslationItem item : result.getChatRoomTranslations()) {
+                if (item.getRoomId() != null && item.getTitle() != null) {
+                    translatedTitles.put(item.getRoomId(), item.getTitle());
+                }
+            }
+
+            for (ChatRoomData room : uncached) {
+                String title = translatedTitles.get(room.getRoomId());
+                if (title == null || title.isBlank()) continue;
+
+                chatMapper.updateRoomTitleTranslation(
+                        room.getRoomId(),
+                        "en".equals(lang) ? title : null,
+                        "ja".equals(lang) ? title : null
+                );
+                room.setTitle(title);
+            }
+        } catch (Exception e) {
+            log.warn("채팅방 제목 번역에 실패해 한국어로 표시합니다. lang={}", lang, e);
+        }
+    }
+
+    private GeminiData callGeminiForRoomTitleTranslations(String prompt) {
+        GeminiRequest geminiRequest = new GeminiRequest(List.of(new GeminiRequest.Content(List.of(new GeminiRequest.Part(prompt)))));
+        GeminiResponse response = callGemini(geminiRequest);
+
+        String aiResult = "";
+        if (response != null && response.candidates() != null && !response.candidates().isEmpty()) {
+            aiResult = response.candidates().get(0).content().parts().get(0).text();
+        }
+        if (aiResult == null || aiResult.isBlank()) return null;
+
+        ObjectMapper objectMapper = new ObjectMapper();
+        return objectMapper.readValue(AiJsonUtil.extractJson(aiResult), GeminiData.class);
+    }
+
     // ========================= 채팅 메시지 번역 =========================
     // 이 앱은 다국어 지원이 핵심이라, AI가 끊겨도 이미 번역된 메시지는 계속 보여야 한다.
     // 그래서 전송 시점에 영어/일본어 번역을 한 번만 만들어 TB_TRMA_CHAT_MESSAGE에
@@ -352,18 +430,37 @@ public class ChatServiceImpl implements ChatService {
         } catch (Exception ignored) {
         }
 
-        GeminiResponse response = restClient.post()
-                .uri(geminiUrl)
-                .header("X-goog-api-key", geminiApiKey)
-                .body(geminiRequest)
-                .retrieve()
-                .body(GeminiResponse.class);
+        // Gemini가 일시적으로 과부하(503)이거나 요청이 몰려 제한(429)에 걸리는 경우가 잦아,
+        // 한 번 실패했다고 바로 포기하면 메시지/방 제목 번역이 자주 안 되고 한국어 원문만
+        // 보이는 문제가 있었다. 과부하성 오류에 한해 짧게 두 번 더 재시도한다.
+        RestClientException lastError = null;
+        for (int attempt = 1; attempt <= 4; attempt++) {
+            try {
+                GeminiResponse response = restClient.post()
+                        .uri(geminiUrl)
+                        .header("X-goog-api-key", geminiApiKey)
+                        .body(geminiRequest)
+                        .retrieve()
+                        .body(GeminiResponse.class);
 
-        try {
-            System.out.println("[Gemini 응답] " + objectMapper.writeValueAsString(response));
-        } catch (Exception ignored) {
+                try {
+                    System.out.println("[Gemini 응답] " + objectMapper.writeValueAsString(response));
+                } catch (Exception ignored) {
+                }
+                return response;
+            } catch (RestClientException e) {
+                lastError = e;
+                if (attempt == 4 || !AiErrorUtil.isAiOverloaded(e)) throw e;
+                log.warn("Gemini 호출이 일시적으로 실패해 재시도합니다({}/3).", attempt, e);
+                try {
+                    Thread.sleep(500L * attempt);
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                    throw e;
+                }
+            }
         }
-        return response;
+        throw lastError;
     }
 
     private GeminiData.ChatTranslationItem callGeminiForChatTranslation(String content) {

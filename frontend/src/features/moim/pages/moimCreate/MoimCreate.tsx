@@ -257,6 +257,9 @@ const MoimCreate = () => {
           onAddItem={(item) =>
             setItemsByDay((prev) => ({ ...prev, [activeDay]: [...(prev[activeDay] ?? []), item] }))
           }
+          onRemoveItem={(tourId) =>
+            setItemsByDay((prev) => ({ ...prev, [activeDay]: (prev[activeDay] ?? []).filter((item) => item.tourId !== tourId) }))
+          }
           onDone={() => goToStep(3)}
         />
       )}

@@ -14,5 +14,6 @@ public class MyTodayScheduleRowData {
     private String moimId;
     private String moimTitle;
     private String time;
+    private String tourId;
     private String placeName;
 }

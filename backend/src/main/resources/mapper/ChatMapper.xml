@@ -101,6 +101,8 @@
         SELECT
             a.ROOM_ID
             ,a.TITLE
+            ,a.TITLE_EN
+            ,a.TITLE_JA
             ,m.CONTENT AS LAST_MESSAGE
             ,COALESCE(u.UNREAD_COUNT, 0) AS UNREAD_COUNT
             ,b.STATE_CD AS MY_STATE
@@ -255,6 +257,20 @@
             <if test="contentJa != null">CONTENT_JA = #{contentJa},</if>
         </set>
         WHERE MESSAGE_ID = #{messageId}
+
+    </update>
+
+    <!-- ========================= -->
+    <!-- 채팅방 제목 번역 캐시 저장 -->
+    <!-- ========================= -->
+    <update id="updateRoomTitleTranslation">
+
+        UPDATE TB_TRMA_CHAT_ROOM
+        <set>
+            <if test="titleEn != null">TITLE_EN = #{titleEn},</if>
+            <if test="titleJa != null">TITLE_JA = #{titleJa},</if>
+        </set>
+        WHERE ROOM_ID = #{roomId}
 
     </update>
 

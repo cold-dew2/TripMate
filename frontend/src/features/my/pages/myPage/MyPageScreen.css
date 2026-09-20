@@ -286,8 +286,12 @@
 .mypage-review-images {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-sm);
+  gap: var(--space-lg);
   margin-top: var(--space-sm);
+}
+.mypage-review-images li {
+  padding: 0;
+  border: none;
 }
 .mypage-review-images img {
   width: 52px;

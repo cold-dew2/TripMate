@@ -1,5 +1,6 @@
 import { useMutation } from "@tanstack/react-query";
 import { apiClient } from "@/shared/api/client";
+import { getApiLang } from "@/shared/utils/lang";
 import type { PlanItem } from "../pages/moimCreate/MoimCreate";
 
 export interface TransportStopInput {
@@ -42,7 +43,7 @@ export const toTransportStops = (itemsByDay: Record<number, PlanItem[]>): Transp
 export const useTransportRecommend = () => {
   return useMutation({
     mutationFn: async (items: TransportStopInput[]) => {
-      const result = await apiClient.post<{ data: TransportLeg[] }>("/tourList/transportRecommend", { items });
+      const result = await apiClient.post<{ data: TransportLeg[] }>("/tourList/transportRecommend", { items, lang: getApiLang() });
       if (!result.success) throw result;
       return result.data.data ?? [];
     },

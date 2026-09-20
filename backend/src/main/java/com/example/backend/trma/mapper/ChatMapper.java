@@ -52,6 +52,11 @@ public interface ChatMapper {
     //예전 버그로 roomId 문자열이 그대로 제목으로 저장된 방을 다시 들어왔을 때 바로잡음
     int fixRoomTitleIfStale(@Param("roomId") String roomId, @Param("title") String title);
 
+    //채팅방 제목 번역 캐시 저장
+    int updateRoomTitleTranslation(@Param("roomId") String roomId,
+                                    @Param("titleEn") String titleEn,
+                                    @Param("titleJa") String titleJa);
+
     //채팅방 나가기(멤버 행 삭제)
     int deleteChatMember(@Param("roomId") String roomId, @Param("userId") String userId);
 

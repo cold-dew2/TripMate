@@ -19,6 +19,7 @@ interface Step4Props {
   watch: UseFormWatch<MoimCreateForm>;
   items: PlanItem[];
   onAddItem: (item: PlanItem) => void;
+  onRemoveItem: (tourId: string) => void;
   onDone: () => void;
 }
 
@@ -29,7 +30,7 @@ const nextTime = (count: number) => {
   return `${String(hour).padStart(2, "0")}:00`;
 };
 
-const Step4 = ({ day, watch, items, onAddItem, onDone }: Step4Props) => {
+const Step4 = ({ day, watch, items, onAddItem, onRemoveItem, onDone }: Step4Props) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { showAlert } = useAlert();
@@ -45,7 +46,6 @@ const Step4 = ({ day, watch, items, onAddItem, onDone }: Step4Props) => {
   const [customName, setCustomName] = useState("");
   const [customAddr, setCustomAddr] = useState("");
   const [isSaving, setIsSaving] = useState(false);
-  const [addedIds, setAddedIds] = useState<string[]>([]);
   const [isSearching, setIsSearching] = useState(true);
   // 테마를 아직 안 골랐으면 애초에 추천 목록을 불러올 게 없으니 기본값은 false로 둔다
   // (true로 두면 "추천 관광지" 탭에서 영원히 "검색 중..."만 보이게 된다).
@@ -125,10 +125,18 @@ const Step4 = ({ day, watch, items, onAddItem, onDone }: Step4Props) => {
       ? recommendResults
       : results;
 
-  const handleAdd = (place: Place) => {
+  // items(현재 날짜에 이미 추가된 일정)를 그대로 "추가됨" 여부의 기준으로 삼는다.
+  // 예전에는 별도의 addedIds 상태로 따로 추적해서, 다시 누르면 취소가 아니라 매번
+  // 새로 추가돼 같은 관광지가 여러 건 쌓이는 문제가 있었다.
+  const toggleItem = (place: Place) => {
+    const existing = items.find((item) => item.tourId === place.tourId);
+    if (existing) {
+      onRemoveItem(place.tourId);
+      return;
+    }
     onAddItem({
       id: `${place.tourId}-${Date.now()}`,
-      time: nextTime(items.length + addedIds.length),
+      time: nextTime(items.length),
       placeName: place.tourNm,
       tourId: place.tourId,
       imageUrl: place.firstImage,
@@ -136,7 +144,6 @@ const Step4 = ({ day, watch, items, onAddItem, onDone }: Step4Props) => {
       sggNm: place.sggNm,
       roadAddr: place.roadAddr,
     });
-    setAddedIds((prev) => [...prev, place.tourId]);
   };
 
   const handleSaveCustom = async () => {
@@ -214,7 +221,7 @@ const Step4 = ({ day, watch, items, onAddItem, onDone }: Step4Props) => {
       ) : (
         <ul className="step4-list">
           {displayedList.map((place) => {
-            const isAdded = addedIds.includes(place.tourId);
+            const isAdded = items.some((item) => item.tourId === place.tourId);
             return (
               <li key={place.tourId}>
                 <span className="step4-swatch" aria-hidden="true">
@@ -227,8 +234,8 @@ const Step4 = ({ day, watch, items, onAddItem, onDone }: Step4Props) => {
                 <button
                   type="button"
                   className={`step4-add-btn ${isAdded ? "is-added" : ""}`}
-                  onClick={() => handleAdd(place)}
-                  aria-label={t("moimCreate.step3.addSchedule")}
+                  onClick={() => toggleItem(place)}
+                  aria-label={isAdded ? t("moimCreate.step4.removeSchedule") : t("moimCreate.step3.addSchedule")}
                 >
                   {isAdded ? "✓" : "+"}
                 </button>

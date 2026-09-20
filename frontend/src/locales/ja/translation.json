@@ -115,7 +115,8 @@
     "remove": "削除",
     "selectAll": "全て選択",
     "deselectAll": "選択解除",
-    "close": "閉じる"
+    "close": "閉じる",
+    "serviceDown": "現在サービスを点検中です。\n後ほど再度お試しください。"
   },
   "moimCreate": {
     "title": "グループ作成",
@@ -167,7 +168,8 @@
       "addressInputPlaceholder": "観光地の住所",
       "save": "保存",
       "customTourNeedLogin": "ログインが必要です。\nログイン後に再度登録してください。",
-      "customTourError": "観光地の登録に失敗しました。\nしばらくしてからもう一度お試しください。"
+      "customTourError": "観光地の登録に失敗しました。\nしばらくしてからもう一度お試しください。",
+      "removeSchedule": "日程から削除"
     },
     "step5": {
       "mapUnavailable": "地図に表示する観光地がありません。",
@@ -363,7 +365,14 @@
       "heavy": "混雑"
     },
     "delayWarning": "混雑予想（最大{{count}}分遅延）",
-    "alternative": "代替案"
+    "alternative": "代替案",
+    "mode": {
+      "지하철": "地下鉄",
+      "버스": "バス",
+      "도보": "徒歩",
+      "택시": "タクシー",
+      "자가용/렌터카": "自家用車/レンタカー"
+    }
   },
   "my": {
     "moiming": "進行中のグループ",

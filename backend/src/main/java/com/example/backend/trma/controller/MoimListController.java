@@ -49,7 +49,7 @@ public class MoimListController {
 
     //내 모임 목록 조회
     @GetMapping("/myMoim")
-    public MyMoimResponse myMoim(Authentication authentication) {
+    public MyMoimResponse myMoim(@RequestParam(required = false) String lang, Authentication authentication) {
 
         if (authentication == null || !authentication.isAuthenticated()
                 || "anonymousUser".equals(authentication.getName())) {
@@ -66,12 +66,12 @@ public class MoimListController {
         }
 
         String userId = authentication.getName();
-        return moimListService.myMoim(userId);
+        return moimListService.myMoim(userId, lang);
     }
 
     //내가 가입한 모임 중 오늘 진행 중인 모임들의 오늘 일정
     @GetMapping("/myTodaySchedule")
-    public MyTodayScheduleResponse myTodaySchedule(Authentication authentication) {
+    public MyTodayScheduleResponse myTodaySchedule(@RequestParam(required = false) String lang, Authentication authentication) {
 
         if (authentication == null || !authentication.isAuthenticated()
                 || "anonymousUser".equals(authentication.getName())) {
@@ -88,7 +88,7 @@ public class MoimListController {
         }
 
         String userId = authentication.getName();
-        return moimListService.myTodaySchedule(userId);
+        return moimListService.myTodaySchedule(userId, lang);
     }
 
     //내 모임 목록 조회
@@ -248,6 +248,7 @@ public class MoimListController {
     //모임 일정 기반 교통편 혼잡도 분석(가입된 멤버만)
     @GetMapping("/{moimId}/transportRecommend")
     public TransportRecommendResponse moimTransportRecommend(@PathVariable String moimId,
+                                                              @RequestParam(required = false) String lang,
                                                               Authentication authentication) {
 
         String userId = null;
@@ -256,6 +257,6 @@ public class MoimListController {
             userId = authentication.getName();
         }
 
-        return moimListService.moimTransportRecommend(moimId, userId);
+        return moimListService.moimTransportRecommend(moimId, userId, lang);
     }
 }

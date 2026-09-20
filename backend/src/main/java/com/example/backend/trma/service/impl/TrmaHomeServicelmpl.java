@@ -8,12 +8,16 @@ import com.example.backend.trma.dto.request.TourCategoryRequest;
 import com.example.backend.trma.dto.request.UserInfoRequest;
 import com.example.backend.trma.dto.response.*;
 import com.example.backend.trma.mapper.TrmaHomeMapper;
+import com.example.backend.trma.service.MoimListService;
+import com.example.backend.trma.service.TourListService;
 import com.example.backend.trma.service.TrmaHomeService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -21,6 +25,8 @@ import java.util.List;
 public class TrmaHomeServicelmpl implements TrmaHomeService {
 
     private final TrmaHomeMapper trmaHomeMapper;
+    private final TourListService tourListService;
+    private final MoimListService moimListService;
 
     //사용자 정보 조회
     public UserInfoResponse userInfo(String request) {
@@ -81,10 +87,11 @@ public class TrmaHomeServicelmpl implements TrmaHomeService {
     }
 
     //인기 여행지(리뷰기반)
-    public BestTourListResponse bestTourList() {
+    public BestTourListResponse bestTourList(String lang) {
 
         try {
             List<BestTourListData> BestTourList = trmaHomeMapper.bestTourList();
+            applyBestTourTranslations(BestTourList, lang);
 
             return new BestTourListResponse(
                     true,
@@ -110,10 +117,11 @@ public class TrmaHomeServicelmpl implements TrmaHomeService {
     }
 
     //인기 모임(클릭 수 많은 모임)
-    public BestMoimListResponse bestMoimList() {
+    public BestMoimListResponse bestMoimList(String lang) {
 
         try {
             List<BestMoimListData> bestMoimList = trmaHomeMapper.bestMoimList();
+            applyBestMoimTranslations(bestMoimList, lang);
 
             return new BestMoimListResponse(
                     true,
@@ -135,6 +143,44 @@ public class TrmaHomeServicelmpl implements TrmaHomeService {
                     "",
                     null
             );
+        }
+    }
+
+    // ========================= 홈 화면 번역 =========================
+    // 홈의 "인기 관광지"/"인기 모임"은 개수가 적어(4~8개) 캐시 없이 매번 번역해도 부담이
+    // 크지 않다. 관광지명/소모임 제목은 각 서비스가 이미 제공하는 캐시 우선 번역기를
+    // 재사용하고, 관광지 주소만 캐시 없는 범용 번역기로 그때그때 번역한다.
+    private void applyBestTourTranslations(List<BestTourListData> tours, String lang) {
+        if (!"en".equals(lang) && !"ja".equals(lang)) return;
+        if (tours == null || tours.isEmpty()) return;
+
+        List<String> tourIds = tours.stream().map(BestTourListData::getTourId).toList();
+        Map<String, String> names = tourListService.translateTourNames(tourIds, lang);
+        for (BestTourListData tour : tours) {
+            String name = names.get(tour.getTourId());
+            if (name != null && !name.isBlank()) tour.setTourNm(name);
+        }
+
+        Map<String, String> addrsInput = new LinkedHashMap<>();
+        for (BestTourListData tour : tours) {
+            addrsInput.put(tour.getTourId(), tour.getRoadAddr());
+        }
+        Map<String, String> addrs = tourListService.translateFreeTexts(addrsInput, lang);
+        for (BestTourListData tour : tours) {
+            String addr = addrs.get(tour.getTourId());
+            if (addr != null && !addr.isBlank()) tour.setRoadAddr(addr);
+        }
+    }
+
+    private void applyBestMoimTranslations(List<BestMoimListData> moims, String lang) {
+        if (!"en".equals(lang) && !"ja".equals(lang)) return;
+        if (moims == null || moims.isEmpty()) return;
+
+        List<String> moimIds = moims.stream().map(BestMoimListData::getMoimId).toList();
+        Map<String, String> titles = moimListService.translateMoimTitles(moimIds, lang);
+        for (BestMoimListData moim : moims) {
+            String title = titles.get(moim.getMoimId());
+            if (title != null && !title.isBlank()) moim.setMoimTitle(title);
         }
     }
 }

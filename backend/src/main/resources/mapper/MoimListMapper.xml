@@ -17,6 +17,10 @@
             a.MOIM_ID
             ,a.MOIM_TITLE
             ,a.MOIM_DSCR
+            ,a.MOIM_TITLE_EN
+            ,a.MOIM_TITLE_JA
+            ,a.MOIM_DSCR_EN
+            ,a.MOIM_DSCR_JA
             ,a.MOIM_START_DT
             ,a.MOIM_END_DT
             ,d.USER_NM
@@ -66,13 +70,23 @@
             AND f.USE_YN = 'Y'
             GROUP BY e.MOIM_ID
         ) c ON a.MOIM_ID = c.MOIM_ID
+        <!-- 이 소모임 자체가 아니라, 소모임을 만든 방장이 그동안 받은 모임장리뷰(REVIEW_TYPE_CD='O')
+             평균 평점을 보여준다. 신규 모임은 자기 리뷰가 아직 없어 MOIM_ID 기준으로 평균을
+             내면 항상 0점으로 보였다(마이페이지/공개 프로필의 RATING 계산과 동일한 방식). -->
         LEFT JOIN (
-            SELECT
-            MOIM_ID,
-            AVG(REVIEW_SCORE) AS AVG_SCORE
-            FROM TB_TRMA_MOIM_REVIEW
-            GROUP BY MOIM_ID
-        ) e ON a.MOIM_ID = e.MOIM_ID
+            SELECT owner_id AS CREATE_USER, AVG(REVIEW_SCORE) AS AVG_SCORE
+            FROM (
+                SELECT f1.REVIEW_ID, f1.REVIEW_SCORE, f2.CREATE_USER AS owner_id
+                FROM TB_TRMA_MOIM_REVIEW f1
+                LEFT JOIN TB_TRMA_MOIM_LIST f2 ON f1.MOIM_ID = f2.MOIM_ID
+                WHERE f1.REVIEW_TYPE_CD = 'O'
+                UNION
+                SELECT f1.REVIEW_ID, f1.REVIEW_SCORE, f1.CREATE_USER AS owner_id
+                FROM TB_TRMA_MOIM_REVIEW f1
+                WHERE f1.REVIEW_TYPE_CD = 'O'
+            ) f_union
+            GROUP BY owner_id
+        ) e ON a.CREATE_USER = e.CREATE_USER
         WHERE a.USE_YN = 'Y'
             AND a.MOIM_START_DT > NOW()
             <if test="keyword != null and keyword != ''">
@@ -97,6 +111,25 @@
         SELECT CREATE_USER
         FROM TB_TRMA_MOIM_LIST
         WHERE MOIM_ID = #{moimId}
+
+    </select>
+
+    <!-- ========================= -->
+    <!-- 소모임 제목 일괄 조회(번역 캐시 확인용) -->
+    <!-- ========================= -->
+    <select id="moimTitlesByIds"
+            resultType="com.example.backend.trma.dto.dataList.MoimTitleTranslationData">
+
+        SELECT
+            MOIM_ID
+            ,MOIM_TITLE
+            ,MOIM_TITLE_EN
+            ,MOIM_TITLE_JA
+        FROM TB_TRMA_MOIM_LIST
+        WHERE MOIM_ID IN
+        <foreach collection="moimIds" item="moimId" open="(" separator="," close=")">
+            #{moimId}
+        </foreach>
 
     </select>
 
@@ -378,6 +411,7 @@
             a.MOIM_ID
             ,a.MOIM_TITLE
             ,c.RMKS AS TIME
+            ,c.TOUR_ID AS TOUR_ID
             ,t.TOUR_NM AS PLACE_NAME
         FROM TB_TRMA_MOIM_LIST a
         INNER JOIN TB_TRMA_MOIM_MEMBER b

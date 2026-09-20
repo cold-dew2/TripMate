@@ -12,8 +12,8 @@ import DaySchedule from '@/shared/components/daySchedule/DaySchedule';
 import TransportLegView from '@/shared/components/transportLeg/TransportLegView';
 import Button from '@/shared/components/button/Button';
 import PageState from '@/shared/components/pageState/PageState';
+import ReviewImageGrid from '@/shared/components/reviewImageGrid/ReviewImageGrid';
 import { useAlert } from '@/shared/contexts/AlertContext';
-import { resolveImageUrl } from '@/shared/utils/url';
 import './MoimDetail.css';
 
 const MoimDetail = () => {
@@ -88,14 +88,15 @@ const MoimDetail = () => {
             <Button
               size="sm"
               variant="secondary"
-              text={transportRecommend.isPending ? t('common.saving') : t('moim.transportAnalysisBtn')}
-              onClick={() => transportRecommend.mutate(undefined, {
-                onError: (error) => {
-                  const code = (error as { code?: string } | null)?.code;
+              text={transportRecommend.isFetching ? t('common.saving') : t('moim.transportAnalysisBtn')}
+              onClick={async () => {
+                const res = await transportRecommend.refetch();
+                if (res.error) {
+                  const code = (res.error as { code?: string } | null)?.code;
                   showAlert(code === 'AI_UNAVAILABLE' ? t('common.aiUnavailable') : t('moim.transportAnalysisError'));
-                },
-              })}
-              disabled={transportRecommend.isPending}
+                }
+              }}
+              disabled={transportRecommend.isFetching}
             />
           )}
         </div>
@@ -135,13 +136,7 @@ const MoimDetail = () => {
                   <time>{review.createDt}</time>
                 </div>
                 <p>{review.reviewContent}</p>
-                {review.imgUrls && (
-                  <ul className="moim-detail-review-images">
-                    {review.imgUrls.split(',').map((url, index) => (
-                      <li key={url}><img src={resolveImageUrl(url)} alt={t('image.reviewPhoto', { index: index + 1 })} /></li>
-                    ))}
-                  </ul>
-                )}
+                {review.imgUrls && <ReviewImageGrid urls={review.imgUrls.split(',')} />}
               </li>
             ))}
           </ul>

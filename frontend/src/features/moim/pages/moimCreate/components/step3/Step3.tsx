@@ -21,6 +21,10 @@ interface Step3Props {
   onNext: () => void;
 }
 
+// 시간을 바꾼 뒤에는 하루 안에서 다시 시간 순으로 정렬해야 한다(MoimManageDetail의
+// 일정 편집과 동일한 규칙).
+const sortByTime = (items: PlanItem[]) => [...items].sort((a, b) => a.time.localeCompare(b.time));
+
 interface AiScheduleItem {
   day: number;
   time: string;
@@ -62,7 +66,7 @@ const Step3 = ({ watch, setValue, itemsByDay, setItemsByDay, onAddDay, onPrev, o
   const changeItemTime = (day: number, id: string, time: string) => {
     setItemsByDay((prev) => ({
       ...prev,
-      [day]: (prev[day] ?? []).map((item) => (item.id === id ? { ...item, time } : item)),
+      [day]: sortByTime((prev[day] ?? []).map((item) => (item.id === id ? { ...item, time } : item))),
     }));
   };
 
