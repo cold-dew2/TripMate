@@ -74,7 +74,8 @@ public class SecurityConfig {
                 "http://localhost:5174",
                 "http://127.0.0.1:5173",
                 "http://127.0.0.1:5174",
-                "http://localhost:3000"
+                "http://localhost:3000",
+                "https://trip-mate-ten-chi.vercel.app"
         ));
 
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));

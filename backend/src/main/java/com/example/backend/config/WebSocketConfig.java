@@ -14,7 +14,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
         registry.setApplicationDestinationPrefixes("/app");
     }
     @Override public void registerStompEndpoints(StompEndpointRegistry registry) {
-        registry.addEndpoint("/ws/chat").setAllowedOriginPatterns("http://localhost:5173", "http://localhost:3000").withSockJS();
-        registry.addEndpoint("/ws/chat-native").setAllowedOriginPatterns("http://localhost:5173", "http://localhost:3000");
+        registry.addEndpoint("/ws/chat").setAllowedOriginPatterns("http://localhost:5173", "http://localhost:3000", "https://trip-mate-ten-chi.vercel.app").withSockJS();
+        registry.addEndpoint("/ws/chat-native").setAllowedOriginPatterns("http://localhost:5173", "http://localhost:3000", "https://trip-mate-ten-chi.vercel.app");
     }
 }
