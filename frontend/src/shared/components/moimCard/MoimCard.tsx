@@ -50,9 +50,9 @@ const MoimCard = ({ loading = false, badge, imageUrl, title, date, member, maxMe
           )}
           <div className="img">
             <img
-              src={imageUrl || "/images/places/no-image.png"}
+              src={imageUrl || "/images/places/no-image.svg"}
               alt={t("image.alt", { title })}
-              onError={(event) => { event.currentTarget.src = "/images/places/no-image.png"; }}
+              onError={(event) => { event.currentTarget.src = "/images/places/no-image.svg"; }}
             />
             <p className="title">{title}</p>
           </div>

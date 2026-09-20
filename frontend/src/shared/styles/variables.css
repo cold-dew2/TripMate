@@ -105,7 +105,7 @@
   /* Shadow */
   --shadow-card: 0 4px 18px 0 rgba(30, 20, 80, 0.06);
   --shadow-card-lg: 0 6px 20px rgba(30, 20, 80, 0.16);
-  --shadow-button: 0 8px 20px rgba(75, 63, 228, 0.35);
+  --shadow-button: 0 4px 20px rgba(0, 0, 0, 0.1);
   --shadow-frame: 0 30px 80px rgba(30, 20, 80, 0.18);
   --shadow-frame-inner: 0 4px 16px rgba(30, 20, 80, 0.08);
 

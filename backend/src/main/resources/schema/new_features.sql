@@ -188,3 +188,25 @@ CREATE TABLE IF NOT EXISTS TB_TRMA_TOUR_AI_INFO (
 
     PRIMARY KEY (TOUR_ID, LANG_CD)
 );
+
+-- 21) 알림 제목/내용을 지금까지 서버에서 완성된 한국어 문장으로 만들어 저장해왔는데,
+--     이러면 사용자/모임 이름이 매번 달라 프론트에서 번역 사전(t(rawString))으로
+--     처리할 수 없고, AI 번역은 알림처럼 실시간성이 중요한 데이터에 걸기엔 무겁다.
+--     타입(TYPE_CD)별로 필요한 값만 PARAM1/PARAM2에 저장해두고, 문장 템플릿 자체는
+--     프론트 i18n에서 언어별로 조립하는 방식으로 바꾼다.
+ALTER TABLE TB_TRMA_NOTIFICATION ADD COLUMN IF NOT EXISTS PARAM1 VARCHAR(200) NULL;
+ALTER TABLE TB_TRMA_NOTIFICATION ADD COLUMN IF NOT EXISTS PARAM2 VARCHAR(200) NULL;
+
+-- 22) 프로필 지역/소개글 번역 캐시. 다른 화면들과 동일한 방식(최초 조회 시 번역해 캐시)으로
+--     처리하되, 본인이 프로필을 수정하면 내용이 달라졌으니 캐시된 번역은 지워서 다음
+--     조회 때 새로 번역하게 한다(updateProfile에서 같이 처리).
+ALTER TABLE TB_TRMA_USER_INFO ADD COLUMN IF NOT EXISTS AREA_NM_EN VARCHAR(200) NULL;
+ALTER TABLE TB_TRMA_USER_INFO ADD COLUMN IF NOT EXISTS AREA_NM_JA VARCHAR(200) NULL;
+ALTER TABLE TB_TRMA_USER_INFO ADD COLUMN IF NOT EXISTS DESCRIPTION_EN TEXT NULL;
+ALTER TABLE TB_TRMA_USER_INFO ADD COLUMN IF NOT EXISTS DESCRIPTION_JA TEXT NULL;
+
+-- 23) 관광지 검색(tourSearch)에서 같은 주소로 중복 등록된 관광지(대부분 사용자가
+--     "직접 입력"으로 같은 장소를 여러 번 등록한 UGC 관광지, 예: 세종호수공원)를
+--     주소당 하나만 보이게 거르는 서브쿼리를 추가했다. TOUR_ID 스캔 시 ROAD_ADDR로
+--     바로 찾을 수 있도록 인덱스를 추가한다(TEXT/긴 VARCHAR라 앞 255자만 인덱싱).
+CREATE INDEX IF NOT EXISTS IDX_TOUR_LIST_ROAD_ADDR ON TB_TRMA_TOUR_LIST(ROAD_ADDR(255));

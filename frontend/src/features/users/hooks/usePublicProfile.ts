@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "@/shared/api/client";
+import { getApiLang } from "@/shared/utils/lang";
 import type { MyMoim } from "@/types/moim";
 
 export interface LanguageCard {
@@ -37,9 +38,9 @@ export interface PublicProfileResult {
 
 export const usePublicProfile = (userId: string) => {
   return useQuery({
-    queryKey: ["publicProfile", userId],
+    queryKey: ["publicProfile", userId, getApiLang()],
     queryFn: async () => {
-      const result = await apiClient.get<PublicProfileResult>(`/users/${userId}/profile`);
+      const result = await apiClient.get<PublicProfileResult>(`/users/${userId}/profile?lang=${getApiLang()}`);
       if (!result.success) throw result;
       return result.data;
     },

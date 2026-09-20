@@ -14,9 +14,9 @@ const Header = ({ place }: InformationProps) => {
     <div className="detail-header">
       <div className="detail-img">
         <img
-          src={place.firstImage || "/images/places/no-image.png"}
+          src={place.firstImage || "/images/places/no-image.svg"}
           alt={t('image.alt', { title: place.tourNm })}
-          onError={(event) => { event.currentTarget.src = "/images/places/no-image.png"; }}
+          onError={(event) => { event.currentTarget.src = "/images/places/no-image.svg"; }}
         />
       </div>
       <div className="detail-info">

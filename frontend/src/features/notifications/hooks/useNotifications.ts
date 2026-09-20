@@ -11,6 +11,9 @@ export interface Notification {
   typeCd: "APPLY" | "CHAT" | "COMPLETE";
   title: string;
   content: string;
+  // 화면 언어에 맞게 문구를 조립하기 위한 값(타입별 의미는 Notification 렌더링 로직 참고)
+  param1?: string;
+  param2?: string;
   linkUrl: string;
   isRead: "Y" | "N";
   createDt: string;

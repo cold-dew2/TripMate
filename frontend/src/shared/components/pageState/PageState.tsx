@@ -29,8 +29,6 @@ const PageState = ({ status, message, onRetry, fullScreen = true }: PageStatePro
       role={status === 'error' ? 'alert' : 'status'}
     >
       {status === 'loading' && <span className="page-state-spinner" aria-hidden="true" />}
-      {status === 'error' && <span className="page-state-icon" aria-hidden="true">⚠️</span>}
-      {status === 'empty' && <span className="page-state-icon" aria-hidden="true">🧭</span>}
       <p>{text}</p>
       {status === 'error' && onRetry && (
         <button type="button" className="page-state-retry" onClick={onRetry}>

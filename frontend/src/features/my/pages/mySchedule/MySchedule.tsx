@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import useMyMoim from "@/features/moim/hooks/useMyMoim";
+import PageState from "@/shared/components/pageState/PageState";
 import { formatDateWithDow } from "@/shared/utils/date";
 import "./MySchedule.css";
 
@@ -27,11 +28,11 @@ const MySchedule = () => {
     <>
       <ul className="schedule-list">
         {myMoim.isLoading ? (
-          <li className="schedule-empty">{t("account.loading")}</li>
+          <li><PageState status="loading" fullScreen={false} /></li>
         ) : myMoim.isError ? (
-          <li className="schedule-empty">{t("common.loadError")}</li>
+          <li><PageState status="error" fullScreen={false} onRetry={() => myMoim.refetch()} /></li>
         ) : items.length === 0 ? (
-          <li className="schedule-empty">{t("moim.emptyMsg")}</li>
+          <li><PageState status="empty" message={t("moim.emptyMsg")} fullScreen={false} /></li>
         ) : (
           items.map((moim) => {
             const status = getStatus(moim.moimEndDt, moim.stateCd);

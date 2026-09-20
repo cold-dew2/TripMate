@@ -1,12 +1,7 @@
-.my-reviews-state {
-  padding: var(--space-3xl) 0;
-  color: var(--gray-400);
-  font-size: var(--fs-sm);
-  text-align: center;
-}
 .my-reviews-list {
   display: grid;
   gap: var(--space-lg);
+  margin-top: 20px;
 }
 .my-reviews-list li {
   display: flex;

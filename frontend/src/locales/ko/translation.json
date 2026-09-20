@@ -12,7 +12,11 @@
   "notifications": {
     "title": "알림",
     "empty": "아직 알림이 없어요.",
-    "loginRequired": "알림을 보려면 로그인이 필요해요."
+    "loginRequired": "알림을 보려면 로그인이 필요해요.",
+    "applyTitle": "새로운 참가 신청이 있어요",
+    "applyContent": "{{userName}}님이 \"{{moimTitle}}\"에 참가 신청했습니다.",
+    "completeTitle": "여행이 완료되었어요",
+    "completeContent": "\"{{moimTitle}}\" 여행이 종료되었습니다. 후기를 남겨보세요!"
   },
   "userProfile": {
     "title": "사용자 정보 조회",
@@ -39,12 +43,16 @@
     "placeholder": "메시지를 입력하세요",
     "send": "전송",
     "loadFailed": "메시지를 불러오지 못했습니다.",
+    "emptyMessages": "아직 대화가 없어요. 첫 메시지를 보내보세요!",
     "sendFailed": "메시지 전송에 실패했습니다.\n다시 시도해 주세요.",
     "leave": "나가기",
     "leaveConfirm": "채팅방을 나갈 경우,\n소모임에서 탈퇴되게됩니다.",
     "leaveFailed": "채팅방 나가기에 실패했어요.\n잠시 후 다시 시도해 주세요.",
     "kickedBanner": "이 소모임에서 추방되어 더 이상 채팅에 참여할 수 없어요.",
-    "kickedLabel": "추방됨"
+    "kickedLabel": "추방됨",
+    "translate": "번역",
+    "showOriginal": "원문 보기",
+    "translating": "번역 중..."
   },
   "account": {
     "loading": "불러오는 중…",

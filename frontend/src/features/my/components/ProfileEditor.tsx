@@ -132,7 +132,7 @@ export default function ProfileEditor() {
   return (
     <section className="profile-editor">
       <div className="profile-editor-avatar-row">
-        <img className="profile-editor-avatar" src={pendingImageUrl ? resolveImageUrl(pendingImageUrl) : profile.data.profileImageUrl ? resolveImageUrl(profile.data.profileImageUrl) : '/images/places/no-image.png'} alt={t('image.profilePhoto', { name: profile.data.userNm })} />
+        <img className="profile-editor-avatar" src={pendingImageUrl ? resolveImageUrl(pendingImageUrl) : profile.data.profileImageUrl ? resolveImageUrl(profile.data.profileImageUrl) : '/images/places/no-image.svg'} alt={t('image.profilePhoto', { name: profile.data.userNm })} />
         <label className="profile-editor-upload">
           {t('account.edit')}
           <input type="file" accept="image/*" onChange={(event) => void uploadImage(event.target.files?.[0])} />

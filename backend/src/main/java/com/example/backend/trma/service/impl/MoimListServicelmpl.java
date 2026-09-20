@@ -282,6 +282,27 @@ public class MoimListServicelmpl implements MoimListService {
             applyMoimDetailTranslation(moimDetail, request.getLang());
             List<MoimCateData> moimCate = moimListMapper.moimCate(request.getMoimId());
             List<MoimPlanData> moimPlan = moimListMapper.moimPlan(request.getMoimId(), request.getLang());
+            // moimPlan은 캐시된 번역(TOUR_NM_EN/JA)만 읽어오는데, 아직 그 언어로 한 번도
+            // 조회된 적 없는 관광지는 캐시가 비어 있어 한국어 이름이 그대로 나온다. 여기서
+            // 한 번 더 번역을 시도해 캐시를 채우고 화면에도 바로 반영한다.
+            if (moimPlan != null && !moimPlan.isEmpty()) {
+                // 공식 일어/영어 데이터나 Gemini 캐시로 이미 이름이 채워진 항목
+                // (NATIVE_MATCH_YN='Y')은 다시 번역할 필요가 없다.
+                List<String> tourIdsNeedingTranslation = moimPlan.stream()
+                        .filter(item -> !"Y".equals(item.getNativeMatchYn()))
+                        .map(MoimPlanData::getTourId)
+                        .toList();
+                Map<String, String> translatedNames = tourListService.translateTourNames(
+                        tourIdsNeedingTranslation,
+                        request.getLang()
+                );
+                for (MoimPlanData item : moimPlan) {
+                    String translatedNm = translatedNames.get(item.getTourId());
+                    if (translatedNm != null && !translatedNm.isBlank()) {
+                        item.setTourNm(translatedNm);
+                    }
+                }
+            }
             MoimJoinStatusData moimJoinStatus = moimListMapper.moimJoinStatus(request.getMoimId(), userId);
             MoimReviewStatusData moimReviewStatus = moimListMapper.moimReviewStatus(request.getMoimId(), userId);
 
@@ -500,9 +521,26 @@ public class MoimListServicelmpl implements MoimListService {
 
     //모임 신청
     @Override
+    @Transactional
     public ApplyMoimResponse applyMoim(String moimId, String userId) {
 
         try {
+            // 신청 버튼을 빠르게 두 번 누르거나 네트워크 재시도로 요청이 겹치는 경우를
+            // 막기 위해, INSERT 전에 이미 신청/가입된 상태인지 먼저 확인한다. 최종적인
+            // 동시성 보장은 DB의 (MOIM_ID, USER_ID) 유니크 제약이 하지만, 여기서 미리
+            // 걸러내면 사용자에게 더 친절한 메시지를 보여줄 수 있다.
+            MoimJoinStatusData existing = moimListMapper.moimJoinStatus(moimId, userId);
+            if (existing != null) {
+                return new ApplyMoimResponse(
+                        false,
+                        409,
+                        "ALREADY_APPLIED",
+                        "이미 신청했거나 가입된 모임입니다.",
+                        "/moimList/" + moimId + "/apply",
+                        ""
+                );
+            }
+
             moimListMapper.insertMoimMember(moimId, userId, "M", "N");
             notificationMapper.insertApplyNotification(moimId, userId);
 
@@ -519,6 +557,18 @@ public class MoimListServicelmpl implements MoimListService {
                     200,
                     "SUCCESS",
                     "모임 신청이 완료되었습니다.",
+                    "/moimList/" + moimId + "/apply",
+                    ""
+            );
+        } catch (org.springframework.dao.DuplicateKeyException e) {
+            // 위 사전 체크와 실제 INSERT 사이의 짧은 틈에 두 요청이 동시에 들어온 경우.
+            // DB가 걸러준 것이므로 데이터는 안전하고, 사용자에게는 친절한 메시지만 보여준다.
+            log.warn("모임 신청이 중복 요청되었습니다. moimId={}, userId={}", moimId, userId);
+            return new ApplyMoimResponse(
+                    false,
+                    409,
+                    "ALREADY_APPLIED",
+                    "이미 신청했거나 가입된 모임입니다.",
                     "/moimList/" + moimId + "/apply",
                     ""
             );
@@ -567,6 +617,7 @@ public class MoimListServicelmpl implements MoimListService {
 
     //모임 멤버 상태 변경(승인/거절)
     @Override
+    @Transactional
     public UpdateMoimMemberResponse updateMoimMember(String moimId, String targetUserId, UpdateMoimMemberRequest request, String userId) {
 
         try {
@@ -616,6 +667,7 @@ public class MoimListServicelmpl implements MoimListService {
 
     //모임 일정 수정
     @Override
+    @Transactional
     public UpdateMoimPlanResponse updateMoimPlan(String moimId, UpdateMoimPlanRequest request, String userId) {
 
         try {

@@ -1,12 +1,6 @@
 .user-profile-page {
   padding: var(--space-2xl);
 }
-.user-profile-status {
-  padding: var(--space-3xl) 0;
-  color: var(--gray-400);
-  font-size: var(--fs-sm);
-  text-align: center;
-}
 .user-profile-summary {
   display: flex;
   align-items: center;
@@ -79,12 +73,6 @@
 }
 .user-profile-list {
   margin-top: var(--space-2xl);
-}
-.user-profile-empty {
-  padding: var(--space-3xl) 0;
-  color: var(--gray-400);
-  font-size: var(--fs-sm);
-  text-align: center;
 }
 .user-profile-list ul {
   display: grid;

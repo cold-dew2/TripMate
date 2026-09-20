@@ -11,6 +11,7 @@ import { useTransportRecommend, type TransportLeg } from '../../hooks/useTranspo
 import DaySchedule, { type ScheduleItem } from '@/shared/components/daySchedule/DaySchedule';
 import TransportLegView from '@/shared/components/transportLeg/TransportLegView';
 import Button from '@/shared/components/button/Button';
+import PageState from '@/shared/components/pageState/PageState';
 import { useAlert } from '@/shared/contexts/AlertContext';
 import { apiClient } from '@/shared/api/client';
 import { addDays, formatMonthDay } from '@/shared/utils/date';
@@ -246,11 +247,11 @@ const MoimManageDetail = () => {
       {tab === 'applicants' && (
         <section className="manage-detail-section">
           {isLoading ? (
-            <p className="manage-loading">{t('account.loading')}</p>
+            <PageState status="loading" fullScreen={false} />
           ) : isError ? (
-            <p className="manage-loading">{t('common.loadError')}</p>
+            <PageState status="error" fullScreen={false} />
           ) : pendingMembers.length === 0 ? (
-            <p className="manage-loading">{t('moim.noApplicants')}</p>
+            <PageState status="empty" message={t('moim.noApplicants')} fullScreen={false} />
           ) : (
             <>
               {actionError && <p className="manage-action-error" role="alert">{actionError}</p>}
@@ -324,11 +325,11 @@ const MoimManageDetail = () => {
       {tab === 'members' && (
         <section className="manage-detail-section">
           {isLoading ? (
-            <p className="manage-loading">{t('account.loading')}</p>
+            <PageState status="loading" fullScreen={false} />
           ) : isError ? (
-            <p className="manage-loading">{t('common.loadError')}</p>
+            <PageState status="error" fullScreen={false} />
           ) : approvedMembers.length === 0 ? (
-            <p className="manage-loading">{t('moim.noMembers')}</p>
+            <PageState status="empty" message={t('moim.noMembers')} fullScreen={false} />
           ) : (
             <>
               {actionError && <p className="manage-action-error" role="alert">{actionError}</p>}
@@ -370,7 +371,7 @@ const MoimManageDetail = () => {
       {tab === 'schedule' && (
         <section className="manage-detail-section">
           {!itemsByDay ? (
-            <p className="manage-loading">{t('account.loading')}</p>
+            <PageState status="loading" fullScreen={false} />
           ) : (
             <>
               <p className="schedule-date-range">{moimStartDt} ~ {moimEndDt}</p>

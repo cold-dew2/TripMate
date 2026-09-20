@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import useMyReviewList, { type MyReviewSort } from '../../hooks/useMyReviewList';
 import FilterTabs from '@/shared/components/filterTabs/FilterTabs';
+import PageState from '@/shared/components/pageState/PageState';
 import { resolveImageUrl } from '@/shared/utils/url';
 import './MyReviewsPage.css';
 
@@ -21,11 +22,11 @@ const MyReviewsPage = () => {
         onChange={(id) => setSort(id as MyReviewSort)}
       />
       {isLoading ? (
-        <p className="my-reviews-state">{t('account.loading')}</p>
+        <PageState status="loading" fullScreen={false} />
       ) : isError ? (
-        <p className="my-reviews-state">{t('common.loadError')}</p>
+        <PageState status="error" fullScreen={false} />
       ) : !reviews?.length ? (
-        <p className="my-reviews-state">{t('my.noReceivedReviews')}</p>
+        <PageState status="empty" message={t('my.noReceivedReviews')} fullScreen={false} />
       ) : (
         <ul className="my-reviews-list">
           {reviews.map((review, index) => (

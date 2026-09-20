@@ -15,4 +15,6 @@ public class MoimPlanData {
     private String roadAddr;
     private String cateCd;
     private String cateNm;
+    // 한국관광공사 공식 일어/영어 데이터 또는 Gemini 번역 캐시로 이미 이름이 채워졌으면 'Y'.
+    private String nativeMatchYn;
 }

@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import AsyncList from "@/shared/components/asyncList/AsyncList";
@@ -7,16 +7,18 @@ import MoimCard from "@/shared/components/moimCard/MoimCard";
 import Button from "@/shared/components/button/Button";
 import useMoimList from "../../hooks/useMoimList";
 import type { MoimCreatePrefill } from "@/types/moim";
+import { translateCategoryList } from "@/shared/utils/category";
+import useUrlState from "@/shared/hooks/useUrlState";
 import "./SejongMatePage.css";
 
-const STYLE_FILTERS: FilterOption[] = [
-  { id: "all", label: "전체" },
-  { id: "NAT", label: "🌿 자연" },
-  { id: "NIG", label: "🌙 야경" },
-  { id: "ACT", label: "🚲 자전거" },
-  { id: "PHO", label: "📷 사진" },
-  { id: "RES", label: "🍴 맛집" },
-  { id: "CUL", label: "🏛️ 도시탐방" },
+const STYLE_FILTER_IDS: { id: string; icon: string; label: string }[] = [
+  { id: "all", icon: "", label: "전체" },
+  { id: "NAT", icon: "🌿", label: "자연" },
+  { id: "NIG", icon: "🌙", label: "야경" },
+  { id: "ACT", icon: "🚲", label: "자전거" },
+  { id: "PHO", icon: "📷", label: "사진" },
+  { id: "RES", icon: "🍴", label: "맛집" },
+  { id: "CUL", icon: "🏛️", label: "도시탐방" },
 ];
 
 interface CourseStop {
@@ -121,7 +123,14 @@ const COURSES: Record<string, Course> = {
 
 const SejongMatePage = () => {
   const { t } = useTranslation();
-  const [activeStyle, setActiveStyle] = useState("all");
+  const [activeStyle, setActiveStyle] = useUrlState("style", "all");
+  const STYLE_FILTERS: FilterOption[] = useMemo(
+    () => STYLE_FILTER_IDS.map((option) => ({
+      id: option.id,
+      label: option.icon ? `${option.icon} ${t(option.label)}` : t(option.label),
+    })),
+    [t]
+  );
 
   const { data, isLoading, isError } = useMoimList("all", "세종");
   const moims = useMemo(() => data?.pages.flat() ?? [], [data]);
@@ -176,8 +185,8 @@ const SejongMatePage = () => {
             <li key={moim.moimId}>
               <Link to={`/moim/${moim.moimId}`}>
                 <MoimCard
-                  badge={moim.cateNm}
-                  imageUrl={moim.imageUrl || "/images/places/no-image.png"}
+                  badge={translateCategoryList(moim.cateNm, t)}
+                  imageUrl={moim.imageUrl || "/images/places/no-image.svg"}
                   title={moim.moimTitle}
                   desc={moim.moimDscr}
                   date={moim.moimStartDt}

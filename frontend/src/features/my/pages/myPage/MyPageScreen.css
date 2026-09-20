@@ -275,7 +275,10 @@
   color: var(--gray-400);
   font-size: var(--fs-xs);
 }
-.mypage-review-body p {
+.mypage-review-content {
+
+}
+.mypage-review-content p {
   margin-top: 4px;
   color: var(--gray-700);
   font-size: var(--fs-sm);

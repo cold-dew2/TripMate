@@ -20,7 +20,9 @@ public interface TourListMapper {
     //관광지 상세
     TourSearchData tourInfo(String tourId);
     //관광지 상세조회(기본)
-    TourDetailData tourDetail(String tourId);
+    TourDetailData tourDetail(@Param("tourId") String tourId, @Param("lang") String lang);
+    //관광지 이름 일괄 조회(번역 캐시 확인용)
+    List<TourSearchData> tourByIds(@Param("tourIds") List<String> tourIds, @Param("lang") String lang);
     //관광지 상세조회(리뷰)
     List<TourDetailReviewData> tourDetailReview(@Param("tourId") String tourId, @Param("offset") int offset);
     //관광지 후기 등록
