@@ -9,6 +9,10 @@
   display: flex;
 }
 
+.themeList li .checkbox {
+  width: 100%;
+}
+
 .themeList li label {
   width: 100%;
   height: 100%;
