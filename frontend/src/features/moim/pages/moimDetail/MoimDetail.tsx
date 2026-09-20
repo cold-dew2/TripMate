@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next';
 import useMoimDetail from '../../hooks/useMoimDetail'
@@ -14,6 +14,7 @@ import Button from '@/shared/components/button/Button';
 import PageState from '@/shared/components/pageState/PageState';
 import ReviewImageGrid from '@/shared/components/reviewImageGrid/ReviewImageGrid';
 import { useAlert } from '@/shared/contexts/AlertContext';
+import { resolveImageUrl } from '@/shared/utils/url';
 import './MoimDetail.css';
 
 const MoimDetail = () => {
@@ -25,6 +26,8 @@ const MoimDetail = () => {
   const { data: reviews } = useMoimReviews(moimId!);
   const { data: user } = useUser();
   const { showAlert, showConfirm } = useAlert();
+  // 업로드 기록은 있는데 실제 파일이 없어져 깨진 이미지 아이콘으로 뜨는 경우를 대비한 안전장치.
+  const [hostAvatarBroken, setHostAvatarBroken] = useState(false);
   const transportRecommend = useMoimTransportRecommend(moimId!);
   const legsByKey = useMemo(() => {
     const map = new Map<string, TransportLeg>();
@@ -74,7 +77,16 @@ const MoimDetail = () => {
       <Header moim={moim} cate={cate} onShare={handleShare} />
 
       <Link to={`/users/${moim.userId}`} className="moim-detail-host">
-        <div className="moim-detail-host-avatar" aria-hidden="true" />
+        {moim.hostProfileImgUrl && !hostAvatarBroken ? (
+          <img
+            className="moim-detail-host-avatar"
+            src={resolveImageUrl(moim.hostProfileImgUrl)}
+            alt=""
+            onError={() => setHostAvatarBroken(true)}
+          />
+        ) : (
+          <div className="moim-detail-host-avatar" aria-hidden="true" />
+        )}
         <span>{moim.userNm}</span>
         {moim.reviewScore != null && (
           <span className="moim-detail-host-score">★ {Number(moim.reviewScore).toFixed(1)}</span>

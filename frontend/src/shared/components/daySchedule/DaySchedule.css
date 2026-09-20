@@ -60,7 +60,7 @@
   font-size: var(--fs-xs);
 }
 .schedule-time-select {
-  width: 40px;
+  width: 45px;
   padding: 6px 2px;
   border: 1px solid var(--gray-200);
   border-radius: var(--radius-sm);
@@ -92,4 +92,12 @@
   color: var(--gray-400);
   font-size: var(--fs-sm);
   background: none;
+}
+.schedule-item-body {
+  width: 100%;
+}
+.scedule-time-top {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 5px;
 }

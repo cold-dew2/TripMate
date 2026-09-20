@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -16,6 +17,7 @@ interface LanguageCard {
 interface RecentReview {
   reviewId: string;
   reviewerName: string;
+  reviewerProfileImgUrl?: string | null;
   reviewScore: number;
   reviewContent: string;
   createDt: string;
@@ -43,6 +45,10 @@ const LANG_NAME_KEY: Record<string, string> = { ko: 'lang.ko', en: 'lang.en', ja
 const MyPageScreen = () => {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
+  // 업로드 기록은 있는데 실제 파일이 사라졌거나 경로가 잘못된 경우(깨진 이미지 아이콘) 조용히
+  // 기본 아바타로 대체하기 위한 상태. 프로필 사진 하나 + 최신 후기 목록(reviewId로 구분) 각각 추적.
+  const [avatarBroken, setAvatarBroken] = useState(false);
+  const [brokenReviewAvatars, setBrokenReviewAvatars] = useState<Set<string>>(new Set());
 
   // 로그인 토큰이 httpOnly 쿠키라 JS에서 로그인 여부를 미리 알 수 없으므로,
   // 항상 호출해보고 결과(성공/NEED_LOGIN)로 로그인 여부를 판단한다.
@@ -69,6 +75,7 @@ const MyPageScreen = () => {
       return putResult.data.data;
     },
     onSuccess: () => {
+      setAvatarBroken(false);
       queryClient.invalidateQueries({ queryKey: ['myProfile'] });
     },
   });
@@ -127,8 +134,12 @@ const MyPageScreen = () => {
         <div className="mypage-avatar-row">
           <div className="mypage-avatar-wrap">
             <div className="mypage-avatar">
-              {p?.profileImageUrl ? (
-                <img src={resolveImageUrl(p.profileImageUrl)} alt={t('image.profilePhoto', { name: p.userNm })} />
+              {p?.profileImageUrl && !avatarBroken ? (
+                <img
+                  src={resolveImageUrl(p.profileImageUrl)}
+                  alt={t('image.profilePhoto', { name: p.userNm })}
+                  onError={() => setAvatarBroken(true)}
+                />
               ) : (
                 <span aria-hidden="true">🙂</span>
               )}
@@ -195,7 +206,16 @@ const MyPageScreen = () => {
           <ul className="mypage-review-list">
             {reviews.map((review) => (
               <li key={review.reviewId}>
-                <div className="mypage-review-avatar" aria-hidden="true" />
+                {review.reviewerProfileImgUrl && !brokenReviewAvatars.has(review.reviewId) ? (
+                  <img
+                    className="mypage-review-avatar"
+                    src={resolveImageUrl(review.reviewerProfileImgUrl)}
+                    alt=""
+                    onError={() => setBrokenReviewAvatars((prev) => new Set(prev).add(review.reviewId))}
+                  />
+                ) : (
+                  <div className="mypage-review-avatar" aria-hidden="true" />
+                )}
                 <div className="mypage-review-body">
                   <div className="mypage-review-top">
                     <div>

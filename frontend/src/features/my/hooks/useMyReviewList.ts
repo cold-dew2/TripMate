@@ -6,6 +6,7 @@ export interface MyReview {
   reviewContent: string;
   reviewScore: number;
   userNm: string;
+  profileImgUrl: string | null;
   imgUrls: string | null;
   createDt: string;
 }

@@ -407,6 +407,7 @@ public class UserServiceImpl implements UserService {
                 recentReviews.add(new RecentReviewData(
                         userId + "-" + recentReviews.size(),
                         review.getUserNm(),
+                        review.getProfileImgUrl(),
                         review.getReviewScore(),
                         review.getReviewContent(),
                         review.getImgUrls(),

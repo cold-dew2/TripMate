@@ -16,6 +16,7 @@
   height: 32px;
   border-radius: var(--radius-full);
   background: var(--purple-100);
+  object-fit: cover;
 }
 .my-review-body {
   min-width: 0;

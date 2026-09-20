@@ -23,4 +23,19 @@ public final class AiJsonUtil {
         }
         return trimmed.trim();
     }
+
+    // 한국관광공사 공식 영/일 데이터에 이름은 있지만 주소 등 일부 필드가 비어 있으면
+    // SQL COALESCE가 조용히 한국어 원문으로 되돌아간다. NATIVE_MATCH_YN만 보고
+    // "이미 번역됐다"고 판단하면 이런 값은 영원히 한국어로 남으므로, 실제로 한글이
+    // 섞여 있는지 직접 확인해 필요하면 Gemini 폴백을 타게 한다.
+    public static boolean containsHangul(String text) {
+        if (text == null) return false;
+        for (int i = 0; i < text.length(); i++) {
+            char c = text.charAt(i);
+            if ((c >= 0xAC00 && c <= 0xD7A3) || (c >= 0x1100 && c <= 0x11FF) || (c >= 0x3130 && c <= 0x318F)) {
+                return true;
+            }
+        }
+        return false;
+    }
 }

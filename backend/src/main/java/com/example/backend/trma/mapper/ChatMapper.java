@@ -63,6 +63,9 @@ public interface ChatMapper {
     //모임에서 추방/거절됐을 때 채팅방 멤버 상태를 추방으로 표시(행은 남겨둠)
     int markChatMemberKicked(@Param("roomId") String roomId, @Param("userId") String userId);
 
+    //예전에 추방됐던 사람이 모임에 재신청해 다시 승인된 경우, 채팅방 멤버 상태를 정상으로 되돌림
+    int reactivateChatMember(@Param("roomId") String roomId, @Param("userId") String userId);
+
     //채팅방에서 나의 참여 상태 조회(정상 'A' / 추방됨 'K')
     String chatMemberState(@Param("roomId") String roomId, @Param("userId") String userId);
 

@@ -3,6 +3,13 @@
   flex-wrap: wrap;
   gap: var(--space-lg);
 }
+
 .themeList li {
-  flex: 1 1 calc(33.33% - var(--space-lg));
+  flex: 0 0 calc((100% - (var(--space-lg) * 2)) / 3);
+  display: flex;
+}
+
+.themeList li label {
+  width: 100%;
+  height: 100%;
 }

@@ -100,7 +100,7 @@ const HomePage = () => {
             moims.slice(0, 4)?.map(moim => (
               <li key={moim.moimId}>
                 <Link to={`/moim/${moim.moimId}`}>
-                  <MoimCard badge={translateCategoryList(moim.cateNm, t)} imageUrl={resolveImageUrl(moim.imageUrl)} title={moim.moimTitle} date={moim.moimStartDt} member={moim.memberCnt} views={moim.visitCnt}/>
+                  <MoimCard badge={translateCategoryList(moim.cateNm, t)} imageUrl={resolveImageUrl(moim.imageUrl)} title={moim.moimTitle} desc={moim.moimDscr} date={moim.moimStartDt} member={moim.memberCnt} views={moim.visitCnt}/>
                 </Link>
               </li>
             ))

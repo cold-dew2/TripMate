@@ -213,6 +213,7 @@
             ,COUNT(c.USER_ID) AS memberCnt
             ,a.CREATE_USER AS USER_ID
             ,b.USER_NM
+            ,b.PROFILE_IMG_URL AS HOST_PROFILE_IMG_URL
             <!-- 이 모임만의 후기 평균이 아니라, 생성자(호스트)가 지금까지 개설한 모든
                  모임에서 받은 후기 + 본인이 직접 남긴 후기(자기 모임 자체 리뷰 포함)를 합쳐
                  계산한 별점이다. 마이페이지 프로필의 RATING 계산과 동일한 기준으로 맞춰서,
@@ -240,6 +241,7 @@
             ,a.MAX_MEMBER
             ,a.CREATE_USER
             ,b.USER_NM
+            ,b.PROFILE_IMG_URL
 
     </select>
 
@@ -620,6 +622,7 @@
         SELECT
             a.USER_ID
             ,b.USER_NM
+            ,b.PROFILE_IMG_URL
             ,a.ROLE_CD
             ,a.STATE_CD
         FROM TB_TRMA_MOIM_MEMBER a

@@ -10,6 +10,7 @@ import lombok.Setter;
 public class MoimMemberData {
     private String userId;
     private String userNm;
+    private String profileImgUrl;
     private String roleCd;
     private String stateCd;
 }

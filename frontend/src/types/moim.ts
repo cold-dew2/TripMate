@@ -65,6 +65,7 @@ export interface MoimDetail {
   memberCnt: number;
   userId: string;
   userNm: string;
+  hostProfileImgUrl?: string | null;
   reviewScore: number | null;
   imageUrl?: string;
 }
@@ -112,6 +113,7 @@ export interface MyMoim {
 export interface MoimMember {
   userId: string;
   userNm: string;
+  profileImgUrl?: string | null;
   roleCd: string;
   stateCd: string;
 }

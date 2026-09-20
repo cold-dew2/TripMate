@@ -162,11 +162,16 @@
             ,e.CMM_CM_NM AS LANG_NM
             ,a.CREATE_DT AS JOIN_DT
         FROM TB_TRMA_USER_INFO a
+        <!-- 아래 서브쿼리들은 원래 전체 테이블을 GROUP BY로 집계한 뒤 바깥 WHERE에서
+             한 명만 걸러냈다(집계 결과 대부분을 버리는 구조). 최종적으로 a.USER_ID = #{userId}인
+             한 행만 남으므로, 같은 필터를 각 서브쿼리 안쪽으로 내려서 이 사용자 관련 행만
+             집계하도록 바꿔도 결과는 동일하고 훨씬 적게 스캔한다. -->
         LEFT JOIN (
             SELECT
             CREATE_USER,
             COUNT(1) AS MOIM_CNT
             FROM TB_TRMA_MOIM_LIST
+            WHERE CREATE_USER = #{userId}
             GROUP BY CREATE_USER
         ) b ON a.USER_ID = b.CREATE_USER
         LEFT JOIN (
@@ -175,6 +180,7 @@
             ,COUNT(1) AS MEMBER_CNT
             FROM TB_TRMA_MOIM_MEMBER c1
             LEFT JOIN TB_TRMA_MOIM_LIST c2 ON c1.MOIM_ID = c2.MOIM_ID
+            WHERE c2.CREATE_USER = #{userId}
             GROUP BY c2.CREATE_USER
         ) c ON a.USER_ID = c.CREATE_USER
         <!-- 받은 후기: 내가 호스트인 모임에 달린 후기 + 내가 직접 남긴 후기(테스트 계정처럼
@@ -186,11 +192,11 @@
                 SELECT d1.REVIEW_ID, d2.CREATE_USER AS owner_id
                 FROM TB_TRMA_MOIM_REVIEW d1
                 LEFT JOIN TB_TRMA_MOIM_LIST d2 ON d1.MOIM_ID = d2.MOIM_ID
-                WHERE d1.USE_YN = 'Y' AND d1.REVIEW_TYPE_CD = 'O'
+                WHERE d1.USE_YN = 'Y' AND d1.REVIEW_TYPE_CD = 'O' AND d2.CREATE_USER = #{userId}
                 UNION
                 SELECT d1.REVIEW_ID, d1.CREATE_USER AS owner_id
                 FROM TB_TRMA_MOIM_REVIEW d1
-                WHERE d1.USE_YN = 'Y' AND d1.REVIEW_TYPE_CD = 'O'
+                WHERE d1.USE_YN = 'Y' AND d1.REVIEW_TYPE_CD = 'O' AND d1.CREATE_USER = #{userId}
             ) d_union
             GROUP BY owner_id
         ) d ON a.USER_ID = d.CREATE_USER
@@ -200,11 +206,11 @@
                 SELECT f1.REVIEW_ID, f1.REVIEW_SCORE, f2.CREATE_USER AS owner_id
                 FROM TB_TRMA_MOIM_REVIEW f1
                 LEFT JOIN TB_TRMA_MOIM_LIST f2 ON f1.MOIM_ID = f2.MOIM_ID
-                WHERE f1.REVIEW_TYPE_CD = 'O'
+                WHERE f1.REVIEW_TYPE_CD = 'O' AND f2.CREATE_USER = #{userId}
                 UNION
                 SELECT f1.REVIEW_ID, f1.REVIEW_SCORE, f1.CREATE_USER AS owner_id
                 FROM TB_TRMA_MOIM_REVIEW f1
-                WHERE f1.REVIEW_TYPE_CD = 'O'
+                WHERE f1.REVIEW_TYPE_CD = 'O' AND f1.CREATE_USER = #{userId}
             ) f_union
             GROUP BY owner_id
         ) f ON a.USER_ID = f.CREATE_USER
@@ -227,6 +233,7 @@
             ,b.REVIEW_CONTENT
             ,b.REVIEW_SCORE
             ,c.USER_NM
+            ,c.PROFILE_IMG_URL
             ,b.IMG_URLS
             ,b.CREATE_DT
         FROM TB_TRMA_MOIM_REVIEW b

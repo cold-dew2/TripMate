@@ -16,6 +16,8 @@ import Skeleton from '@/shared/components/skeleton/Skeleton';
 import { useAlert } from '@/shared/contexts/AlertContext';
 import { apiClient } from '@/shared/api/client';
 import { addDays, formatMonthDay } from '@/shared/utils/date';
+import { resolveImageUrl } from '@/shared/utils/url';
+import { getApiLang } from '@/shared/utils/lang';
 import type { Place } from '@/types/place';
 import './MoimManageDetail.css';
 
@@ -51,6 +53,8 @@ const MoimManageDetail = () => {
     });
   };
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  // 업로드 기록은 있는데 실제 파일이 없어져 깨진 이미지 아이콘으로 뜨는 경우를 대비한 안전장치.
+  const [brokenAvatars, setBrokenAvatars] = useState<Set<string>>(new Set());
 
   const { data: result } = useMoimDetail(moimId!);
   const { data: members, isLoading, isError } = useMoimMembers(moimId!);
@@ -165,7 +169,7 @@ const MoimManageDetail = () => {
   useEffect(() => {
     if (addingDay === null) return;
     const timer = window.setTimeout(async () => {
-      const res = await apiClient.get<{ data: Place[] }>('/tourList/tourSearch', { page: 1, keyword: searchKeyword.trim() });
+      const res = await apiClient.get<{ data: Place[] }>('/tourList/tourSearch', { page: 1, keyword: searchKeyword.trim(), lang: getApiLang() });
       if (res.success) setSearchResults(res.data.data ?? []);
     }, 300);
     return () => window.clearTimeout(timer);
@@ -299,7 +303,16 @@ const MoimManageDetail = () => {
                         aria-label={t('moim.selectApplicant', { name: member.userNm })}
                       />
                     </label>
-                    <div className="applicant-avatar" aria-hidden="true">🙂</div>
+                    {member.profileImgUrl && !brokenAvatars.has(member.userId) ? (
+                      <img
+                        className="applicant-avatar"
+                        src={resolveImageUrl(member.profileImgUrl)}
+                        alt=""
+                        onError={() => setBrokenAvatars((prev) => new Set(prev).add(member.userId))}
+                      />
+                    ) : (
+                      <div className="applicant-avatar" aria-hidden="true">🙂</div>
+                    )}
                     <span className="applicant-name">{member.userNm}</span>
                     <div className="applicant-actions">
                       <button
@@ -353,7 +366,16 @@ const MoimManageDetail = () => {
               <ul className="applicant-list">
                 {approvedMembers.map((member) => (
                   <li key={member.userId}>
-                    <div className="applicant-avatar" aria-hidden="true">🙂</div>
+                    {member.profileImgUrl && !brokenAvatars.has(member.userId) ? (
+                      <img
+                        className="applicant-avatar"
+                        src={resolveImageUrl(member.profileImgUrl)}
+                        alt=""
+                        onError={() => setBrokenAvatars((prev) => new Set(prev).add(member.userId))}
+                      />
+                    ) : (
+                      <div className="applicant-avatar" aria-hidden="true">🙂</div>
+                    )}
                     <span className="applicant-name">
                       {member.userNm}
                       {member.roleCd === 'A' && <span className="member-host-badge">{t('moim.hostBadge')}</span>}

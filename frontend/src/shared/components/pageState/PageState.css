@@ -16,8 +16,13 @@
 
 /* 화면 전체를 대체하는 상태는 헤더/네비를 뺀 보이는 영역 한가운데로 오도록 세로 중앙정렬한다. */
 .page-state-fullscreen {
-  min-height: 60vh;
+  min-height: calc(100vh - 110px);
 }
+.page-state-fullscreen.page-state-fullscreen {
+  border: none;
+  background-color: none;
+}
+
 
 /* 로딩 중엔 박스 없이 스피너만 떠 있으면 된다. */
 .page-state-loading {

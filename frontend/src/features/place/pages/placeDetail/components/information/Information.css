@@ -15,6 +15,7 @@
   height: 26px;
   border-radius: var(--radius-md);
   background-color: var(--purple-200);
+  flex-shrink: 0;
 }
 .place-infoList .icon img {
   width: 14px;
@@ -52,4 +53,5 @@
   height: 13px;
   display: inline-block;
   background: url('/icons/icon_info.svg') no-repeat center;
+  flex-shrink: 0;
 }

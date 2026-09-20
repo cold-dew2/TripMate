@@ -187,8 +187,8 @@ public class TourAPIServicelmpl implements TourAPIService {
     @Override
     public TourAPIResponse areaBased_batch() {
         try {
-            //areaBasedList2();
-            //areaBasedList2_jp();
+            areaBasedList2();
+            areaBasedList2_jp();
             areaBasedList2_en();
 
             return new TourAPIResponse(
@@ -216,8 +216,8 @@ public class TourAPIServicelmpl implements TourAPIService {
     @Override
     public TourAPIResponse detailCommon_batch() {
         try {
-            //detailCommon2();
-            //detailCommon2_jp();
+            detailCommon2();
+            detailCommon2_jp();
             detailCommon2_en();
 
             return new TourAPIResponse(

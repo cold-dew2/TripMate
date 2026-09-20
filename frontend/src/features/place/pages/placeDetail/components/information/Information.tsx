@@ -10,7 +10,8 @@ interface InformationProps {
 
 const Information = ({ tourId }: InformationProps) => {
   const { t } = useTranslation();
-  const { data: place, isLoading, isError } = usePlaceAIDetail(tourId);
+  const { data: place, isLoading, isError, error } = usePlaceAIDetail(tourId);
+  const isAiUnavailable = (error as { code?: string } | null)?.code === 'AI_UNAVAILABLE';
 
   return (
     <div className="info-content">
@@ -19,7 +20,13 @@ const Information = ({ tourId }: InformationProps) => {
       </div>
 
       {isLoading && <PageState status="loading" message={t("place.infoLoading")} fullScreen={false} />}
-      {isError && <PageState status="error" message={t("place.infoError")} fullScreen={false} />}
+      {isError && (
+        <PageState
+          status="error"
+          message={isAiUnavailable ? t('common.aiUnavailable') : t('place.infoError')}
+          fullScreen={false}
+        />
+      )}
 
       {place && (
         <>

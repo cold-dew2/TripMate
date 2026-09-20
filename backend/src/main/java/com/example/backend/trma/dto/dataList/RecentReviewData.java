@@ -8,6 +8,7 @@ import lombok.Getter;
 public class RecentReviewData {
     private String reviewId;
     private String reviewerName;
+    private String reviewerProfileImgUrl;
     private int reviewScore;
     private String reviewContent;
     private String imgUrls;

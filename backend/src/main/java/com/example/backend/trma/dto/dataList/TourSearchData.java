@@ -23,6 +23,8 @@ public class TourSearchData {
     private String firstImage;
     private String tourNmEn;
     private String tourNmJa;
+    private String roadAddrEn;
+    private String roadAddrJa;
     // 한국관광공사 공식 일어/영어 데이터로 이미 채워졌으면 'Y'.
     private String nativeMatchYn;
 }

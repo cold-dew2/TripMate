@@ -83,21 +83,26 @@ const DaySchedule = ({ day, date, items = [], mode = "view", onRemove, onAddClic
                 <span className="schedule-thumb" aria-hidden="true">
                   {item.imageUrl && <img src={item.imageUrl} alt="" />}
                 </span>
-                {mode === "edit" && onTimeChange ? (
-                  <TimeSelect
-                    time={item.time}
-                    placeName={item.placeName}
-                    onChange={(time) => onTimeChange(item.id, time)}
-                  />
-                ) : (
-                  <span className="schedule-time">{item.time}</span>
-                )}
-                <span className="schedule-place">{item.placeName}</span>
-                {mode === "edit" && onRemove && (
-                  <button type="button" className="schedule-remove" onClick={() => onRemove(item.id)} aria-label={t("common.remove")}>
-                    ✕
-                  </button>
-                )}
+                <div className="schedule-item-body">
+                  <div className="scedule-time-top">
+                    {mode === "edit" && onTimeChange ? (
+                      <TimeSelect
+                        time={item.time}
+                        placeName={item.placeName}
+                        onChange={(time) => onTimeChange(item.id, time)}
+                      />
+                    ) : (
+                      <span className="schedule-time">{item.time}</span>
+                    )}
+                    {mode === "edit" && onRemove && (
+                      <button type="button" className="schedule-remove" onClick={() => onRemove(item.id)} aria-label={t("common.remove")}>
+                        ✕
+                      </button>
+                    )}
+                  </div>
+
+                  <span className="schedule-place">{item.placeName}</span>
+                </div>
               </div>
             </li>
           ))}

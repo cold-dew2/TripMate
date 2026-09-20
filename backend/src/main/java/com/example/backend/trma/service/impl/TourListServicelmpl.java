@@ -984,7 +984,7 @@ public class TourListServicelmpl implements TourListService {
         if (aiResult == null || aiResult.isBlank()) return null;
 
         ObjectMapper objectMapper = new ObjectMapper();
-        return objectMapper.readValue(aiResult, GeminiData.class);
+        return objectMapper.readValue(AiJsonUtil.extractJson(aiResult), GeminiData.class);
     }
 
     private void applySearchTranslations(List<TourSearchData> tours, String lang) {
@@ -1052,8 +1052,8 @@ public class TourListServicelmpl implements TourListService {
     }
 
     // 목록 화면(tourSearch)은 이름만 캐시해서 번역하고 주소는 다루지 않아 목록에서
-    // 주소가 계속 한국어로 남는 문제가 있었다. 주소는 검색 결과마다 달라 캐시 효율이
-    // 낮으므로(페이지당 최대 10건) 캐시 없이 범용 번역기로 그때그때 번역한다.
+    // 주소가 계속 한국어로 남는 문제가 있었다. 인기 관광지는 여러 사용자의 검색/페이지에
+    // 반복해서 등장하므로 이름과 마찬가지로 ROAD_ADDR_EN/JA에 캐시해 재사용한다.
     private void applySearchAddressTranslations(List<TourSearchData> tours, String lang) {
         if (!"en".equals(lang) && !"ja".equals(lang)) return;
         if (tours == null || tours.isEmpty()) return;
@@ -1061,15 +1061,37 @@ public class TourListServicelmpl implements TourListService {
         Map<String, String> addrsInput = new LinkedHashMap<>();
         for (TourSearchData tour : tours) {
             // 한국관광공사 공식 데이터로 이미 채워진 주소는 다시 번역하지 않는다.
-            if ("Y".equals(tour.getNativeMatchYn())) continue;
-            addrsInput.put(tour.getTourId(), tour.getRoadAddr());
+            // 단, NATIVE_MATCH_YN='Y'라도 공식 데이터에 주소 필드 자체가 비어 있으면
+            // COALESCE가 한국어 원문으로 조용히 되돌아가므로, 실제로 한글이 남아있는지
+            // 확인해서 그런 경우는 번역 대상에 포함시킨다.
+            if ("Y".equals(tour.getNativeMatchYn()) && !AiJsonUtil.containsHangul(tour.getRoadAddr())) continue;
+
+            String cached = "en".equals(lang) ? tour.getRoadAddrEn() : tour.getRoadAddrJa();
+            if (cached != null && !cached.isBlank() && !AiJsonUtil.containsHangul(cached)) {
+                tour.setRoadAddr(cached);
+            } else {
+                addrsInput.put(tour.getTourId(), tour.getRoadAddr());
+            }
         }
         if (addrsInput.isEmpty()) return;
 
         Map<String, String> addrs = translateFreeTexts(addrsInput, lang);
         for (TourSearchData tour : tours) {
             String addr = addrs.get(tour.getTourId());
-            if (addr != null && !addr.isBlank()) tour.setRoadAddr(addr);
+            if (addr == null || addr.isBlank()) continue;
+
+            tourListMapper.updateTourTranslation(
+                    tour.getTourId(),
+                    null,
+                    null,
+                    null,
+                    null,
+                    "en".equals(lang) ? addr : null,
+                    "ja".equals(lang) ? addr : null,
+                    null,
+                    null
+            );
+            tour.setRoadAddr(addr);
         }
     }
 
@@ -1078,7 +1100,13 @@ public class TourListServicelmpl implements TourListService {
         if (!"en".equals(lang) && !"ja".equals(lang)) return;
         // 한국관광공사 공식 일어/영어 데이터로 이미 채워진 관광지는 Gemini로 다시
         // 번역하지 않는다(tourDetail 쿼리에서 COALESCE로 이미 반영됨).
-        if ("Y".equals(tour.getNativeMatchYn())) return;
+        // 단, 공식 데이터에 일부 필드(주로 주소)가 비어 있으면 COALESCE가 한국어
+        // 원문으로 조용히 되돌아가므로, 실제로 한글이 남아있는 경우는 그대로
+        // 믿고 넘어가지 않고 아래 Gemini 폴백까지 진행한다.
+        boolean nativeLooksTranslated = "Y".equals(tour.getNativeMatchYn())
+                && !AiJsonUtil.containsHangul(tour.getRoadAddr())
+                && !AiJsonUtil.containsHangul(tour.getDetailAddr());
+        if (nativeLooksTranslated) return;
 
         String cachedNm = "en".equals(lang) ? tour.getTourNmEn() : tour.getTourNmJa();
         String cachedOverview = "en".equals(lang) ? tour.getOverviewEn() : tour.getOverviewJa();

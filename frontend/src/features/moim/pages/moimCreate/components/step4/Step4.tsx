@@ -5,6 +5,7 @@ import Button from "@/shared/components/button/Button";
 import Input from "@/shared/components/input/Input";
 import FilterTabs from "@/shared/components/filterTabs/FilterTabs";
 import { apiClient } from "@/shared/api/client";
+import { getApiLang } from "@/shared/utils/lang";
 import { useAlert } from "@/shared/contexts/AlertContext";
 import type { MoimCreateForm } from "@/types/moim";
 import type { Place } from "@/types/place";
@@ -54,7 +55,7 @@ const Step4 = ({ day, watch, items, onAddItem, onRemoveItem, onDone }: Step4Prop
   const runSearch = async (searchKeyword: string) => {
     setIsSearching(true);
     try {
-      const result = await apiClient.get<{ data: Place[] }>("/tourList/tourSearch", { page: 1, keyword: searchKeyword });
+      const result = await apiClient.get<{ data: Place[] }>("/tourList/tourSearch", { page: 1, keyword: searchKeyword, lang: getApiLang() });
       if (!result.success) return;
 
       let places = result.data.data ?? [];
@@ -97,7 +98,7 @@ const Step4 = ({ day, watch, items, onAddItem, onRemoveItem, onDone }: Step4Prop
       setIsRecommendLoading(true);
       const lists = await Promise.all(
         cateNames.map(async (name) => {
-          const result = await apiClient.get<{ data: Place[] }>("/tourList/tourSearch", { page: 1, keyword: name });
+          const result = await apiClient.get<{ data: Place[] }>("/tourList/tourSearch", { page: 1, keyword: name, lang: getApiLang() });
           return result.success ? result.data.data ?? [] : [];
         })
       );

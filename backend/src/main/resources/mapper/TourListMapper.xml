@@ -47,6 +47,8 @@
             </choose>
             b.TOUR_NM_EN,
             b.TOUR_NM_JA,
+            b.ROAD_ADDR_EN,
+            b.ROAD_ADDR_JA,
             <choose>
                 <when test="lang == 'en'">(CASE WHEN en.TOUR_ID IS NOT NULL THEN 'Y' ELSE 'N' END) AS NATIVE_MATCH_YN</when>
                 <when test="lang == 'ja'">(CASE WHEN jp.TOUR_ID IS NOT NULL THEN 'Y' ELSE 'N' END) AS NATIVE_MATCH_YN</when>

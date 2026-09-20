@@ -67,6 +67,8 @@
   border-radius: var(--radius-full);
   background: var(--purple-100);
   font-size: 18px;
+  object-fit: cover;
+  flex-shrink: 0;
 }
 .applicant-name {
   flex: 1;

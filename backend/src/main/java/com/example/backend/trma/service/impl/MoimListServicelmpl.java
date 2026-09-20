@@ -656,6 +656,13 @@ public class MoimListServicelmpl implements MoimListService {
 
             if (request.isApprove()) {
                 moimListMapper.updateMoimMemberState(moimId, targetUserId, "Y", userId);
+                // 승인된 사람을 소모임 채팅방에도 자동으로 합류시킨다(모임 인원수와
+                // 채팅방 인원수가 어긋나지 않도록). 이미 들어와 있으면 INSERT IGNORE라 아무
+                // 일도 안 하고, 예전에 추방됐다가 재승인된 경우엔 상태를 정상으로 되돌린다.
+                String roomId = "moim-" + moimId;
+                chatMapper.insertRoomIfNotExists(roomId, chatMapper.moimTitle(moimId), targetUserId);
+                chatMapper.insertMemberIfNotExists(roomId, targetUserId);
+                chatMapper.reactivateChatMember(roomId, targetUserId);
             } else {
                 moimListMapper.deleteMoimMember(moimId, targetUserId);
                 // 채팅방은 그대로 남겨두고 상태만 "추방됨"으로 표시한다(대기 중이던
@@ -1088,8 +1095,10 @@ public class MoimListServicelmpl implements MoimListService {
         List<MoimSearchData> uncachedTitle = new ArrayList<>();
         List<MoimSearchData> uncachedDscr = new ArrayList<>();
         for (MoimSearchData moim : moims) {
+            // 캐시 값이 비어있지 않아도 한글이 섞여 있으면(번역 실패가 그대로 캐시된
+            // 경우) 캐시를 믿지 않고 다시 번역 대상에 넣는다.
             String cachedTitle = "en".equals(lang) ? moim.getMoimTitleEn() : moim.getMoimTitleJa();
-            if (cachedTitle != null && !cachedTitle.isBlank()) {
+            if (cachedTitle != null && !cachedTitle.isBlank() && !AiJsonUtil.containsHangul(cachedTitle)) {
                 moim.setMoimTitle(cachedTitle);
             } else {
                 uncachedTitle.add(moim);
@@ -1097,7 +1106,7 @@ public class MoimListServicelmpl implements MoimListService {
 
             if (moim.getMoimDscr() != null && !moim.getMoimDscr().isBlank()) {
                 String cachedDscr = "en".equals(lang) ? moim.getMoimDscrEn() : moim.getMoimDscrJa();
-                if (cachedDscr != null && !cachedDscr.isBlank()) {
+                if (cachedDscr != null && !cachedDscr.isBlank() && !AiJsonUtil.containsHangul(cachedDscr)) {
                     moim.setMoimDscr(cachedDscr);
                 } else {
                     uncachedDscr.add(moim);

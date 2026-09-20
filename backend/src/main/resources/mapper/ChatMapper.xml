@@ -298,6 +298,19 @@
     </update>
 
     <!-- ========================= -->
+    <!-- 추방됐던 채팅 멤버를 다시 정상 상태로 되돌림(재승인 시) -->
+    <!-- ========================= -->
+    <update id="reactivateChatMember">
+
+        UPDATE TB_TRMA_CHAT_MEMBER
+        SET STATE_CD = 'A'
+        WHERE ROOM_ID = #{roomId}
+            AND USER_ID = #{userId}
+            AND STATE_CD = 'K'
+
+    </update>
+
+    <!-- ========================= -->
     <!-- 채팅방에서 나의 참여 상태 조회 -->
     <!-- ========================= -->
     <select id="chatMemberState"

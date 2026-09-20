@@ -19,6 +19,7 @@ public class MoimDetailData {
     private Integer memberCnt;
     private String userId;
     private String userNm;
+    private String hostProfileImgUrl;
     private Double reviewScore;
     private String imageUrl;
     private String moimTitleEn;
