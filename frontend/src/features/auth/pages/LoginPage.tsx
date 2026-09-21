@@ -53,7 +53,7 @@ const LoginPage = () => {
   return (
     <main className="auth-screen">
       <div className="auth-logo">
-        <span className="auth-logo-icon" aria-hidden="true">📍</span>
+        <Link to="/"><span className="auth-logo-icon" aria-hidden="true">📍</span></Link>
       </div>
       <h1 className="auth-title">{t("account.loginTitle")}</h1>
       <p className="auth-subtitle">{t("account.loginSubtitle")}</p>
