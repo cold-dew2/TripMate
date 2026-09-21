@@ -55,9 +55,9 @@ const LoginPage = () => {
       <Link to="/">
         <div className="auth-logo">
           <span className="auth-logo-icon" aria-hidden="true">📍</span>
-          <h1 className="auth-title">{t("account.loginTitle")}</h1>
-          <p className="auth-subtitle">{t("account.loginSubtitle")}</p>
         </div>
+        <h1 className="auth-title">{t("account.loginTitle")}</h1>
+        <p className="auth-subtitle">{t("account.loginSubtitle")}</p>
       </Link>
       {signupSuccess && <p className="auth-success">{t("account.signupSuccess")}</p>}
 
