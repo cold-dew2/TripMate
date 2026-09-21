@@ -5,6 +5,7 @@ import com.example.backend.trma.dto.dataList.ChatRoomData;
 import com.example.backend.trma.dto.dataList.ChatTranslationDelta;
 import com.example.backend.trma.dto.dataList.ChatUnreadDeltaData;
 import com.example.backend.trma.dto.dataList.GeminiData;
+import com.example.backend.trma.dto.dataList.MoimTitleTranslationData;
 import com.example.backend.trma.dto.dataList.NewChatMessage;
 import com.example.backend.trma.dto.request.GeminiRequest;
 import com.example.backend.trma.dto.request.SendChatMessageRequest;
@@ -61,7 +62,15 @@ public class ChatServiceImpl implements ChatService {
 
         try {
             List<ChatRoomData> rooms = chatMapper.chatRooms(userId);
-            applyChatRoomTranslations(rooms, lang);
+            // 다른 목록 화면과 동일하게, 캐시(소모임 제목 캐시 재사용 포함)로 못 채우고
+            // Gemini를 불러야 하는 방이 있어도 최대 0.5초만 기다린다.
+            try {
+                CompletableFuture.runAsync(() -> applyChatRoomTranslations(rooms, lang)).get(500, java.util.concurrent.TimeUnit.MILLISECONDS);
+            } catch (java.util.concurrent.TimeoutException e) {
+                log.warn("채팅방 목록 번역이 0.5초 안에 끝나지 않아 한국어로 먼저 응답합니다. lang={}", lang);
+            } catch (Exception e) {
+                log.warn("채팅방 목록 번역 대기 중 오류가 발생했습니다. lang={}", lang, e);
+            }
 
             return new ChatRoomsResponse(
                     true,
@@ -151,6 +160,20 @@ public class ChatServiceImpl implements ChatService {
                         403,
                         "KICKED",
                         "이 채팅방에서 추방되어 메시지를 보낼 수 없습니다.",
+                        "/chat/rooms/" + roomId + "/messages",
+                        "",
+                        null
+                );
+            }
+
+            // 프론트는 빈/공백 메시지를 막지만, 그건 API를 직접 호출하면 우회할 수 있다.
+            // DB 컬럼은 NOT NULL일 뿐 빈 문자열은 그대로 허용하므로 서버에서도 막는다.
+            if (request.getContent() == null || request.getContent().isBlank()) {
+                return new SendChatMessageResponse(
+                        false,
+                        400,
+                        "EMPTY_CONTENT",
+                        "메시지 내용을 입력해주세요.",
                         "/chat/rooms/" + roomId + "/messages",
                         "",
                         null
@@ -361,6 +384,46 @@ public class ChatServiceImpl implements ChatService {
             } else {
                 uncached.add(room);
             }
+        }
+        if (uncached.isEmpty()) return;
+
+        // 소모임 채팅방(roomId="moim-{moimId}")의 제목은 그 모임 이름과 같다. 소모임
+        // 목록/상세를 먼저 봤다면 MOIM_TITLE_EN/JA에 이미 번역이 캐시돼 있는 경우가
+        // 많으므로, Gemini를 또 호출하기 전에 그 캐시를 재사용한다(같은 문장을 두 번
+        // 번역하는 토큰 낭비를 막고, 채팅방 목록 로딩도 그만큼 빨라진다). 재사용한
+        // 값은 채팅방 자체의 캐시(TITLE_EN/JA)에도 저장해 다음부터는 이 조회조차 필요 없게 한다.
+        Map<String, String> moimIdByRoomId = new HashMap<>();
+        for (ChatRoomData room : uncached) {
+            if (room.getRoomId() != null && room.getRoomId().startsWith("moim-")) {
+                moimIdByRoomId.put(room.getRoomId(), room.getRoomId().substring("moim-".length()));
+            }
+        }
+        if (!moimIdByRoomId.isEmpty()) {
+            List<MoimTitleTranslationData> moims = moimListMapper.moimTitlesByIds(new ArrayList<>(moimIdByRoomId.values()));
+            Map<String, String> moimTitleByMoimId = new HashMap<>();
+            for (MoimTitleTranslationData moim : moims) {
+                String moimCached = "en".equals(lang) ? moim.getMoimTitleEn() : moim.getMoimTitleJa();
+                if (moimCached != null && !moimCached.isBlank()) {
+                    moimTitleByMoimId.put(moim.getMoimId(), moimCached);
+                }
+            }
+
+            List<ChatRoomData> stillUncached = new ArrayList<>();
+            for (ChatRoomData room : uncached) {
+                String moimId = moimIdByRoomId.get(room.getRoomId());
+                String reused = moimId != null ? moimTitleByMoimId.get(moimId) : null;
+                if (reused != null) {
+                    chatMapper.updateRoomTitleTranslation(
+                            room.getRoomId(),
+                            "en".equals(lang) ? reused : null,
+                            "ja".equals(lang) ? reused : null
+                    );
+                    room.setTitle(reused);
+                } else {
+                    stillUncached.add(room);
+                }
+            }
+            uncached = stillUncached;
         }
         if (uncached.isEmpty()) return;
 

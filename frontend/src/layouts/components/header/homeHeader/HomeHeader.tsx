@@ -70,7 +70,7 @@ const HomeHeader = () => {
         </div>
       </div>
       <div className="header-search">
-        <form onSubmit={handleSearchSubmit}>
+        <form onSubmit={handleSearchSubmit} className="header-search-form">
           <Input
             label={t("home.searchLabel")}
             id="home-search"
@@ -80,6 +80,7 @@ const HomeHeader = () => {
             placeholder={t("home.searchPlaceholder")}
             blind
           />
+          <button type="submit" className="header-search-btn" aria-label={t("home.searchLabel")}>🔍</button>
         </form>
       </div>
     </header>

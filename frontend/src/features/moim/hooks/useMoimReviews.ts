@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "@/shared/api/client";
 import { getApiLang } from "@/shared/utils/lang";
+import useTranslationCatchup from "@/shared/hooks/useTranslationCatchup";
 
 export interface MoimReview {
   userNm: string;
@@ -11,7 +12,7 @@ export interface MoimReview {
 }
 
 export const useMoimReviews = (moimId: string) => {
-  return useQuery({
+  const query = useQuery({
     queryKey: ["moimReviews", moimId, getApiLang()],
     queryFn: async () => {
       const result = await apiClient.get<{ data: MoimReview[] }>(`/moimList/${moimId}/reviews`, { lang: getApiLang() });
@@ -20,6 +21,10 @@ export const useMoimReviews = (moimId: string) => {
     },
     enabled: !!moimId,
   });
+
+  useTranslationCatchup(query.refetch, !query.isLoading && !!moimId);
+
+  return query;
 };
 
 export default useMoimReviews;

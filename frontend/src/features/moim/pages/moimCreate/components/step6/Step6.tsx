@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import Button from "@/shared/components/button/Button";
 import { apiClient } from "@/shared/api/client";
 import { formatDateWithDow, formatMonthDayWithDow } from "@/shared/utils/date";
+import { translateCategoryList } from "@/shared/utils/category";
 import type { MoimCreateForm } from "@/types/moim";
 import type { PlanItem } from "../../MoimCreate";
 import type { UseFormSetValue, UseFormWatch } from "react-hook-form";
@@ -38,9 +39,10 @@ const Step6 = ({ watch, setValue, itemsByDay, onPrev, isSubmitting }: Step6Props
       allItems
         .filter((item) => item.sidoNm === withSido.sidoNm && item.sggNm)
         .map((item) => item.sggNm as string)
-    ));
-    return sggNames.length ? `${withSido.sidoNm} ${sggNames.join(', ')}` : withSido.sidoNm;
-  }, [itemsByDay]);
+    )).map((name) => t(name));
+    const sidoLabel = t(withSido.sidoNm as string);
+    return sggNames.length ? `${sidoLabel} ${sggNames.join(', ')}` : sidoLabel;
+  }, [itemsByDay, t]);
 
   const handlePhotoSelect = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -78,7 +80,7 @@ const Step6 = ({ watch, setValue, itemsByDay, onPrev, isSubmitting }: Step6Props
 
       <div className="step6-tags">
         {(moimCateData ?? []).slice(0, 1).map((cate) => (
-          <span key={cate.cateCd} className="tag-badge">{t(cate.cateNm ?? "")}</span>
+          <span key={cate.cateCd} className="tag-badge">{translateCategoryList(cate.cateNm, t)}</span>
         ))}
         <span className="tag-badge tag-badge-muted">{t("moimCreate.step3.daysOption", { count: dayCount })}</span>
         <span className="tag-badge tag-badge-muted">{t("moimCreate.step6.tagRecruit")}</span>

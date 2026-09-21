@@ -13,6 +13,14 @@
             parameterType="com.example.backend.trma.dto.request.TourSearchRequest"
             resultType="com.example.backend.trma.dto.dataList.TourSearchData">
 
+        <!-- 카테고리(d)/시도명(c1)/시군구명(c2) 같은 무거운 조인들을 조건절에 그대로
+             걸어두면, ORDER BY + LIMIT으로 최종 10건만 필요한데도 옵티마이저가 LIMIT 적용
+             전에 전체 매칭 대상(4000여 건)에 대해 그 조인들을 다 계산해버려 조회가
+             300ms 넘게 걸렸다(특히 카테고리 GROUP_CONCAT 조인 하나만으로 12ms -> 250ms
+             수준으로 튀었다). "정렬/필터링에 필요한 최소 컬럼(AVG_SCORE)만으로 먼저
+             TOUR_ID 10건을 뽑고, 그 10건에 대해서만 나머지 상세 컬럼을 붙이는" 2단계
+             구조로 바꿔서 무거운 조인들이 LIMIT 이후의 10건에 대해서만 실행되게 했다
+             (약 340ms -> 80ms). -->
         SELECT
             b.TOUR_ID,
             <choose>
@@ -39,7 +47,7 @@
             b.ZIP_CD,
             d.CATE_CD,
             d.CATE_NM,
-            IFNULL(a.AVG_SCORE,0) AS AVG_SCORE,
+            ids.AVG_SCORE,
             <choose>
                 <when test="lang == 'en'">COALESCE(NULLIF(en.FIRST_IMAGE, ''), b.FIRST_IMAGE) AS FIRST_IMAGE,</when>
                 <when test="lang == 'ja'">COALESCE(NULLIF(jp.FIRST_IMAGE, ''), b.FIRST_IMAGE) AS FIRST_IMAGE,</when>
@@ -54,14 +62,85 @@
                 <when test="lang == 'ja'">(CASE WHEN jp.TOUR_ID IS NOT NULL THEN 'Y' ELSE 'N' END) AS NATIVE_MATCH_YN</when>
                 <otherwise>'N' AS NATIVE_MATCH_YN</otherwise>
             </choose>
-        FROM TB_TRMA_TOUR_LIST b
-            LEFT JOIN (
-                SELECT
-                TOUR_ID,
-                AVG(REVIEW_SCORE) AS AVG_SCORE
-                FROM TB_TRMA_MOIM_REVIEW
-                GROUP BY TOUR_ID
-            ) a ON b.TOUR_ID = a.TOUR_ID
+        FROM (
+            SELECT
+                b.TOUR_ID,
+                IFNULL(a.AVG_SCORE,0) AS AVG_SCORE
+            FROM TB_TRMA_TOUR_LIST b
+                LEFT JOIN (
+                    SELECT
+                    TOUR_ID,
+                    AVG(REVIEW_SCORE) AS AVG_SCORE
+                    FROM TB_TRMA_MOIM_REVIEW
+                    GROUP BY TOUR_ID
+                ) a ON b.TOUR_ID = a.TOUR_ID
+                <!-- 같은 주소로 여러 번 등록된 관광지(주로 사용자가 직접 입력한 UGC 관광지가
+                     중복 등록된 경우)는 주소당 하나만 보여준다. 대표로는 그 주소를 쓰는
+                     관광지 중 TOUR_ID가 가장 작은(=가장 먼저 등록된) 것만 남기고 나머지는
+                     제외한다.
+                     예전에는 이걸 행마다 다시 실행되는 상관 서브쿼리(dependent subquery)로
+                     처리했는데, ORDER BY 정렬 때문에 LIMIT 적용 전 전체 4500여 건을 다
+                     모아야 해서 서브쿼리가 매번 다시 실행돼 조회가 1.6초 넘게 걸렸다.
+                     "주소별 대표 TOUR_ID 전체(4500여 건)"를 조인하는 대신, 실제로 중복인
+                     주소는 120건 정도뿐이라는 점을 이용해 "제외해야 할(대표가 아닌) TOUR_ID"만
+                     작게 모아 조인하면 훨씬 빠르다. ROAD_ADDR가 빈 문자열('')인 관광지가
+                     941건 있는데, 이걸 걸러내지 않으면 "빈 주소끼리 전부 서로 중복"으로
+                     취급돼 44만 건 넘는 매칭이 생기면서 쿼리가 다시 느려지고, 주소가 없는
+                     관광지 900여 건이 검색 결과에서 부당하게 숨겨지는 버그가 있었다. -->
+                LEFT JOIN (
+                    SELECT b1.TOUR_ID
+                    FROM TB_TRMA_TOUR_LIST b1
+                    JOIN TB_TRMA_TOUR_LIST b2
+                        ON b2.ROAD_ADDR = b1.ROAD_ADDR
+                        AND b2.USE_YN = 'Y'
+                        AND b2.TOUR_ID &lt; b1.TOUR_ID
+                    WHERE b1.USE_YN = 'Y' AND b1.ROAD_ADDR IS NOT NULL AND b1.ROAD_ADDR != ''
+                ) dup ON dup.TOUR_ID = b.TOUR_ID
+            WHERE b.USE_YN='Y'
+            <!-- c1(시도명)/c2(시군구명)도 LIKE 대상에 넣었었는데, ROAD_ADDR 자체에
+                 이미 시도/시군구명이 포함돼 있어 실제 매칭 결과는 완전히 동일하면서
+                 (직접 비교 확인함) CMM_CD_D 조인 조건이 CONCAT 함수 기반이라 인덱스를
+                 못 타 쿼리 전체가 5개 OR 조건에서는 0.1초, 3개로 줄이면 0.03초로
+                 3배 이상 빨라졌다. -->
+            <if test="keyword != null and keyword != ''">
+                AND (
+                b.TOUR_NM LIKE CONCAT('%', #{keyword}, '%')
+                OR b.TOUR_CONTENT LIKE CONCAT('%', #{keyword}, '%')
+                OR b.ROAD_ADDR LIKE CONCAT('%', #{keyword}, '%')
+                )
+            </if>
+            <!-- 카테고리는 관광지 1건당 1개뿐이라(다대다 아님) GROUP_CONCAT 조인 없이
+                 EXISTS로 직접 확인할 수 있고, 이러면 카테고리 조인을 LIMIT 이전 단계에서
+                 아예 계산하지 않아도 된다. -->
+            <if test="cateCd != null and cateCd != ''">
+                AND EXISTS (
+                    SELECT 1 FROM TB_TRMA_TOUR_CATE tc2
+                    WHERE tc2.TOUR_ID = b.TOUR_ID AND tc2.CATE_CD = #{cateCd}
+                )
+            </if>
+            <!-- 지역 탭: 도로명주소가 그 지역명으로 "시작"하는 것만 정확히 매칭한다(도중에
+                 섞여 들어가는 "세종대로"/"세종대왕" 같은 우연한 일치를 피한다). SIDO_CD/
+                 CMM_CD_D 매핑이 지역에 따라 비어 있는 경우가 있어(세종 등) SIDO_NM 대신
+                 주소 원문을 직접 쓴다. -->
+            <if test="region != null and region != '' and region != 'OTHER'">
+                AND b.ROAD_ADDR LIKE CONCAT(#{region}, '%')
+            </if>
+            <if test="region == 'OTHER'">
+                AND NOT (
+                    b.ROAD_ADDR LIKE '세종%'
+                    OR b.ROAD_ADDR LIKE '서울%'
+                    OR b.ROAD_ADDR LIKE '부산%'
+                    OR b.ROAD_ADDR LIKE '제주%'
+                )
+            </if>
+            AND dup.TOUR_ID IS NULL
+            <!-- 사용자가 직접 등록한 관광지(UGC, TOUR_ID가 "UGC"로 시작, 65건)는 공공데이터
+                 기반 정식 관광지(4500여 건)보다 뒤에 나오도록 먼저 구분하고, 그 안에서는
+                 기존처럼 평점 높은 순으로 정렬한다. -->
+            ORDER BY (CASE WHEN b.TOUR_ID LIKE 'UGC%' THEN 1 ELSE 0 END) ASC, AVG_SCORE DESC
+            LIMIT 10 OFFSET #{offset}
+        ) ids
+            JOIN TB_TRMA_TOUR_LIST b ON b.TOUR_ID = ids.TOUR_ID
             LEFT JOIN (
                 SELECT
                 tc.TOUR_ID,
@@ -77,33 +156,7 @@
             LEFT JOIN TB_TRMA_CMM_CD_D c2 ON CONCAT(b.SIDO_CD,b.SGG_CD,'00000') = c2.CMM_CDV AND c2.CMM_CD_ID = 'SGG_CD'
             <if test="lang == 'en'">LEFT JOIN TB_TRMA_TOUR_EN_LIST en ON b.TOUR_ID = en.TOUR_ID</if>
             <if test="lang == 'ja'">LEFT JOIN TB_TRMA_TOUR_JP_LIST jp ON b.TOUR_ID = jp.TOUR_ID</if>
-        WHERE b.USE_YN='Y'
-        <if test="keyword != null and keyword != ''">
-            AND (
-            b.TOUR_NM LIKE CONCAT('%', #{keyword}, '%')
-            OR b.TOUR_CONTENT LIKE CONCAT('%', #{keyword}, '%')
-            OR b.ROAD_ADDR LIKE CONCAT('%', #{keyword}, '%')
-            OR c1.CMM_CM_NM LIKE CONCAT('%', #{keyword}, '%')
-            OR c2.CMM_CM_NM LIKE CONCAT('%', #{keyword}, '%')
-            )
-        </if>
-        <if test="cateCd != null and cateCd != ''">
-            AND d.CATE_CD = #{cateCd}
-        </if>
-        <!-- 같은 주소로 여러 번 등록된 관광지(주로 사용자가 직접 입력한 UGC 관광지가
-             중복 등록된 경우)는 주소당 하나만 보여준다. 대표로는 그 주소를 쓰는
-             관광지 중 TOUR_ID가 가장 작은(=가장 먼저 등록된) 것을 고른다. -->
-        AND (
-            b.ROAD_ADDR IS NULL
-            OR b.TOUR_ID = (
-                SELECT MIN(b2.TOUR_ID)
-                FROM TB_TRMA_TOUR_LIST b2
-                WHERE b2.ROAD_ADDR = b.ROAD_ADDR
-                    AND b2.USE_YN = 'Y'
-            )
-        )
-        ORDER BY AVG_SCORE DESC
-        LIMIT 10 OFFSET #{offset}
+        ORDER BY (CASE WHEN b.TOUR_ID LIKE 'UGC%' THEN 1 ELSE 0 END) ASC, ids.AVG_SCORE DESC
 
     </select>
 
@@ -182,6 +235,7 @@
             </choose>
             a.MAP_Y AS LATITUDE,
             a.MAP_X AS LONGITUDE,
+            a.ROAD_ADDR AS ROAD_ADDR_KO,
             a.TOUR_NM_EN,
             a.TOUR_NM_JA,
             a.TOUR_CONTENT_EN AS OVERVIEW_EN,
@@ -223,7 +277,7 @@
                 JOIN TB_TRMA_CMM_CD_D d ON c.CATE_CD = d.CMM_CDV AND d.CMM_CD_ID = 'TOUR_LCLS_CD'
                 WHERE c.TOUR_ID = a.TOUR_ID
             ) AS CATE_NM,
-            IFNULL(c.AVG_SCORE,0) AS AVG_SCORE,
+            IFNULL((SELECT AVG(rv.REVIEW_SCORE) FROM TB_TRMA_MOIM_REVIEW rv WHERE rv.TOUR_ID = a.TOUR_ID), 0) AS AVG_SCORE,
             <!-- 위에서 공식 일어/영어 데이터를 이미 썼으면(NATIVE_MATCH_YN='Y') 서비스
                  계층에서 Gemini 번역을 다시 시도하지 않고 그대로 둔다. -->
             <choose>
@@ -234,13 +288,9 @@
         FROM TB_TRMA_TOUR_LIST a
         LEFT JOIN TB_TRMA_CMM_CD_D b1 ON CONCAT(a.SIDO_CD,'00000000') = b1.CMM_CDV AND b1.CMM_CD_ID = 'SIDO_CD'
         LEFT JOIN TB_TRMA_CMM_CD_D b2 ON CONCAT(a.SIDO_CD,a.SGG_CD,'00000') = b2.CMM_CDV AND b2.CMM_CD_ID = 'SGG_CD'
-        LEFT JOIN (
-            SELECT
-            TOUR_ID,
-            AVG(REVIEW_SCORE) AS AVG_SCORE
-            FROM TB_TRMA_MOIM_REVIEW
-            GROUP BY TOUR_ID
-        ) c ON a.TOUR_ID = c.TOUR_ID
+        <!-- 예전에는 리뷰 평점 평균을 시스템 전체 관광지 기준으로 먼저 GROUP BY로
+             다 집계한 뒤 이 관광지 하나만 조인해서 썼다. 상세조회는 애초에 한 건만
+             보므로, 이 관광지 리뷰만 바로 스칼라 서브쿼리로 집계한다(위 AVG_SCORE). -->
         <if test="lang == 'en'">LEFT JOIN TB_TRMA_TOUR_EN_LIST en ON a.TOUR_ID = en.TOUR_ID</if>
         <if test="lang == 'ja'">LEFT JOIN TB_TRMA_TOUR_JP_LIST jp ON a.TOUR_ID = jp.TOUR_ID</if>
         WHERE 1=1
@@ -261,6 +311,14 @@
             </choose>
             ,b.TOUR_NM_EN
             ,b.TOUR_NM_JA
+            ,b.FIRST_IMAGE
+            <choose>
+                <when test="lang == 'en'">,COALESCE(NULLIF(en.ROAD_ADDR, ''), b.ROAD_ADDR) AS ROAD_ADDR</when>
+                <when test="lang == 'ja'">,COALESCE(NULLIF(jp.ROAD_ADDR, ''), b.ROAD_ADDR) AS ROAD_ADDR</when>
+                <otherwise>,b.ROAD_ADDR</otherwise>
+            </choose>
+            ,b.ROAD_ADDR_EN
+            ,b.ROAD_ADDR_JA
             <choose>
                 <when test="lang == 'en'">,(CASE WHEN en.TOUR_ID IS NOT NULL THEN 'Y' ELSE 'N' END) AS NATIVE_MATCH_YN</when>
                 <when test="lang == 'ja'">,(CASE WHEN jp.TOUR_ID IS NOT NULL THEN 'Y' ELSE 'N' END) AS NATIVE_MATCH_YN</when>
@@ -270,6 +328,22 @@
         <if test="lang == 'en'">LEFT JOIN TB_TRMA_TOUR_EN_LIST en ON b.TOUR_ID = en.TOUR_ID</if>
         <if test="lang == 'ja'">LEFT JOIN TB_TRMA_TOUR_JP_LIST jp ON b.TOUR_ID = jp.TOUR_ID</if>
         WHERE b.TOUR_ID IN
+        <foreach collection="tourIds" item="tourId" open="(" separator="," close=")">
+            #{tourId}
+        </foreach>
+    </select>
+
+    <!-- ========================= -->
+    <!-- 관광지 좌표 일괄 조회(실시간 길찾기용) -->
+    <!-- ========================= -->
+    <select id="tourCoordinatesByIds"
+            resultType="com.example.backend.trma.dto.dataList.TourCoordinateData">
+        SELECT
+            TOUR_ID
+            ,MAP_Y AS LATITUDE
+            ,MAP_X AS LONGITUDE
+        FROM TB_TRMA_TOUR_LIST
+        WHERE TOUR_ID IN
         <foreach collection="tourIds" item="tourId" open="(" separator="," close=")">
             #{tourId}
         </foreach>

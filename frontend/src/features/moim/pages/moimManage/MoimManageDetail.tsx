@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useParams, useSearchParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
 import FilterTabs from '@/shared/components/filterTabs/FilterTabs';
 import ChatRoom from '@/features/chat/components/ChatRoom';
 import useMoimDetail from '../../hooks/useMoimDetail';
 import useMoimMembers from '../../hooks/useMoimMembers';
+import useUser from '@/shared/hooks/useUser';
 import useUpdateMoimMember from '../../hooks/useUpdateMoimMember';
 import { useTransportRecommend, type TransportLeg } from '../../hooks/useTransportRecommend';
 import DaySchedule, { type ScheduleItem } from '@/shared/components/daySchedule/DaySchedule';
@@ -35,9 +36,11 @@ const MANAGE_TABS: ManageTab[] = ['applicants', 'members', 'chat', 'schedule'];
 
 const MoimManageDetail = () => {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const { showAlert, showConfirm } = useAlert();
   const queryClient = useQueryClient();
   const { moimId } = useParams<{ moimId: string }>();
+  const [isDeleting, setIsDeleting] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
   const tabFromUrl = searchParams.get('tab') as ManageTab | null;
   const [tab, setTab] = useState<ManageTab>(
@@ -56,10 +59,42 @@ const MoimManageDetail = () => {
   // 업로드 기록은 있는데 실제 파일이 없어져 깨진 이미지 아이콘으로 뜨는 경우를 대비한 안전장치.
   const [brokenAvatars, setBrokenAvatars] = useState<Set<string>>(new Set());
 
-  const { data: result } = useMoimDetail(moimId!);
+  const { data: result, isError: isDetailError, error: detailError } = useMoimDetail(moimId!);
   const { data: members, isLoading, isError } = useMoimMembers(moimId!);
+  const { data: user } = useUser();
+  const isHost = !!user && !!result && user.userId === result.data.userId;
   const [actionError, setActionError] = useState('');
   const updateMember = useUpdateMoimMember(moimId!);
+
+  // 알림에 남아있는 링크 등으로 이미 삭제된 소모임의 관리 화면에 들어온 경우,
+  // 삭제됐다는 걸 명확히 알리고 내 모임 관리 목록으로 돌려보낸다.
+  useEffect(() => {
+    if (isDetailError && (detailError as { code?: string } | null)?.code === 'MOIM_DELETED') {
+      showAlert(t('moim.deletedNotice'));
+      navigate('/moimManage', { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isDetailError, detailError]);
+
+  const deleteMoim = () => {
+    showConfirm(t('moim.deleteConfirm'), {
+      confirmText: t('moim.delete'),
+      onConfirm: async () => {
+        setIsDeleting(true);
+        const res = await apiClient.delete(`/moimList/${moimId}`);
+        setIsDeleting(false);
+        if (!res.success) {
+          showAlert(t('moim.deleteFailed'));
+          return;
+        }
+        // 삭제된 모임의 캐시가 남아있으면 목록/관리 화면으로 돌아갔을 때 잠깐이라도
+        // 다시 보일 수 있어 함께 비운다.
+        queryClient.invalidateQueries({ queryKey: ['myMoim'] });
+        showAlert(t('moim.deleteSuccess'));
+        navigate('/moimManage', { replace: true });
+      },
+    });
+  };
 
   // 채팅과 마찬가지로, 알림을 거치지 않고 모임 관리 화면에 바로 들어와 신청자 목록을
   // 조회한 것만으로도 그 모임의 가입 신청 알림이 읽음 처리되도록 한다.
@@ -138,7 +173,7 @@ const MoimManageDetail = () => {
         ? Math.round((new Date(item.startDt).getTime() - new Date(moimStartDt).getTime()) / 86400000) + 1
         : 1;
       const list = grouped[dayIndex] ?? [];
-      list.push({ id: `${item.tourId}-${item.startDt}-${item.rmks}`, time: item.rmks, placeName: item.tourNm, tourId: item.tourId });
+      list.push({ id: `${item.tourId}-${item.startDt}-${item.rmks}`, time: item.rmks, placeName: item.tourNm, tourId: item.tourId, imageUrl: item.firstImage });
       grouped[dayIndex] = list;
     });
 
@@ -278,11 +313,13 @@ const MoimManageDetail = () => {
               {actionError && <p className="manage-action-error" role="alert">{actionError}</p>}
               <div className="applicant-list-head">
                 <span>{t('moim.applicantList')} · {t('moim.waitingCount', { count: pendingMembers.length })}</span>
-                <button type="button" onClick={toggleSelectAll}>
-                  {allSelected ? t('common.deselectAll') : t('common.selectAll')}
-                </button>
+                {isHost && (
+                  <button type="button" onClick={toggleSelectAll}>
+                    {allSelected ? t('common.deselectAll') : t('common.selectAll')}
+                  </button>
+                )}
               </div>
-              {selected.size > 0 && (
+              {isHost && selected.size > 0 && (
                 <button
                   type="button"
                   className="applicant-approve-selected"
@@ -295,14 +332,16 @@ const MoimManageDetail = () => {
               <ul className="applicant-list">
                 {pendingMembers.map((member) => (
                   <li key={member.userId}>
-                    <label className="applicant-checkbox">
-                      <input
-                        type="checkbox"
-                        checked={selected.has(member.userId)}
-                        onChange={() => toggleSelect(member.userId)}
-                        aria-label={t('moim.selectApplicant', { name: member.userNm })}
-                      />
-                    </label>
+                    {isHost && (
+                      <label className="applicant-checkbox">
+                        <input
+                          type="checkbox"
+                          checked={selected.has(member.userId)}
+                          onChange={() => toggleSelect(member.userId)}
+                          aria-label={t('moim.selectApplicant', { name: member.userNm })}
+                        />
+                      </label>
+                    )}
                     {member.profileImgUrl && !brokenAvatars.has(member.userId) ? (
                       <img
                         className="applicant-avatar"
@@ -314,36 +353,38 @@ const MoimManageDetail = () => {
                       <div className="applicant-avatar" aria-hidden="true">🙂</div>
                     )}
                     <span className="applicant-name">{member.userNm}</span>
-                    <div className="applicant-actions">
-                      <button
-                        type="button"
-                        className="applicant-approve"
-                        aria-label={t('moim.approve')}
-                        disabled={updateMember.isPending}
-                        onClick={() => {
-                          setActionError('');
-                          updateMember.mutate({ userId: member.userId, approve: true }, {
-                            onError: () => setActionError(t('moim.approveFailed')),
-                          });
-                        }}
-                      >
-                        ✓
-                      </button>
-                      <button
-                        type="button"
-                        className="applicant-reject"
-                        aria-label={t('moim.reject')}
-                        disabled={updateMember.isPending}
-                        onClick={() => {
-                          setActionError('');
-                          updateMember.mutate({ userId: member.userId, approve: false }, {
-                            onError: () => setActionError(t('moim.approveFailed')),
-                          });
-                        }}
-                      >
-                        ✕
-                      </button>
-                    </div>
+                    {isHost && (
+                      <div className="applicant-actions">
+                        <button
+                          type="button"
+                          className="applicant-approve"
+                          aria-label={t('moim.approve')}
+                          disabled={updateMember.isPending}
+                          onClick={() => {
+                            setActionError('');
+                            updateMember.mutate({ userId: member.userId, approve: true }, {
+                              onError: () => setActionError(t('moim.approveFailed')),
+                            });
+                          }}
+                        >
+                          ✓
+                        </button>
+                        <button
+                          type="button"
+                          className="applicant-reject"
+                          aria-label={t('moim.reject')}
+                          disabled={updateMember.isPending}
+                          onClick={() => {
+                            setActionError('');
+                            updateMember.mutate({ userId: member.userId, approve: false }, {
+                              onError: () => setActionError(t('moim.approveFailed')),
+                            });
+                          }}
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    )}
                   </li>
                 ))}
               </ul>
@@ -380,7 +421,7 @@ const MoimManageDetail = () => {
                       {member.userNm}
                       {member.roleCd === 'A' && <span className="member-host-badge">{t('moim.hostBadge')}</span>}
                     </span>
-                    {member.roleCd !== 'A' && (
+                    {isHost && member.roleCd !== 'A' && (
                       <div className="applicant-actions">
                         <button
                           type="button"
@@ -414,9 +455,9 @@ const MoimManageDetail = () => {
           ) : (
             <>
               <p className="schedule-date-range">{moimStartDt} ~ {moimEndDt}</p>
-              {planError && <p className="manage-action-error" role="alert">{planError}</p>}
+              {isHost && planError && <p className="manage-action-error" role="alert">{planError}</p>}
 
-              {totalItemCount >= 2 && (
+              {isHost && totalItemCount >= 2 && (
                 <div className="manage-transport-trigger">
                   <Button
                     text={transportRecommend.isPending ? t('common.saving') : t('moim.transportRecommend')}
@@ -441,7 +482,7 @@ const MoimManageDetail = () => {
                       day={day}
                       date={date ? formatMonthDay(date) : `${day}`}
                       items={itemsByDay[day] ?? []}
-                      mode="edit"
+                      mode={isHost ? "edit" : "view"}
                       onRemove={(id) => removeItem(day, id)}
                       onAddClick={() => openSpotSearch(day)}
                       onTimeChange={(id, time) => changeItemTime(day, id, time)}
@@ -451,7 +492,7 @@ const MoimManageDetail = () => {
                         return leg ? <TransportLegView leg={leg} /> : null;
                       }}
                     />
-                    {addingDay === day && (
+                    {isHost && addingDay === day && (
                       <div className="schedule-spot-search">
                         <input
                           type="text"
@@ -481,16 +522,31 @@ const MoimManageDetail = () => {
                 );
               })}
 
-              <div className="schedule-save-row">
-                <Button
-                  text={planSaving ? t('common.saving') : t('common.submit')}
-                  onClick={savePlan}
-                  disabled={planSaving}
-                />
-              </div>
+              {isHost && (
+                <div className="schedule-save-row">
+                  <Button
+                    text={planSaving ? t('common.saving') : t('common.submit')}
+                    onClick={savePlan}
+                    disabled={planSaving}
+                  />
+                </div>
+              )}
             </>
           )}
         </section>
+      )}
+
+      {isHost && (
+        <div className="manage-detail-delete-row">
+          <button
+            type="button"
+            className="manage-delete-btn"
+            onClick={deleteMoim}
+            disabled={isDeleting}
+          >
+            {isDeleting ? t('common.saving') : t('moim.delete')}
+          </button>
+        </div>
       )}
     </div>
   );

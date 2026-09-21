@@ -3,8 +3,10 @@ import type { RouteHandle } from '@/routes/path/paths';
 import { useTranslation } from 'react-i18next';
 import PageHeader from './components/header/pageHeader/PageHeader'
 import Navigation from './components/nav/Navigation';
+import useScrollToTop from '@/shared/hooks/useScrollToTop'
 
 const ContentLayout = () => {
+  useScrollToTop();
   const { t } = useTranslation();
   const matches = useMatches();
   const current = [...matches].reverse().find((m) => (m.handle as RouteHandle)?.title);

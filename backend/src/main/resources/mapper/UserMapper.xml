@@ -229,8 +229,11 @@
         <!-- 받은 후기: 내가 호스트인 모임에 달린 후기 + 내가 직접 남긴 후기(테스트 계정처럼
              본인 모임에 스스로 후기를 남기는 경우도 포함). userDetail의 카운트와 동일한 기준. -->
         SELECT
-            b.REVIEW_TITLE
+            b.REVIEW_ID
+            ,b.REVIEW_TITLE
             ,b.REVIEW_CONTENT
+            ,b.REVIEW_CONTENT_EN
+            ,b.REVIEW_CONTENT_JA
             ,b.REVIEW_SCORE
             ,c.USER_NM
             ,c.PROFILE_IMG_URL

@@ -17,6 +17,9 @@ const useUser = () => {
 
           return result.data.data;
         },
+        // 로그인 여부는 앱 전역 staleTime 기본값(60초)을 따르지 않고 항상 새로 확인한다
+        // (세션 만료/로그아웃 직후에도 잠깐 "로그인된 것처럼" 보이면 안 되므로).
+        staleTime: 0,
     });
 }
 export default useUser

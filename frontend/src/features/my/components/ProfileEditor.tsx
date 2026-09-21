@@ -54,6 +54,8 @@ export default function ProfileEditor() {
   // 새로 고른 프로필 이미지는 "완료"를 눌러 저장하기 전까지는 미리보기용으로만 들고
   // 있는다. 이 값이 없으면 업로드를 아예 안 한 것이므로 기존 이미지를 그대로 쓴다.
   const [pendingImageUrl, setPendingImageUrl] = useState<string | null>(null);
+  // 업로드 기록은 있는데 실제 파일이 없어져 깨진 이미지 아이콘으로 뜨는 경우를 대비한 안전장치.
+  const [avatarBroken, setAvatarBroken] = useState(false);
 
   useEffect(() => {
     if (profile.data) {
@@ -115,6 +117,7 @@ export default function ProfileEditor() {
       if (!r.success) throw r;
       // 서버에 올리기만 하고, 실제 프로필 반영은 "완료"를 눌렀을 때 onSubmit에서 한다.
       setPendingImageUrl(r.data.data.url);
+      setAvatarBroken(false);
     } catch {
       setUploadError(t('my.uploadFailed'));
     }
@@ -132,7 +135,18 @@ export default function ProfileEditor() {
   return (
     <section className="profile-editor">
       <div className="profile-editor-avatar-row">
-        <img className="profile-editor-avatar" src={pendingImageUrl ? resolveImageUrl(pendingImageUrl) : profile.data.profileImageUrl ? resolveImageUrl(profile.data.profileImageUrl) : '/images/places/no-image.svg'} alt={t('image.profilePhoto', { name: profile.data.userNm })} />
+        <img
+          className="profile-editor-avatar"
+          src={
+            !avatarBroken && pendingImageUrl
+              ? resolveImageUrl(pendingImageUrl)
+              : !avatarBroken && profile.data.profileImageUrl
+                ? resolveImageUrl(profile.data.profileImageUrl)
+                : '/images/places/no-image.svg'
+          }
+          alt={t('image.profilePhoto', { name: profile.data.userNm })}
+          onError={() => setAvatarBroken(true)}
+        />
         <label className="profile-editor-upload">
           {t('account.edit')}
           <input type="file" accept="image/*" onChange={(event) => void uploadImage(event.target.files?.[0])} />

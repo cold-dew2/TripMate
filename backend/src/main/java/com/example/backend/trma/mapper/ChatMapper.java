@@ -60,6 +60,9 @@ public interface ChatMapper {
     //채팅방 나가기(멤버 행 삭제)
     int deleteChatMember(@Param("roomId") String roomId, @Param("userId") String userId);
 
+    //소모임 삭제 시 그 채팅방에 남아있던 멤버 전원 삭제
+    int deleteAllChatMembersByRoom(@Param("roomId") String roomId);
+
     //모임에서 추방/거절됐을 때 채팅방 멤버 상태를 추방으로 표시(행은 남겨둠)
     int markChatMemberKicked(@Param("roomId") String roomId, @Param("userId") String userId);
 

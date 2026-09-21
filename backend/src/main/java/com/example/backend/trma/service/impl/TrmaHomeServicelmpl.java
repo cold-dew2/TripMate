@@ -7,10 +7,12 @@ import com.example.backend.trma.dto.dataList.BestMoimListData;
 import com.example.backend.trma.dto.request.TourCategoryRequest;
 import com.example.backend.trma.dto.request.UserInfoRequest;
 import com.example.backend.trma.dto.response.*;
+import com.example.backend.trma.mapper.TourListMapper;
 import com.example.backend.trma.mapper.TrmaHomeMapper;
 import com.example.backend.trma.service.MoimListService;
 import com.example.backend.trma.service.TourListService;
 import com.example.backend.trma.service.TrmaHomeService;
+import com.example.backend.trma.util.AiJsonUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -18,6 +20,9 @@ import org.springframework.stereotype.Service;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 @Service
 @RequiredArgsConstructor
@@ -25,6 +30,7 @@ import java.util.Map;
 public class TrmaHomeServicelmpl implements TrmaHomeService {
 
     private final TrmaHomeMapper trmaHomeMapper;
+    private final TourListMapper tourListMapper;
     private final TourListService tourListService;
     private final MoimListService moimListService;
 
@@ -91,7 +97,17 @@ public class TrmaHomeServicelmpl implements TrmaHomeService {
 
         try {
             List<BestTourListData> BestTourList = trmaHomeMapper.bestTourList();
-            applyBestTourTranslations(BestTourList, lang);
+            // 홈 화면은 가장 먼저 보이는 화면이라 번역 대기를 최대 0.5초로 제한한다.
+            // 못 끝나면 한국어로라도 바로 보여주고, 번역은 백그라운드에서 계속 돌아
+            // 캐시에 저장돼 다음부터는 즉시 나온다.
+            try {
+                CompletableFuture.runAsync(() -> applyBestTourTranslations(BestTourList, lang))
+                        .get(500, TimeUnit.MILLISECONDS);
+            } catch (TimeoutException e) {
+                log.warn("인기 관광지 번역이 0.5초 안에 끝나지 않아 한국어로 먼저 응답합니다. lang={}", lang);
+            } catch (Exception e) {
+                log.warn("인기 관광지 번역 대기 중 오류가 발생했습니다. lang={}", lang, e);
+            }
 
             return new BestTourListResponse(
                     true,
@@ -121,7 +137,14 @@ public class TrmaHomeServicelmpl implements TrmaHomeService {
 
         try {
             List<BestMoimListData> bestMoimList = trmaHomeMapper.bestMoimList();
-            applyBestMoimTranslations(bestMoimList, lang);
+            try {
+                CompletableFuture.runAsync(() -> applyBestMoimTranslations(bestMoimList, lang))
+                        .get(500, TimeUnit.MILLISECONDS);
+            } catch (TimeoutException e) {
+                log.warn("인기 모임 번역이 0.5초 안에 끝나지 않아 한국어로 먼저 응답합니다. lang={}", lang);
+            } catch (Exception e) {
+                log.warn("인기 모임 번역 대기 중 오류가 발생했습니다. lang={}", lang, e);
+            }
 
             return new BestMoimListResponse(
                     true,
@@ -147,9 +170,10 @@ public class TrmaHomeServicelmpl implements TrmaHomeService {
     }
 
     // ========================= 홈 화면 번역 =========================
-    // 홈의 "인기 관광지"/"인기 모임"은 개수가 적어(4~8개) 캐시 없이 매번 번역해도 부담이
-    // 크지 않다. 관광지명/소모임 제목은 각 서비스가 이미 제공하는 캐시 우선 번역기를
-    // 재사용하고, 관광지 주소만 캐시 없는 범용 번역기로 그때그때 번역한다.
+    // 관광지명/소모임 제목은 각 서비스가 이미 제공하는 캐시 우선 번역기를 재사용한다.
+    // 주소도 ROAD_ADDR_EN/JA에 캐시해 재사용한다 — 인기 관광지는 홈 화면에 계속 다시
+    // 노출되므로(요청마다 매번) 캐시 없이 매번 Gemini를 부르면 홈 로딩이 눈에 띄게
+    // 느려진다(관광지 목록의 주소 번역과 동일한 문제였다).
     private void applyBestTourTranslations(List<BestTourListData> tours, String lang) {
         if (!"en".equals(lang) && !"ja".equals(lang)) return;
         if (tours == null || tours.isEmpty()) return;
@@ -163,12 +187,32 @@ public class TrmaHomeServicelmpl implements TrmaHomeService {
 
         Map<String, String> addrsInput = new LinkedHashMap<>();
         for (BestTourListData tour : tours) {
-            addrsInput.put(tour.getTourId(), tour.getRoadAddr());
+            String cached = "en".equals(lang) ? tour.getRoadAddrEn() : tour.getRoadAddrJa();
+            if (cached != null && !cached.isBlank() && !AiJsonUtil.containsHangul(cached)) {
+                tour.setRoadAddr(cached);
+            } else {
+                addrsInput.put(tour.getTourId(), tour.getRoadAddr());
+            }
         }
+        if (addrsInput.isEmpty()) return;
+
         Map<String, String> addrs = tourListService.translateFreeTexts(addrsInput, lang);
         for (BestTourListData tour : tours) {
             String addr = addrs.get(tour.getTourId());
-            if (addr != null && !addr.isBlank()) tour.setRoadAddr(addr);
+            if (addr == null || addr.isBlank()) continue;
+
+            tourListMapper.updateTourTranslation(
+                    tour.getTourId(),
+                    null,
+                    null,
+                    null,
+                    null,
+                    "en".equals(lang) ? addr : null,
+                    "ja".equals(lang) ? addr : null,
+                    null,
+                    null
+            );
+            tour.setRoadAddr(addr);
         }
     }
 
@@ -181,6 +225,12 @@ public class TrmaHomeServicelmpl implements TrmaHomeService {
         for (BestMoimListData moim : moims) {
             String title = titles.get(moim.getMoimId());
             if (title != null && !title.isBlank()) moim.setMoimTitle(title);
+        }
+
+        Map<String, String> dscrs = moimListService.translateMoimDescriptions(moimIds, lang);
+        for (BestMoimListData moim : moims) {
+            String dscr = dscrs.get(moim.getMoimId());
+            if (dscr != null && !dscr.isBlank()) moim.setMoimDscr(dscr);
         }
     }
 }

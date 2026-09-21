@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { usePlaceAIDetail } from '@/features/place/hooks/usePlaceDetail';
 import PageState from '@/shared/components/pageState/PageState';
+import useAiWaitNotice from '@/shared/hooks/useAiWaitNotice';
 import './Information.css'
 
 interface InformationProps {
@@ -12,6 +13,7 @@ const Information = ({ tourId }: InformationProps) => {
   const { t } = useTranslation();
   const { data: place, isLoading, isError, error } = usePlaceAIDetail(tourId);
   const isAiUnavailable = (error as { code?: string } | null)?.code === 'AI_UNAVAILABLE';
+  useAiWaitNotice(isLoading, t('place.infoLoading'));
 
   return (
     <div className="info-content">

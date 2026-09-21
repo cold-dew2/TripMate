@@ -1,4 +1,4 @@
-import { forwardRef, type SelectHTMLAttributes } from 'react'
+import { forwardRef, useId, type SelectHTMLAttributes } from 'react'
 import "./Select.css"
 
 interface OptionProps {
@@ -27,19 +27,25 @@ const Select = forwardRef<HTMLSelectElement, SelectProps>(({
   // 없는 첫 번째 실제 옵션을 브라우저 기본 동작으로 선택해버려, 사용자가 아무것도
   // 고르지 않았는데도 첫 옵션이 이미 선택된 것처럼 보이는 문제가 있었다.
   const effectiveDefaultValue = defaultValue ?? (placeholder ? "" : undefined);
+  // Input/Textarea와 동일하게, id를 안 넘겨도 label과 select가 항상 연결되도록 한다.
+  const generatedId = useId();
+  const selectId = id ?? generatedId;
+  const errorId = error ? `${selectId}-error` : undefined;
   return (
     <div className={`form select ${className || ''}`}>
       {label && (
-        <label htmlFor={id} className={blind ? 'blind' : ''}>
+        <label htmlFor={selectId} className={blind ? 'blind' : ''}>
           {label}
         </label>
       )}
       <div className="select-control">
         <select
           ref={ref}
-          id={id}
+          id={selectId}
           name={name}
           defaultValue={effectiveDefaultValue}
+          aria-invalid={!!error}
+          aria-describedby={errorId}
           {...rest}
         >
           {placeholder && (
@@ -54,7 +60,7 @@ const Select = forwardRef<HTMLSelectElement, SelectProps>(({
           ))}
         </select>
       </div>
-      {error && <span className="error">{error}</span>}
+      {error && <span className="error" id={errorId}>{error}</span>}
     </div>
   )
 })

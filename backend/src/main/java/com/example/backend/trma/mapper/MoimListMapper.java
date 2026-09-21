@@ -17,6 +17,14 @@ public interface MoimListMapper {
     MoimSearchData moimInfo(String moimId);
     //모임장(생성자) 계정 조회
     String moimHostUserId(String moimId);
+    //모임 삭제(소프트 삭제, 본인 소유일 때만 적용됨). 영향받은 행 수를 반환한다.
+    int deleteMoim(@Param("moimId") String moimId, @Param("userId") String userId);
+    //모임 정원 조회
+    Integer moimMaxMember(String moimId);
+    //모임 정원 조회(행 잠금 — 동시 승인 요청이 정원 체크를 순서대로 거치게 한다)
+    Integer moimMaxMemberForUpdate(String moimId);
+    //모임 승인된 멤버 수(정원 초과 승인 방지용)
+    int approvedMemberCount(String moimId);
     //소모임 제목 일괄 조회(번역 캐시 확인용)
     List<MoimTitleTranslationData> moimTitlesByIds(@Param("moimIds") List<String> moimIds);
     //모임 상세조회(기본)

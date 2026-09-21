@@ -1,4 +1,5 @@
-import type { RouteObject } from "react-router-dom";
+import { redirect, type RouteObject } from "react-router-dom";
+import { apiClient } from "@/shared/api/client";
 
 export interface RouteHandle {
   title?: string;
@@ -136,10 +137,27 @@ export const noLayoutRoutes: (RouteObject & { handle?: RouteHandle })[] = [
   },
   {
     path: "/createMoim",
+    // 소모임 생성은 로그인한 사용자만 가능하다. URL로 직접 들어오는 것도 막기
+    // 위해 라우터 loader 단계에서 로그인 여부를 확인해, 게스트면 화면이 그려지기
+    // 전에 로그인 화면으로 돌려보낸다.
+    loader: async () => {
+      const result = await apiClient.get<unknown>("/login/authCheck");
+      if (!result.success) {
+        throw redirect("/auth");
+      }
+      return null;
+    },
     lazy: () => import("@/features/moim/pages/moimCreate/MoimCreate").then((m) => ({ Component: m.default })),
   },
   {
     path: "/moim/:moimId/review",
     lazy: () => import("@/features/moim/pages/moimReview/MoimReviewPage").then((m) => ({ Component: m.default })),
+  },
+  // 정의된 라우트와 매칭되지 않는 모든 경로. 반드시 배열 마지막에 있어야 한다
+  // (react-router는 등록 순서와 무관하게 가장 구체적인 경로부터 매칭하지만,
+  // "*"는 다른 모든 경로와 매칭되므로 의도를 명확히 하기 위해 마지막에 둔다).
+  {
+    path: "*",
+    lazy: () => import("@/features/notFound/pages/NotFoundPage").then((m) => ({ Component: m.default })),
   },
 ];

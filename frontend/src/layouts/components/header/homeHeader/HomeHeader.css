@@ -28,10 +28,27 @@
 .header-search {
   margin-top: 20px;
 }
-.header-search.form input {
-  padding: 14px 20px;
+.header-search-form {
+  position: relative;
+}
+.header-search-form input {
+  width: 100%;
+  padding: 14px 44px 14px 20px;
   border-radius: 25px;
   box-shadow: var(--shadow-button);
+  box-sizing: border-box;
+}
+.header-search-btn {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  font-size: 16px;
+  line-height: 1;
+  padding: 8px;
+  cursor: pointer;
 }
 
 .header-top .buttons {

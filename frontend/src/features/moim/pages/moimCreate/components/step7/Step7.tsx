@@ -36,7 +36,10 @@ const Step7 = ({ moimId }: Step7Props) => {
       <div className="step7-buttons">
         <Button
           text={t("moimCreate.step7.viewDetail")}
-          onClick={() => moimId && navigate(`/moim/${moimId}`)}
+          // replace: true로 생성 마법사(/createMoim) 히스토리 엔트리 자체를 상세 화면으로
+          // 바꿔치기한다. 그래야 상세 화면에서 뒤로가기를 눌렀을 때 이미 끝난 마법사로
+          // 돌아가는 대신, 마법사에 들어오기 전 화면(보통 소모임 목록)으로 바로 이동한다.
+          onClick={() => moimId && navigate(`/moim/${moimId}`, { replace: true })}
           disabled={!moimId}
         />
         <Button text={t("moimCreate.step7.share")} variant="secondary" onClick={handleShare} />

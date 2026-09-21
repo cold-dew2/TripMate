@@ -277,7 +277,10 @@
   font-size: var(--fs-xs);
 }
 .mypage-review-content {
-
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  margin-top: 10px;
 }
 .mypage-review-content p {
   margin-top: 4px;
@@ -289,6 +292,13 @@
   flex-wrap: wrap;
   gap: var(--space-lg);
   margin-top: var(--space-sm);
+}
+.review-image-grid {
+  margin-top: 0;
+}
+.review-image-grid li {
+  padding: 0;
+  border: none;
 }
 .mypage-review-images li {
   padding: 0;

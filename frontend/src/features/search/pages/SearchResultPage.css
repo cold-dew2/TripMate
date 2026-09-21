@@ -4,3 +4,24 @@
   font-size: var(--fs-sm);
   text-align: center;
 }
+
+.search-result-form {
+  position: relative;
+}
+.search-result-form input {
+  width: 100%;
+  padding-right: 44px;
+  box-sizing: border-box;
+}
+.search-result-btn {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  font-size: 16px;
+  line-height: 1;
+  padding: 8px;
+  cursor: pointer;
+}

@@ -3,6 +3,7 @@ package com.example.backend.trma.service.impl;
 import com.example.backend.trma.dto.dataList.*;
 import com.example.backend.trma.dto.request.*;
 import com.example.backend.trma.dto.response.*;
+import com.example.backend.trma.mapper.MoimListMapper;
 import com.example.backend.trma.mapper.TourListMapper;
 import com.example.backend.trma.service.TourListService;
 import com.example.backend.trma.util.AiErrorUtil;
@@ -13,6 +14,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
+import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
 import java.util.ArrayList;
@@ -21,6 +23,9 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 @Service
 @RequiredArgsConstructor
@@ -28,6 +33,7 @@ import java.util.UUID;
 public class TourListServicelmpl implements TourListService {
 
     private final TourListMapper tourListMapper;
+    private final MoimListMapper moimListMapper;
     private final RestClient restClient;
 
     //사용자 정보 조회
@@ -41,8 +47,23 @@ public class TourListServicelmpl implements TourListService {
             request.setOffset(offset);
 
             List<TourSearchData> tourSearch = tourListMapper.tourSearch(request);
-            applySearchTranslations(tourSearch, request.getLang());
-            applySearchAddressTranslations(tourSearch, request.getLang());
+            // 이름 번역과 주소 번역은 서로 무관하니 동시에 실행하고, 캐시가 없어 Gemini를
+            // 불러야 하는 경우에도 최대 0.35초만 기다린 뒤 한국어로라도 바로 응답한다(목록
+            // 화면이라 몇 초씩 붙잡고 있으면 체감이 특히 컸다). 못 끝난 번역은 백그라운드에서
+            // 계속 돌아 캐시에 저장되므로 다음 조회부터는 즉시 나온다. SQL 자체도 ~0.1초가
+            // 걸리므로, 조회 목표(0.5초)를 지키려면 번역 대기를 그보다 짧게 잡아야 한다
+            // (0.5초를 그대로 쓰면 콜드캐시일 때 SQL+대기 합이 0.5초를 넘길 수 있었다).
+            CompletableFuture<Void> nameTranslation = CompletableFuture.runAsync(
+                    () -> applySearchTranslations(tourSearch, request.getLang()));
+            CompletableFuture<Void> addrTranslation = CompletableFuture.runAsync(
+                    () -> applySearchAddressTranslations(tourSearch, request.getLang()));
+            try {
+                CompletableFuture.allOf(nameTranslation, addrTranslation).get(350, TimeUnit.MILLISECONDS);
+            } catch (TimeoutException e) {
+                log.warn("관광지 목록 번역이 0.35초 안에 끝나지 않아 한국어로 먼저 응답합니다. lang={}", request.getLang());
+            } catch (Exception e) {
+                log.warn("관광지 목록 번역 대기 중 오류가 발생했습니다. lang={}", request.getLang(), e);
+            }
             return new TourSearchResponse(
                     true,
                     200,
@@ -72,6 +93,12 @@ public class TourListServicelmpl implements TourListService {
 
     @Value("${gemini.api.key}")
     private String apiKey;
+
+    @Value("${kakaomobility.api.key}")
+    private String kakaoMobilityApiKey;
+
+    @Value("${kakaomobility.api.directions.url}")
+    private String kakaoDirectionsUrl;
 
     //AI 관광지 추천
     public TourAiSearchResponse tourAiSearch(TourAiSearchRequest request) {
@@ -263,7 +290,18 @@ public class TourListServicelmpl implements TourListService {
 
         try {
             TourDetailData tourDetail = tourListMapper.tourDetail(request.getTourId(), request.getLang());
-            applyDetailTranslation(tourDetail, request.getLang());
+            // 공식 번역 데이터/캐시가 없어 Gemini를 불러야 하는 최초 조회에서도 응답이
+            // 오래 붙잡히지 않도록 최대 0.5초만 기다린다. 나머지는 위 tourSearch와 동일한
+            // 이유(백그라운드에서 계속 돌아 캐시에 저장, 다음부터는 즉시 나옴).
+            try {
+                CompletableFuture.runAsync(() -> applyDetailTranslation(tourDetail, request.getLang()))
+                        .get(500, TimeUnit.MILLISECONDS);
+            } catch (TimeoutException e) {
+                log.warn("관광지 상세 번역이 0.5초 안에 끝나지 않아 한국어로 먼저 응답합니다. tourId={}, lang={}",
+                        request.getTourId(), request.getLang());
+            } catch (Exception e) {
+                log.warn("관광지 상세 번역 대기 중 오류가 발생했습니다. tourId={}, lang={}", request.getTourId(), request.getLang(), e);
+            }
 
             return new TourDetailResponse(
                     true,
@@ -292,6 +330,31 @@ public class TourListServicelmpl implements TourListService {
     public TourAiDetailResponse tourAiDetail(TourAiDetailRequest request) {
 
         String langCd = (request.getLang() == null || request.getLang().isBlank()) ? "ko" : request.getLang();
+
+        // 예전에는 이 화면에 들어올 때마다 매번 Gemini를 새로 호출하고, 캐시는 AI 호출이
+        // "실패했을 때"만 대신 보여주는 폴백으로 썼다. 그래서 관광지 상세를 열 때마다
+        // 이용정보 탭이 몇 초씩 로딩되고, 마침 Gemini가 과부하(503)일 때 캐시도 아직
+        // 없으면 그대로 "AI 기능을 사용할 수 없다"는 에러만 보였다. 운영시간/휴무일 같은
+        // 정보는 자주 바뀌지 않으므로, 캐시가 있으면 그대로 즉시 반환하고 없을 때만
+        // Gemini를 호출한다.
+        // 캐시 조회 자체가 실패해도(예: 데이터 이상) 전체 요청이 500으로 죽지 않고
+        // 아래 Gemini 경로로 자연스럽게 넘어가게 감싼다.
+        try {
+            TourAiDetailData cachedFirst = tourListMapper.selectTourAiInfo(request.getTourId(), langCd);
+            if (cachedFirst != null) {
+                return new TourAiDetailResponse(
+                        true,
+                        200,
+                        "SUCCESS",
+                        "관광지 상세조회(AI)를 정상적으로 조회했습니다.",
+                        "/tourList/tourAiDetail",
+                        "",
+                        cachedFirst
+                );
+            }
+        } catch (Exception e) {
+            log.warn("관광지 AI 이용정보 캐시 조회에 실패했습니다. tourId={}", request.getTourId(), e);
+        }
 
         try {
             StringBuilder tourListPrompt = new StringBuilder();
@@ -439,7 +502,16 @@ public class TourListServicelmpl implements TourListService {
             }
             int offset = (request.getPage() - 1) * 10;
             List<TourDetailReviewData> tourDetailReview = tourListMapper.tourDetailReview(request.getTourId(), offset);
-            applyReviewTranslations(tourDetailReview, request.getLang());
+            // 위 tourDetail/tourSearch와 동일한 이유로 리뷰 번역도 최대 0.5초만 기다린다.
+            try {
+                CompletableFuture.runAsync(() -> applyReviewTranslations(tourDetailReview, request.getLang()))
+                        .get(500, TimeUnit.MILLISECONDS);
+            } catch (TimeoutException e) {
+                log.warn("관광지 리뷰 번역이 0.5초 안에 끝나지 않아 한국어로 먼저 응답합니다. tourId={}, lang={}",
+                        request.getTourId(), request.getLang());
+            } catch (Exception e) {
+                log.warn("관광지 리뷰 번역 대기 중 오류가 발생했습니다. tourId={}, lang={}", request.getTourId(), request.getLang(), e);
+            }
 
             return new TourDetailReviewResponse(
                     true,
@@ -468,6 +540,25 @@ public class TourListServicelmpl implements TourListService {
     public CreateTourReviewResponse createTourReview(CreateTourReviewRequest request, String userId) {
 
         try {
+            // 특정 소모임 일정으로 방문한 관광지 후기(moimId가 채워진 경우)는, 그
+            // 소모임 자체와 마찬가지로 여행이 끝난 뒤에만 남길 수 있다. 관광지 상세
+            // 화면에서 소모임과 무관하게 단독으로 남기는 후기(moimId=null)는 이
+            // 제한과 무관하다.
+            if (request.getMoimId() != null && !request.getMoimId().isBlank()) {
+                MoimSearchData moimInfo = moimListMapper.moimInfo(request.getMoimId());
+                if (moimInfo == null || moimInfo.getMoimEndDt() == null
+                        || !moimInfo.getMoimEndDt().isBefore(java.time.LocalDate.now())) {
+                    return new CreateTourReviewResponse(
+                            false,
+                            400,
+                            "MOIM_NOT_FINISHED",
+                            "여행이 끝난 후에 후기를 남길 수 있습니다.",
+                            "/tourList/tourDetailReview",
+                            ""
+                    );
+                }
+            }
+
             String imgUrls = request.getImageUrls() == null ? null : String.join(",", request.getImageUrls());
             String reviewId = "RVT" + UUID.randomUUID().toString().replace("-", "").substring(0, 12).toUpperCase();
             tourListMapper.insertTourReview(reviewId, request, imgUrls, userId);
@@ -499,24 +590,61 @@ public class TourListServicelmpl implements TourListService {
         try {
             int dayCount = Math.max(1, request.getDayCount());
 
+            // 예전에는 지역을 keyword(자유 검색어, "세종대로"/"세종대왕" 같은 우연한
+            // 일치가 섞이는 문제가 있던 방식)로만 받았다. 지역 탭과 동일한 전용 region
+            // 필터(주소 접두사 매칭)를 우선 쓰고, 없으면 keyword로 폴백한다.
             TourSearchRequest searchRequest = new TourSearchRequest();
             searchRequest.setCateCd(request.getCateCd());
-            searchRequest.setKeyword(request.getKeyword());
+            searchRequest.setRegion(request.getRegion());
+            if ((request.getRegion() == null || request.getRegion().isBlank())
+                    && request.getKeyword() != null && !request.getKeyword().isBlank()) {
+                searchRequest.setKeyword(request.getKeyword());
+            }
 
             List<TourSearchData> tourList = tourListMapper.tourSearch(searchRequest);
 
-            // 검색어+테마 조합에 맞는 관광지가 없으면 테마만으로, 그래도 없으면 테마도 빼고
-            // 평점 높은 순으로 다시 찾는다(항상 실제 DB에 있는 관광지만 후보로 준다).
-            // 예전에는 키워드만 "여행"으로 바꿔 재시도했는데 테마(cateCd) 필터가 그대로
-            // 남아있어서 "여행"이라는 단어와 그 테마를 동시에 만족하는 관광지가 없으면
-            // 여전히 0건이었고, 그 상태로 빈 관광지 목록을 그대로 Gemini에 보내고 있었다.
+            // 지역+테마 조합에 맞는 관광지가 없으면, 사용자가 명시적으로 고른 지역은
+            // 최대한 지키는 게 우선이라고 보고 테마부터 빼고 지역만으로 다시 찾는다.
+            // 그래도 없으면 지역도 빼고 테마만으로, 그래도 없으면 마지막에만 평점 높은
+            // 순 전체로 폴백한다(항상 실제 DB에 있는 관광지만 후보로 준다).
+            // 예전에는 지역 조건이 먼저 사라지고 테마만 남았는데, 애초에 지역 필터
+            // 자체가 부정확한 keyword 방식이라 지역+테마 조합이 자주 0건이 되면서
+            // "전국구" 추천이 나오는 원인이었다.
             if (tourList == null || tourList.isEmpty()) {
+                log.warn("일정 추천: 지역+테마 조합에 맞는 관광지가 없어 지역만으로 다시 찾습니다. region={}, cateCd={}",
+                        request.getRegion(), request.getCateCd());
+                TourSearchRequest regionOnly = new TourSearchRequest();
+                regionOnly.setRegion(request.getRegion());
+                tourList = tourListMapper.tourSearch(regionOnly);
+            }
+            if (tourList == null || tourList.isEmpty()) {
+                log.warn("일정 추천: 지역만으로도 관광지가 없어 테마만으로 다시 찾습니다. cateCd={}", request.getCateCd());
                 TourSearchRequest cateOnly = new TourSearchRequest();
                 cateOnly.setCateCd(request.getCateCd());
                 tourList = tourListMapper.tourSearch(cateOnly);
             }
             if (tourList == null || tourList.isEmpty()) {
+                log.warn("일정 추천: 지역/테마 모두 후보가 없어 전체 관광지 중 평점 순으로 대체합니다.");
                 tourList = tourListMapper.tourSearch(new TourSearchRequest());
+            }
+
+            // 테마(cateCd) 후보만으로는 식사할 곳(맛집)이 아예 안 섞여 있어서, 점심/저녁
+            // 시간대에도 추천에 식사가 빠지는 문제가 있었다. 같은 지역의 맛집(RES)을
+            // 별도로 더 가져와 후보에 합쳐서 AI가 식사 자리를 고를 수 있게 한다.
+            if (!"RES".equals(request.getCateCd())) {
+                TourSearchRequest restaurantSearch = new TourSearchRequest();
+                restaurantSearch.setCateCd("RES");
+                restaurantSearch.setRegion(request.getRegion());
+                List<TourSearchData> restaurants = tourListMapper.tourSearch(restaurantSearch);
+                if (restaurants != null && !restaurants.isEmpty()) {
+                    java.util.Set<String> mergedIds = tourList.stream().map(TourSearchData::getTourId)
+                            .collect(java.util.stream.Collectors.toCollection(java.util.HashSet::new));
+                    List<TourSearchData> merged = new ArrayList<>(tourList);
+                    for (TourSearchData restaurant : restaurants) {
+                        if (mergedIds.add(restaurant.getTourId())) merged.add(restaurant);
+                    }
+                    tourList = merged;
+                }
             }
 
             List<AiScheduleExistingItem> existingItems = request.getExistingItems() != null
@@ -584,10 +712,12 @@ public class TourListServicelmpl implements TourListService {
                             : "")
                     + "[규칙]\n"
                     + "1. 반드시 제공된 목록에 있는 관광지ID만 사용하세요.\n"
-                    + "2. 하루에 2~3개의 관광지를 배정하세요.\n"
-                    + "3. 시간은 09:00~18:00 사이로, 이동 시간을 고려해 배정하세요.\n"
+                    + "2. 하루에 3~4곳을 배정하되, 그중 점심(12:00~13:30)과 저녁(18:00~19:30) 시간대에는"
+                            + " 반드시 카테고리가 \"맛집\"인 관광지를 하나씩 배정해 식사를 거르지 않게 하세요"
+                            + "(맛집 후보가 목록에 없는 날은 생략해도 됩니다).\n"
+                    + "3. 시간은 09:00~20:00 사이로, 이동 시간을 고려해 배정하세요.\n"
                     + "4. 하루 안에서는 시간 순서대로 정렬하세요.\n"
-                    + "5. 관심 테마/여행 목적과 동행 인원을 고려해 어울리는 관광지 위주로 배정하세요.\n"
+                    + "5. 맛집을 제외한 나머지는 관심 테마/여행 목적과 동행 인원을 고려해 어울리는 관광지 위주로 배정하세요.\n"
                     + (hasExisting
                             ? "6. 위 [이미 확정된 일정]과 겹치지 않는 시간대만 추가로 채우세요. 이미 확정된"
                                     + " 일정 자체는 응답에 절대 포함하지 말고, 새로 추가할 항목만 응답하세요.\n"
@@ -609,10 +739,44 @@ public class TourListServicelmpl implements TourListService {
             ObjectMapper objectMapper = new ObjectMapper();
             GeminiData recommend = objectMapper.readValue(AiJsonUtil.extractJson(aiResult), GeminiData.class);
 
+            // 예전에는 tourInfo()로 관광지 하나씩 한국어 원문만 조회했다(추천 개수만큼
+            // N+1 조회 + 항상 한국어). 추천된 관광지ID를 한 번에 모아 lang을 반영해
+            // 조회하고, 목록 화면과 동일한 이름/주소 캐시를 재사용해 번역한다.
+            List<String> recommendedTourIds = recommend.getRecommendations4() != null
+                    ? recommend.getRecommendations4().stream().map(GeminiData.Recommendation4::getTourId).distinct().toList()
+                    : List.of();
+            Map<String, TourSearchData> tourInfoById = new HashMap<>();
+            if (!recommendedTourIds.isEmpty()) {
+                List<TourSearchData> tourInfos = tourListMapper.tourByIds(recommendedTourIds, request.getLang());
+                if ("en".equals(request.getLang()) || "ja".equals(request.getLang())) {
+                    CompletableFuture<Void> nameT = CompletableFuture.runAsync(
+                            () -> applySearchTranslations(tourInfos, request.getLang()));
+                    CompletableFuture<Void> addrT = CompletableFuture.runAsync(
+                            () -> applySearchAddressTranslations(tourInfos, request.getLang()));
+                    try {
+                        // 목록/상세 조회는 0.5초 예산이지만, aiSchedule은 이미 Gemini
+                        // 일정 생성으로 수 초~수십 초를 기다린 뒤라 마지막에 번역만
+                        // 0.5초 예산으로 끊으면 콜드캐시 관광지(추천 결과 8곳 안팎의
+                        // 이름+주소 번역)가 절반도 못 끝나 응답 전체가 한국어로 나가는
+                        // 경우가 많았다. 게다가 이 화면은 POST 액션이라 목록/상세처럼
+                        // "잠시 후 조용히 재조회"하는 캐치업도 적용할 수 없어(다시
+                        // 부르면 Gemini가 아예 다른 일정을 새로 만들어버림), 이번
+                        // 응답에서 최대한 끝내는 게 중요하다. 이미 오래 기다린 뒤라
+                        // 3초를 더 기다리는 체감 차이는 크지 않다고 보고 예산을 늘렸다.
+                        CompletableFuture.allOf(nameT, addrT).get(3000, TimeUnit.MILLISECONDS);
+                    } catch (TimeoutException e) {
+                        log.warn("일정 추천 관광지 번역이 3초 안에 끝나지 않아 한국어로 먼저 응답합니다. lang={}", request.getLang());
+                    } catch (Exception e) {
+                        log.warn("일정 추천 관광지 번역 대기 중 오류가 발생했습니다. lang={}", request.getLang(), e);
+                    }
+                }
+                for (TourSearchData tourInfo : tourInfos) tourInfoById.put(tourInfo.getTourId(), tourInfo);
+            }
+
             List<AiScheduleItemData> schedule = new ArrayList<>();
             if (recommend.getRecommendations4() != null) {
                 for (GeminiData.Recommendation4 item : recommend.getRecommendations4()) {
-                    TourSearchData tourInfo = tourListMapper.tourInfo(item.getTourId());
+                    TourSearchData tourInfo = tourInfoById.get(item.getTourId());
                     if (tourInfo == null) continue;
 
                     AiScheduleItemData data = new AiScheduleItemData();
@@ -797,27 +961,16 @@ public class TourListServicelmpl implements TourListService {
                 });
             }
 
-            StringBuilder legPrompt = new StringBuilder();
-            int legNo = 0;
+            record LegPair(int day, TransportRecommendRequest.TransportStopInput from, TransportRecommendRequest.TransportStopInput to) {}
+            List<LegPair> allLegs = new ArrayList<>();
             for (Map.Entry<Integer, List<TransportRecommendRequest.TransportStopInput>> entry : byDay.entrySet()) {
                 List<TransportRecommendRequest.TransportStopInput> dayItems = entry.getValue();
                 for (int i = 0; i < dayItems.size() - 1; i++) {
-                    TransportRecommendRequest.TransportStopInput from = dayItems.get(i);
-                    TransportRecommendRequest.TransportStopInput to = dayItems.get(i + 1);
-                    legPrompt.append("""
-                            [구간 번호 %d]
-                            day : %d
-                            출발 관광지ID : %s / 이름 : %s / 주소 : %s
-                            도착 관광지ID : %s / 이름 : %s / 주소 : %s
-                            """.formatted(
-                            legNo++, entry.getKey(),
-                            from.getTourId(), from.getTourNm(), from.getRoadAddr(),
-                            to.getTourId(), to.getTourNm(), to.getRoadAddr()
-                    ));
+                    allLegs.add(new LegPair(entry.getKey(), dayItems.get(i), dayItems.get(i + 1)));
                 }
             }
 
-            if (legNo == 0) {
+            if (allLegs.isEmpty()) {
                 return new TransportRecommendResponse(
                         true,
                         200,
@@ -829,70 +982,191 @@ public class TourListServicelmpl implements TourListService {
                 );
             }
 
-            String legLangLabel = "en".equals(request.getLang()) ? "영어" : "ja".equals(request.getLang()) ? "일본어" : null;
-
-            String prompt = "당신은 대한민국 대중교통과 도로 혼잡 패턴에 정통한 여행 이동 전문가입니다.\n"
-                    + "다음은 하루 일정 안에서 연속으로 방문하는 관광지 구간 목록입니다.\n"
-                    + "각 구간마다 두 관광지의 주소와 방문 시각을 바탕으로 가장 적절한 이동수단, 예상 소요시간(분), "
-                    + "예상 비용(원), 환승 횟수를 추천하고, 해당 시각대의 예상 혼잡도와 지연 위험, "
-                    + "혼잡할 경우의 대체 이동수단까지 함께 제시해주세요.\n"
-                    + "[규칙]\n"
-                    + "1. 이동수단은 지하철, 버스, 도보, 택시, 자가용/렌터카 중 실제 거리에 맞는 것으로 고르세요.\n"
-                    + "2. 도보로 15분 이내인 거리는 도보를 우선 추천하세요.\n"
-                    + "3. 정확한 수치를 모르더라도 주소 간 거리와 방문 시각(출퇴근 시간대, 주말 등)을 바탕으로 합리적인 추정치를 제시하세요.\n"
-                    + "4. congestionLevel은 \"원활\", \"보통\", \"혼잡\" 중 하나로 답하세요.\n"
-                    + "5. congestionLevel이 \"혼잡\"일 때만 delayRiskMinutes(예상 지연 분)와 alternativeMode(대체 이동수단), "
-                    + "alternativeReason(대체를 추천하는 이유, 한 문장)을 채우고, 그 외에는 모두 null로 두세요.\n"
-                    + "6. 반드시 JSON 형식으로만 응답하고, 요청받은 day와 관광지ID를 그대로 포함해서 응답하세요.\n"
-                    + (legLangLabel != null
-                        ? "7. mode, alternativeMode, congestionLevel 값은 반드시 지하철/버스/도보/택시/자가용/렌터카/원활/보통/혼잡 중 하나의 한국어 표기 그대로 쓰고(화면에서 별도로 번역합니다), alternativeReason만 " + legLangLabel + "로 작성해주세요.\n"
-                        : "")
-                    + "[응답 형식]\n"
-                    + "{\"transportLegs\":[{\"day\":1,\"fromTourId\":\"T0001\",\"toTourId\":\"T0002\","
-                    + "\"mode\":\"지하철\",\"durationMinutes\":20,\"cost\":1500,\"transferCount\":0,"
-                    + "\"congestionLevel\":\"혼잡\",\"delayRiskMinutes\":15,\"alternativeMode\":\"택시\","
-                    + "\"alternativeReason\":\"퇴근시간대 지하철 혼잡으로 택시가 더 빠릅니다.\"}]}\n"
-                    + "[이동 구간 목록]\n" + legPrompt;
-
-            GeminiRequest geminiRequest = new GeminiRequest(List.of(new GeminiRequest.Content(List.of(new GeminiRequest.Part(prompt)))));
-
-            GeminiResponse response = callGemini(geminiRequest);
-
-            String aiResult = "";
-            if (response != null && response.candidates() != null && !response.candidates().isEmpty()) {
-                aiResult = response.candidates().get(0).content().parts().get(0).text();
+            // 관광지 좌표를 한 번에 모아 조회해서, 실제 거리/실시간 교통정보를 카카오모빌리티
+            // 길찾기로 바로 구한다(예전에는 이 부분 전부를 Gemini가 지어냈다).
+            List<String> allTourIds = allLegs.stream()
+                    .flatMap(leg -> java.util.stream.Stream.of(leg.from().getTourId(), leg.to().getTourId()))
+                    .distinct().toList();
+            Map<String, TourCoordinateData> coordById = new HashMap<>();
+            try {
+                for (TourCoordinateData c : tourListMapper.tourCoordinatesByIds(allTourIds)) {
+                    coordById.put(c.getTourId(), c);
+                }
+            } catch (Exception e) {
+                log.warn("교통편 추천용 관광지 좌표 조회에 실패했습니다.", e);
             }
 
-            ObjectMapper objectMapper = new ObjectMapper();
-            GeminiData recommend = objectMapper.readValue(AiJsonUtil.extractJson(aiResult), GeminiData.class);
-
             List<TransportLegData> legs = new ArrayList<>();
-            if (recommend.getTransportLegs() != null) {
-                Map<String, TransportRecommendRequest.TransportStopInput> byTourId = new LinkedHashMap<>();
-                for (TransportRecommendRequest.TransportStopInput item : items) {
-                    byTourId.putIfAbsent(item.getTourId(), item);
+            List<LegPair> aiFallbackLegs = new ArrayList<>();
+            // 카카오 길찾기가 필요한 구간은 순서대로 하나씩 부르면 구간 수만큼 지연이
+            // 쌓인다(구간 5개면 5번의 네트워크 왕복). 전부 동시에 병렬로 부른다.
+            List<LegPair> kakaoLegs = new ArrayList<>();
+            List<CompletableFuture<TransportLegData>> kakaoFutures = new ArrayList<>();
+
+            for (LegPair leg : allLegs) {
+                TourCoordinateData fromCoord = coordById.get(leg.from().getTourId());
+                TourCoordinateData toCoord = coordById.get(leg.to().getTourId());
+                if (fromCoord == null || toCoord == null
+                        || fromCoord.getLatitude() == null || fromCoord.getLongitude() == null
+                        || toCoord.getLatitude() == null || toCoord.getLongitude() == null) {
+                    // 좌표가 없는 관광지(주로 사용자가 직접 입력한 UGC 관광지)는 실시간
+                    // 길찾기를 돌릴 수 없으니, 이 구간만 기존 AI 추정으로 보완한다.
+                    aiFallbackLegs.add(leg);
+                    continue;
                 }
 
-                for (GeminiData.TransportLegItem item : recommend.getTransportLegs()) {
-                    TransportRecommendRequest.TransportStopInput from = byTourId.get(item.getFromTourId());
-                    TransportRecommendRequest.TransportStopInput to = byTourId.get(item.getToTourId());
-                    if (from == null || to == null) continue;
+                double distanceMeters = haversineMeters(
+                        fromCoord.getLatitude(), fromCoord.getLongitude(), toCoord.getLatitude(), toCoord.getLongitude());
 
-                    TransportLegData leg = new TransportLegData();
-                    leg.setDay(item.getDay());
-                    leg.setFromTourId(from.getTourId());
-                    leg.setFromTourNm(from.getTourNm());
-                    leg.setToTourId(to.getTourId());
-                    leg.setToTourNm(to.getTourNm());
-                    leg.setMode(item.getMode());
-                    leg.setDurationMinutes(item.getDurationMinutes());
-                    leg.setCost(item.getCost());
-                    leg.setTransferCount(item.getTransferCount());
-                    leg.setCongestionLevel(item.getCongestionLevel());
-                    leg.setDelayRiskMinutes(item.getDelayRiskMinutes());
-                    leg.setAlternativeMode(item.getAlternativeMode());
-                    leg.setAlternativeReason(item.getAlternativeReason());
-                    legs.add(leg);
+                TransportLegData legData = new TransportLegData();
+                legData.setDay(leg.day());
+                legData.setFromTourId(leg.from().getTourId());
+                legData.setFromTourNm(leg.from().getTourNm());
+                legData.setToTourId(leg.to().getTourId());
+                legData.setToTourNm(leg.to().getTourNm());
+
+                // 직선거리 1.2km 이내는 카카오 길찾기(자동차용)를 부르는 대신 도보로 바로
+                // 추정한다 — 어차피 짧은 거리를 "차로 3분" 식으로 추천하는 건 부자연스럽다.
+                if (distanceMeters <= 1200) {
+                    legData.setMode("도보");
+                    legData.setDurationMinutes((int) Math.max(1, Math.ceil(distanceMeters / 67.0)));
+                    legData.setCost(0);
+                    legData.setTransferCount(0);
+                    legData.setCongestionLevel("원활");
+                    legs.add(legData);
+                    continue;
+                }
+
+                kakaoLegs.add(leg);
+                kakaoFutures.add(CompletableFuture.supplyAsync(() -> buildKakaoLeg(legData,
+                        fromCoord.getLongitude(), fromCoord.getLatitude(), toCoord.getLongitude(), toCoord.getLatitude(),
+                        request.getLang())));
+            }
+
+            // 각 호출 자체는 RestClient 타임아웃(5초 연결/15초 응답)으로 이미 상한이 있으니,
+            // 여기서는 "병렬로 돌린 전체가 끝나길" 넉넉히 기다린다. 개별 호출이 아니라
+            // 전체를 동시에 기다리므로 구간이 여러 개여도 가장 느린 한 번만큼만 걸린다.
+            try {
+                CompletableFuture.allOf(kakaoFutures.toArray(new CompletableFuture[0])).get(5, TimeUnit.SECONDS);
+            } catch (TimeoutException e) {
+                log.warn("교통편 실시간 조회가 5초 안에 끝나지 않아 완료되지 않은 구간은 AI 추정으로 대체합니다.");
+            } catch (Exception e) {
+                log.warn("교통편 실시간 조회 대기 중 오류가 발생했습니다.", e);
+            }
+            for (int i = 0; i < kakaoFutures.size(); i++) {
+                CompletableFuture<TransportLegData> future = kakaoFutures.get(i);
+                TransportLegData result = future.isDone() && !future.isCompletedExceptionally() ? future.getNow(null) : null;
+                if (result != null) {
+                    legs.add(result);
+                } else {
+                    LegPair leg = kakaoLegs.get(i);
+                    log.warn("카카오모빌리티 길찾기 호출에 실패해 이 구간만 AI 추정으로 대체합니다. from={}, to={}",
+                            leg.from().getTourId(), leg.to().getTourId());
+                    aiFallbackLegs.add(leg);
+                }
+            }
+
+            // 좌표가 없거나 카카오 호출이 실패한 구간만 모아 기존 AI 추정으로 보완한다.
+            // 이 블록을 별도 try로 감싸서, Gemini 호출이 실패해도(일시적 과부하 등) 이미
+            // 카카오/도보로 구한 나머지 구간까지 전부 날아가지 않게 한다. 예전에는 여기서
+            // 예외가 나면 메서드 전체가 AI_UNAVAILABLE로 실패 처리돼, 구간 5개 중 1개만
+            // AI 추정이 필요했던 경우에도 이미 구한 4개까지 통째로 사라졌었다(같은 이유로
+            // 첫 시도만 실패하고 재시도하면 되던 것도 사용자 입장에선 "AI 추천이 아예
+            // 안 된다"처럼 보였다).
+            if (!aiFallbackLegs.isEmpty()) {
+                try {
+                    StringBuilder legPrompt = new StringBuilder();
+                    int legNo = 0;
+                    for (LegPair leg : aiFallbackLegs) {
+                        TransportRecommendRequest.TransportStopInput from = leg.from();
+                        TransportRecommendRequest.TransportStopInput to = leg.to();
+                        legPrompt.append("""
+                                [구간 번호 %d]
+                                day : %d
+                                출발 관광지ID : %s / 이름 : %s / 주소 : %s
+                                도착 관광지ID : %s / 이름 : %s / 주소 : %s
+                                """.formatted(
+                                legNo++, leg.day(),
+                                from.getTourId(), from.getTourNm(), from.getRoadAddr(),
+                                to.getTourId(), to.getTourNm(), to.getRoadAddr()
+                        ));
+                    }
+
+                    String legLangLabel = "en".equals(request.getLang()) ? "영어" : "ja".equals(request.getLang()) ? "일본어" : null;
+
+                    String prompt = "당신은 대한민국 대중교통과 도로 혼잡 패턴에 정통한 여행 이동 전문가입니다.\n"
+                            + "다음은 하루 일정 안에서 연속으로 방문하는 관광지 구간 목록입니다.\n"
+                            + "각 구간마다 두 관광지의 주소와 방문 시각을 바탕으로 가장 적절한 이동수단, 예상 소요시간(분), "
+                            + "예상 비용(원), 환승 횟수를 추천하고, 해당 시각대의 예상 혼잡도와 지연 위험, "
+                            + "혼잡할 경우의 대체 이동수단까지 함께 제시해주세요.\n"
+                            + "[규칙]\n"
+                            + "1. 이동수단은 지하철, 버스, 도보, 택시, 자가용/렌터카 중 실제 거리에 맞는 것으로 고르세요.\n"
+                            + "2. 도보로 15분 이내인 거리는 도보를 우선 추천하세요.\n"
+                            + "3. 정확한 수치를 모르더라도 주소 간 거리와 방문 시각(출퇴근 시간대, 주말 등)을 바탕으로 합리적인 추정치를 제시하세요.\n"
+                            + "4. congestionLevel은 \"원활\", \"보통\", \"혼잡\" 중 하나로 답하세요.\n"
+                            + "5. congestionLevel이 \"혼잡\"일 때만 delayRiskMinutes(예상 지연 분)와 alternativeMode(대체 이동수단), "
+                            + "alternativeReason(대체를 추천하는 이유, 한 문장)을 채우고, 그 외에는 모두 null로 두세요.\n"
+                            + "6. 반드시 JSON 형식으로만 응답하고, 요청받은 day와 관광지ID를 그대로 포함해서 응답하세요.\n"
+                            + (legLangLabel != null
+                                ? "7. mode, alternativeMode, congestionLevel 값은 반드시 지하철/버스/도보/택시/자가용/렌터카/원활/보통/혼잡 중 하나의 한국어 표기 그대로 쓰고(화면에서 별도로 번역합니다), alternativeReason만 " + legLangLabel + "로 작성해주세요.\n"
+                                : "")
+                            + "[응답 형식]\n"
+                            + "{\"transportLegs\":[{\"day\":1,\"fromTourId\":\"T0001\",\"toTourId\":\"T0002\","
+                            + "\"mode\":\"지하철\",\"durationMinutes\":20,\"cost\":1500,\"transferCount\":0,"
+                            + "\"congestionLevel\":\"혼잡\",\"delayRiskMinutes\":15,\"alternativeMode\":\"택시\","
+                            + "\"alternativeReason\":\"퇴근시간대 지하철 혼잡으로 택시가 더 빠릅니다.\"}]}\n"
+                            + "[이동 구간 목록]\n" + legPrompt;
+
+                    GeminiRequest geminiRequest = new GeminiRequest(List.of(new GeminiRequest.Content(List.of(new GeminiRequest.Part(prompt)))));
+
+                    // callGemini() 자체가 과부하 시 최대 4번 재시도하는데(각 시도 최대 15초
+                    // 읽기 타임아웃 + 재시도 사이 대기), 최악의 경우 40초 넘게 걸릴 수 있었다.
+                    // 이미 위에서 실패해도 카카오로 구한 나머지 구간은 그대로 돌려주도록
+                    // 만들어뒀으니, 여기서 너무 오래 붙잡고 있을 필요가 없다 — 10초 안에
+                    // 안 끝나면 포기하고 나머지 결과만 바로 돌려준다.
+                    GeminiResponse response = CompletableFuture.supplyAsync(() -> callGemini(geminiRequest))
+                            .get(10, TimeUnit.SECONDS);
+
+                    String aiResult = "";
+                    if (response != null && response.candidates() != null && !response.candidates().isEmpty()) {
+                        aiResult = response.candidates().get(0).content().parts().get(0).text();
+                    }
+
+                    ObjectMapper objectMapper = new ObjectMapper();
+                    GeminiData recommend = objectMapper.readValue(AiJsonUtil.extractJson(aiResult), GeminiData.class);
+
+                    // 위에서 실시간 데이터로 이미 채운 legs에 AI 추정 구간만 덧붙인다(재선언하지 않음).
+                    if (recommend.getTransportLegs() != null) {
+                        Map<String, TransportRecommendRequest.TransportStopInput> byTourId = new LinkedHashMap<>();
+                        for (TransportRecommendRequest.TransportStopInput item : items) {
+                            byTourId.putIfAbsent(item.getTourId(), item);
+                        }
+
+                        for (GeminiData.TransportLegItem item : recommend.getTransportLegs()) {
+                            TransportRecommendRequest.TransportStopInput from = byTourId.get(item.getFromTourId());
+                            TransportRecommendRequest.TransportStopInput to = byTourId.get(item.getToTourId());
+                            if (from == null || to == null) continue;
+
+                            TransportLegData leg = new TransportLegData();
+                            leg.setDay(item.getDay());
+                            leg.setFromTourId(from.getTourId());
+                            leg.setFromTourNm(from.getTourNm());
+                            leg.setToTourId(to.getTourId());
+                            leg.setToTourNm(to.getTourNm());
+                            leg.setMode(item.getMode());
+                            leg.setDurationMinutes(item.getDurationMinutes());
+                            leg.setCost(item.getCost());
+                            leg.setTransferCount(item.getTransferCount());
+                            leg.setCongestionLevel(item.getCongestionLevel());
+                            leg.setDelayRiskMinutes(item.getDelayRiskMinutes());
+                            leg.setAlternativeMode(item.getAlternativeMode());
+                            leg.setAlternativeReason(item.getAlternativeReason());
+                            legs.add(leg);
+                        }
+                    }
+                } catch (Exception e) {
+                    log.warn("교통편 AI 추정 구간 계산에 실패해 해당 구간은 생략하고 나머지 결과만 반환합니다. 실패 구간 수={}",
+                            aiFallbackLegs.size(), e);
                 }
             }
 
@@ -930,6 +1204,110 @@ public class TourListServicelmpl implements TourListService {
                     null
             );
         }
+    }
+
+    // ========================= 카카오모빌리티 실시간 길찾기 =========================
+    // 두 좌표 사이의 직선거리(Haversine). 지구를 완전한 구로 근사하므로 약간의 오차는
+    // 있지만, "걸어갈 거리인지 차로 가야 할 거리인지"를 가르는 용도로는 충분하다.
+    private double haversineMeters(double lat1, double lon1, double lat2, double lon2) {
+        double earthRadiusM = 6371000;
+        double dLat = Math.toRadians(lat2 - lat1);
+        double dLon = Math.toRadians(lon2 - lon1);
+        double a = Math.sin(dLat / 2) * Math.sin(dLat / 2)
+                + Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2))
+                        * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return earthRadiusM * c;
+    }
+
+    private record KakaoDirectionsResult(long durationSeconds, long distanceMeters, Integer taxiFare, Double avgTrafficSpeedKmh) {}
+
+    // 카카오모빌리티 자동차 길찾기(실시간 교통정보 반영). RECOMMEND 우선순위를 쓰면
+    // 카카오가 그 시점의 실시간 정체를 반영해 소요시간을 계산해준다.
+    private KakaoDirectionsResult callKakaoDirections(double originLng, double originLat, double destLng, double destLat) {
+        JsonNode response = restClient.get()
+                .uri(uriBuilder -> {
+                    java.net.URI parsed = java.net.URI.create(kakaoDirectionsUrl);
+                    return uriBuilder
+                            .scheme(parsed.getScheme())
+                            .host(parsed.getHost())
+                            .path(parsed.getPath())
+                            .queryParam("origin", originLng + "," + originLat)
+                            .queryParam("destination", destLng + "," + destLat)
+                            .queryParam("priority", "RECOMMEND")
+                            .queryParam("summary", "false")
+                            .build();
+                })
+                .header("Authorization", "KakaoAK " + kakaoMobilityApiKey)
+                .retrieve()
+                .body(JsonNode.class);
+
+        JsonNode route = response.path("routes").get(0);
+        if (route == null || route.path("result_code").asInt(-1) != 0) {
+            throw new IllegalStateException("카카오모빌리티 길찾기 응답이 올바르지 않습니다: " + response);
+        }
+
+        JsonNode summary = route.path("summary");
+        long duration = summary.path("duration").asLong();
+        long distance = summary.path("distance").asLong();
+        Integer taxiFare = summary.path("fare").has("taxi") ? summary.path("fare").path("taxi").asInt() : null;
+
+        // 구간(section)별 도로들의 실시간 속도를 거리로 가중평균해 전체 체감 속도를 낸다.
+        double totalWeightedSpeed = 0;
+        double totalDistanceForSpeed = 0;
+        for (JsonNode section : route.path("sections")) {
+            for (JsonNode road : section.path("roads")) {
+                double roadDistance = road.path("distance").asDouble(0);
+                double speed = road.path("traffic_speed").asDouble(0);
+                if (roadDistance > 0 && speed > 0) {
+                    totalWeightedSpeed += speed * roadDistance;
+                    totalDistanceForSpeed += roadDistance;
+                }
+            }
+        }
+        Double avgSpeed = totalDistanceForSpeed > 0 ? totalWeightedSpeed / totalDistanceForSpeed : null;
+
+        return new KakaoDirectionsResult(duration, distance, taxiFare, avgSpeed);
+    }
+
+    // 카카오 길찾기 호출 + 결과를 leg 데이터로 채우는 부분을 한 번에 묶어서, 구간마다
+    // 병렬로(CompletableFuture.supplyAsync) 돌릴 수 있게 한다. 실패하면 null을 돌려주고,
+    // 호출한 쪽에서 그 구간만 AI 추정으로 보완한다.
+    private TransportLegData buildKakaoLeg(TransportLegData legData, double originLng, double originLat,
+                                            double destLng, double destLat, String lang) {
+        try {
+            KakaoDirectionsResult real = callKakaoDirections(originLng, originLat, destLng, destLat);
+
+            legData.setMode("자가용/렌터카");
+            legData.setDurationMinutes((int) Math.max(1, Math.round(real.durationSeconds() / 60.0)));
+            legData.setCost(real.taxiFare());
+            legData.setTransferCount(0);
+
+            String level;
+            if (real.avgTrafficSpeedKmh() != null && real.avgTrafficSpeedKmh() > 0) {
+                if (real.avgTrafficSpeedKmh() < 15) level = "혼잡";
+                else if (real.avgTrafficSpeedKmh() < 30) level = "보통";
+                else level = "원활";
+            } else {
+                level = "보통";
+            }
+            legData.setCongestionLevel(level);
+            if ("혼잡".equals(level)) {
+                legData.setDelayRiskMinutes((int) Math.max(1, Math.round(legData.getDurationMinutes() * 0.3)));
+                legData.setAlternativeMode("버스");
+                legData.setAlternativeReason(congestionAlternativeReason(lang));
+            }
+            return legData;
+        } catch (Exception e) {
+            log.warn("카카오모빌리티 길찾기 호출에 실패했습니다. from={}, to={}", legData.getFromTourId(), legData.getToTourId(), e);
+            return null;
+        }
+    }
+
+    private String congestionAlternativeReason(String lang) {
+        if ("en".equals(lang)) return "This route is congested. Consider using public transit instead.";
+        if ("ja".equals(lang)) return "この区間は混雑しています。公共交通機関の利用をご検討ください。";
+        return "혼잡 구간입니다. 대중교통 이용을 고려해보세요.";
     }
 
     // ========================= 관광지명/개요 번역 =========================
@@ -1105,7 +1483,8 @@ public class TourListServicelmpl implements TourListService {
         // 믿고 넘어가지 않고 아래 Gemini 폴백까지 진행한다.
         boolean nativeLooksTranslated = "Y".equals(tour.getNativeMatchYn())
                 && !AiJsonUtil.containsHangul(tour.getRoadAddr())
-                && !AiJsonUtil.containsHangul(tour.getDetailAddr());
+                && !AiJsonUtil.containsHangul(tour.getDetailAddr())
+                && !AiJsonUtil.containsHangul(tour.getOverview());
         if (nativeLooksTranslated) return;
 
         String cachedNm = "en".equals(lang) ? tour.getTourNmEn() : tour.getTourNmJa();
@@ -1115,15 +1494,46 @@ public class TourListServicelmpl implements TourListService {
         // 이름만 캐시된 걸로는 "다 캐시됐다"고 보지 않는다. 목록 화면(tourSearch)은
         // 이름만 먼저 번역해 캐시해두기 때문에, 이름만 보고 판단하면 설명/주소는
         // 영원히 번역을 시도하지 않고 한국어로 남는 문제가 있었다. 설명은 원본이 비어있는
-        // 관광지도 있어 판단 기준으로 쓰기 어려우니, 주소(모든 관광지에 항상 있음)까지
-        // 같이 캐시돼 있어야 "다 캐시됨"으로 본다.
+        // 관광지도 있어 판단 기준으로 쓰기 어려우니, 원본 설명이 있는데 캐시만 비어있는
+        // 경우(번역이 실패했거나 아직 시도 안 된 경우)만 "다 캐시되지 않음"으로 본다.
+        boolean overviewNeedsTranslation = tour.getOverview() != null && !tour.getOverview().isBlank()
+                && (cachedOverview == null || cachedOverview.isBlank());
         boolean fullyCached = cachedNm != null && !cachedNm.isBlank()
-                && cachedRoadAddr != null && !cachedRoadAddr.isBlank();
+                && cachedRoadAddr != null && !cachedRoadAddr.isBlank()
+                && !overviewNeedsTranslation;
         if (fullyCached) {
             tour.setTourNm(cachedNm);
             if (cachedOverview != null && !cachedOverview.isBlank()) tour.setOverview(cachedOverview);
             tour.setRoadAddr(cachedRoadAddr);
             if (cachedDetailAddr != null && !cachedDetailAddr.isBlank()) tour.setDetailAddr(cachedDetailAddr);
+            return;
+        }
+
+        // 이름/주소는 이미 캐시돼 있는데 설명만 없는 경우(목록 화면에서 이름만 먼저
+        // 캐시해둔 관광지를 상세로 열 때 흔하다)가 많다. 이때 이름/주소까지 통째로
+        // 다시 Gemini에 물어보면 느리고 토큰도 낭비이므로, 캐시된 값은 그대로 쓰고
+        // 설명만 별도로(작은 프롬프트로) 번역한다.
+        boolean nameAndAddrCached = cachedNm != null && !cachedNm.isBlank()
+                && cachedRoadAddr != null && !cachedRoadAddr.isBlank();
+        if (nameAndAddrCached) {
+            tour.setTourNm(cachedNm);
+            tour.setRoadAddr(cachedRoadAddr);
+            if (cachedDetailAddr != null && !cachedDetailAddr.isBlank()) tour.setDetailAddr(cachedDetailAddr);
+
+            Map<String, String> overviewInput = new LinkedHashMap<>();
+            overviewInput.put(tour.getTourId(), tour.getOverview());
+            Map<String, String> translatedOverview = translateFreeTexts(overviewInput, lang);
+            String overview = translatedOverview.get(tour.getTourId());
+            if (overview != null && !overview.isBlank()) {
+                tourListMapper.updateTourTranslation(
+                        tour.getTourId(),
+                        null, null,
+                        "en".equals(lang) ? overview : null,
+                        "ja".equals(lang) ? overview : null,
+                        null, null, null, null
+                );
+                tour.setOverview(overview);
+            }
             return;
         }
 

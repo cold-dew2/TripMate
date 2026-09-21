@@ -12,7 +12,7 @@ const Introduce = ({ place }: { place: PlaceDetail }) => {
         <KakaoMap
           latitude={place.latitude}
           longitude={place.longitude}
-          address={place.roadAddr}
+          address={place.roadAddrKo || place.roadAddr}
           title={place.tourNm}
         />
       </div>

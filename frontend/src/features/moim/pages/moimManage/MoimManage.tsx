@@ -4,6 +4,7 @@ import useMyMoim from '../../hooks/useMyMoim';
 import useMoimMembers from '../../hooks/useMoimMembers';
 import { formatDateWithDow } from '@/shared/utils/date';
 import PageState from '@/shared/components/pageState/PageState';
+import { useIsLoggedIn } from '@/shared/hooks/useIsLoggedIn';
 import type { MyMoim } from '@/types/moim';
 import './MoimManage.css';
 
@@ -30,6 +31,7 @@ const MoimManageRow = ({ moim, index }: { moim: MyMoim; index: number }) => {
 
 const MoimManage = () => {
   const { t } = useTranslation();
+  const { isLoggedIn } = useIsLoggedIn();
   const { data: myMoim, isLoading, isError } = useMyMoim();
   const hostedMoims = (myMoim ?? []).filter((moim) => moim.roleCd === 'A');
 
@@ -43,7 +45,7 @@ const MoimManage = () => {
         <div className="empty-manage">
           <span>🧳</span>
           <p>{t('moim.emptyManageMsg')}</p>
-          <Link to="/createMoim">{t('moim.emptyManageCta')}</Link>
+          {isLoggedIn && <Link to="/createMoim">{t('moim.emptyManageCta')}</Link>}
         </div>
       ) : (
         <ul className="manage-list">

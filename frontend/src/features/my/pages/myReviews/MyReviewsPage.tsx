@@ -51,8 +51,10 @@ const MyReviewsPage = () => {
                   <span className="stars" aria-hidden="true">{'★'.repeat(review.reviewScore)}</span>
                   <time>{review.createDt}</time>
                 </div>
-                <p>{review.reviewContent}</p>
-                {review.imgUrls && <ReviewImageGrid urls={review.imgUrls.split(',')} />}
+                <div className="mypage-review-content">
+                  <p>{review.reviewContent}</p>
+                  {review.imgUrls && <ReviewImageGrid urls={review.imgUrls.split(',')} maxVisible={1} />} 
+                </div>
               </div>
             </li>
           ))}

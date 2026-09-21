@@ -2,6 +2,7 @@ package com.example.backend.trma.mapper;
 
 import com.example.backend.trma.dto.dataList.TourAiDetailData;
 import com.example.backend.trma.dto.dataList.TourAiSearchData;
+import com.example.backend.trma.dto.dataList.TourCoordinateData;
 import com.example.backend.trma.dto.dataList.TourDetailData;
 import com.example.backend.trma.dto.dataList.TourDetailReviewData;
 import com.example.backend.trma.dto.dataList.TourSearchData;
@@ -23,6 +24,8 @@ public interface TourListMapper {
     TourDetailData tourDetail(@Param("tourId") String tourId, @Param("lang") String lang);
     //관광지 이름 일괄 조회(번역 캐시 확인용)
     List<TourSearchData> tourByIds(@Param("tourIds") List<String> tourIds, @Param("lang") String lang);
+    //관광지 좌표 일괄 조회(실시간 길찾기용)
+    List<TourCoordinateData> tourCoordinatesByIds(@Param("tourIds") List<String> tourIds);
     //관광지 상세조회(리뷰)
     List<TourDetailReviewData> tourDetailReview(@Param("tourId") String tourId, @Param("offset") int offset);
     //관광지 후기 등록

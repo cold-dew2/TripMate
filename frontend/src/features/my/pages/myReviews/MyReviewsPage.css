@@ -10,9 +10,6 @@
   border: 1px solid var(--gray-100);
   border-radius: var(--radius-lg);
 }
-.review-image-grid li {
-  
-}
 .my-review-avatar {
   flex-shrink: 0;
   width: 32px;
@@ -48,4 +45,18 @@
   margin-top: 4px;
   color: var(--gray-700);
   font-size: var(--fs-sm);
+}
+
+.mypage-review-content {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  margin-top: 10px;
+}
+.review-image-grid {
+  margin-top: 0;
+}
+.review-image-grid li {
+  padding: 0;
+  border: none;
 }

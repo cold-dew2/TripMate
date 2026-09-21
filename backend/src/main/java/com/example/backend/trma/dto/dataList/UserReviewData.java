@@ -8,8 +8,11 @@ import lombok.Setter;
 @NoArgsConstructor
 @Setter
 public class UserReviewData {
+    private String reviewId;
     private String reviewTitle;
     private String reviewContent;
+    private String reviewContentEn;
+    private String reviewContentJa;
     private int reviewScore;
     private String userNm;
     private String profileImgUrl;

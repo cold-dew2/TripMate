@@ -2,9 +2,10 @@ import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "@/shared/api/client";
 import { getApiLang } from "@/shared/utils/lang";
 import type { MyMoim } from "@/types/moim";
+import useTranslationCatchup from "@/shared/hooks/useTranslationCatchup";
 
 export const useMyMoim = (enabled = true) => {
-  return useQuery({
+  const query = useQuery({
     queryKey: ["myMoim", getApiLang()],
     queryFn: async () => {
       const result = await apiClient.get<{ data: MyMoim[] }>("/moimList/myMoim", { lang: getApiLang() });
@@ -13,6 +14,10 @@ export const useMyMoim = (enabled = true) => {
     },
     enabled,
   });
+
+  useTranslationCatchup(query.refetch, enabled && !query.isLoading);
+
+  return query;
 };
 
 export default useMyMoim;

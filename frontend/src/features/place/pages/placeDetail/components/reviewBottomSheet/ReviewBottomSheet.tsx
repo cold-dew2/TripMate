@@ -63,6 +63,7 @@ export default function ReviewBottomSheet({ tourId, onClose }: { tourId: string;
                 type="button"
                 role="radio"
                 aria-checked={score === star}
+                aria-label={`${star} - ${t(SCORE_LABEL_KEYS[star])}`}
                 className={star <= score ? 'star-btn filled' : 'star-btn'}
                 onClick={() => setValue('reviewScore', star)}
               >★</button>

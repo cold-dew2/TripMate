@@ -56,7 +56,12 @@ const SignupPage = () => {
     });
 
     if (!result.success) {
-      setSignupError(t("account.signupFailed"));
+      // 아이디 중복처럼 원인이 명확한 실패는 그 원인을 그대로 보여준다(예전엔 무슨
+      // 이유든 똑같은 "가입 실패" 문구만 떠서, 아이디가 겹친 건지 서버 오류인지
+      // 사용자가 구분할 수 없었다).
+      setSignupError(
+        result.code === "USER_ALREADY_EXISTS" ? t("account.userAlreadyExists") : t("account.signupFailed")
+      );
       return;
     }
 

@@ -26,6 +26,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
 @Service
 @RequiredArgsConstructor
@@ -50,7 +51,16 @@ public class MoimListServicelmpl implements MoimListService {
             request.setOffset(offset);
 
             List<MoimSearchData> moimSearch = moimListMapper.moimSearch(request);
-            applyMoimSearchTranslations(moimSearch, request.getLang());
+            // 다른 목록 화면(tourSearch 등)과 동일하게, 번역 대기를 0.5초로 제한해
+            // 캐시가 없는 첫 조회에서도 응답이 오래 붙잡히지 않게 한다.
+            try {
+                CompletableFuture.runAsync(() -> applyMoimSearchTranslations(moimSearch, request.getLang()))
+                        .get(500, java.util.concurrent.TimeUnit.MILLISECONDS);
+            } catch (java.util.concurrent.TimeoutException e) {
+                log.warn("소모임 목록 번역이 0.5초 안에 끝나지 않아 한국어로 먼저 응답합니다. lang={}", request.getLang());
+            } catch (Exception e) {
+                log.warn("소모임 목록 번역 대기 중 오류가 발생했습니다. lang={}", request.getLang(), e);
+            }
             return new MoimSearchResponse(
                     true,
                     200,
@@ -281,29 +291,40 @@ public class MoimListServicelmpl implements MoimListService {
 
         try {
             MoimDetailData moimDetail = moimListMapper.moimDetail(request.getMoimId());
-            applyMoimDetailTranslation(moimDetail, request.getLang());
+            if (moimDetail == null) {
+                return new MoimDetailResponse(
+                        false,
+                        404,
+                        "MOIM_DELETED",
+                        "삭제되었거나 존재하지 않는 모임입니다.",
+                        "/moimList/moimDetail",
+                        "",
+                        null, null, null, null, null
+                );
+            }
             List<MoimCateData> moimCate = moimListMapper.moimCate(request.getMoimId());
             List<MoimPlanData> moimPlan = moimListMapper.moimPlan(request.getMoimId(), request.getLang());
-            // moimPlan은 캐시된 번역(TOUR_NM_EN/JA)만 읽어오는데, 아직 그 언어로 한 번도
-            // 조회된 적 없는 관광지는 캐시가 비어 있어 한국어 이름이 그대로 나온다. 여기서
-            // 한 번 더 번역을 시도해 캐시를 채우고 화면에도 바로 반영한다.
-            if (moimPlan != null && !moimPlan.isEmpty()) {
-                // 공식 일어/영어 데이터나 Gemini 캐시로 이미 이름이 채워진 항목
-                // (NATIVE_MATCH_YN='Y')은 다시 번역할 필요가 없다.
-                List<String> tourIdsNeedingTranslation = moimPlan.stream()
-                        .filter(item -> !"Y".equals(item.getNativeMatchYn()))
-                        .map(MoimPlanData::getTourId)
-                        .toList();
-                Map<String, String> translatedNames = tourListService.translateTourNames(
-                        tourIdsNeedingTranslation,
-                        request.getLang()
-                );
-                for (MoimPlanData item : moimPlan) {
-                    String translatedNm = translatedNames.get(item.getTourId());
-                    if (translatedNm != null && !translatedNm.isBlank()) {
-                        item.setTourNm(translatedNm);
-                    }
-                }
+
+            // 제목/소개 번역과 일정 관광지명 번역은 서로 무관하니, 캐시가 없어 Gemini를
+            // 둘 다 호출해야 하는 최초 조회(cold-cache)에서 순차 대기로 응답이 느려지지
+            // 않도록 동시에 실행한다(리뷰 작성 화면처럼 이 정보만 필요한 "고정 페이지"도
+            // moimDetail을 그대로 쓰기 때문에 특히 체감이 컸다).
+            CompletableFuture<Void> titleTranslation = CompletableFuture.runAsync(
+                    () -> applyMoimDetailTranslation(moimDetail, request.getLang()));
+            CompletableFuture<Void> planTranslation = CompletableFuture.runAsync(
+                    () -> applyMoimPlanTranslation(moimPlan, request.getLang()));
+            // 캐시가 완전히 비어 있는 최초 조회는 Gemini 응답이 늦어지면 3초를 넘기기
+            // 쉽다. 응답 시간을 보장하기 위해 번역 완료를 최대 0.5초만 기다리고, 그 안에
+            // 못 끝나면 아직 한국어인 상태로라도 바로 응답한다 — 두 작업은 취소하지
+            // 않고 계속 돌게 둬서, 이번 응답에는 못 실려도 캐시(DB)에는 저장되어 다음
+            // 조회부터는 번역된 채로 즉시 나온다.
+            try {
+                CompletableFuture.allOf(titleTranslation, planTranslation).get(500, java.util.concurrent.TimeUnit.MILLISECONDS);
+            } catch (java.util.concurrent.TimeoutException e) {
+                log.warn("모임 상세 번역이 0.5초 안에 끝나지 않아 한국어로 먼저 응답합니다. moimId={}, lang={}",
+                        request.getMoimId(), request.getLang());
+            } catch (Exception e) {
+                log.warn("모임 상세 번역 대기 중 오류가 발생했습니다. moimId={}, lang={}", request.getMoimId(), request.getLang(), e);
             }
             MoimJoinStatusData moimJoinStatus = moimListMapper.moimJoinStatus(request.getMoimId(), userId);
             MoimReviewStatusData moimReviewStatus = moimListMapper.moimReviewStatus(request.getMoimId(), userId);
@@ -386,10 +407,20 @@ public class MoimListServicelmpl implements MoimListService {
             List<MyMoimData> myMoimList = moimListMapper.myMoim(userId);
             if ("en".equals(lang) || "ja".equals(lang)) {
                 List<String> moimIds = myMoimList.stream().map(MyMoimData::getMoimId).toList();
-                Map<String, String> titles = translateMoimTitles(moimIds, lang);
-                for (MyMoimData moim : myMoimList) {
-                    String title = titles.get(moim.getMoimId());
-                    if (title != null && !title.isBlank()) moim.setMoimTitle(title);
+                // 다른 목록과 동일하게 번역 대기를 0.5초로 제한한다.
+                try {
+                    CompletableFuture.supplyAsync(() -> translateMoimTitles(moimIds, lang))
+                            .thenAccept(titles -> {
+                                for (MyMoimData moim : myMoimList) {
+                                    String title = titles.get(moim.getMoimId());
+                                    if (title != null && !title.isBlank()) moim.setMoimTitle(title);
+                                }
+                            })
+                            .get(500, java.util.concurrent.TimeUnit.MILLISECONDS);
+                } catch (java.util.concurrent.TimeoutException e) {
+                    log.warn("내 모임 목록 번역이 0.5초 안에 끝나지 않아 한국어로 먼저 응답합니다. lang={}", lang);
+                } catch (Exception e) {
+                    log.warn("내 모임 목록 번역 대기 중 오류가 발생했습니다. lang={}", lang, e);
                 }
             }
 
@@ -424,13 +455,26 @@ public class MoimListServicelmpl implements MoimListService {
             String today = java.time.LocalDate.now(java.time.ZoneId.of("Asia/Seoul")).toString();
             List<MyTodayScheduleRowData> rows = moimListMapper.myTodaySchedule(userId, today);
 
-            Map<String, String> translatedTitles = "en".equals(lang) || "ja".equals(lang)
-                    ? translateMoimTitles(rows.stream().map(MyTodayScheduleRowData::getMoimId).distinct().toList(), lang)
-                    : Map.of();
-            Map<String, String> translatedPlaceNames = "en".equals(lang) || "ja".equals(lang)
-                    ? tourListService.translateTourNames(
-                            rows.stream().map(MyTodayScheduleRowData::getTourId).filter(java.util.Objects::nonNull).distinct().toList(), lang)
-                    : Map.of();
+            Map<String, String> translatedTitles = Map.of();
+            Map<String, String> translatedPlaceNames = Map.of();
+            if ("en".equals(lang) || "ja".equals(lang)) {
+                // 모임 제목 번역과 장소명 번역은 서로 무관하니 동시에 실행하고, 0.5초로
+                // 대기를 제한한다(다른 목록 화면과 동일한 이유).
+                CompletableFuture<Map<String, String>> titleFuture = CompletableFuture.supplyAsync(
+                        () -> translateMoimTitles(rows.stream().map(MyTodayScheduleRowData::getMoimId).distinct().toList(), lang));
+                CompletableFuture<Map<String, String>> placeFuture = CompletableFuture.supplyAsync(
+                        () -> tourListService.translateTourNames(
+                                rows.stream().map(MyTodayScheduleRowData::getTourId).filter(java.util.Objects::nonNull).distinct().toList(), lang));
+                try {
+                    CompletableFuture.allOf(titleFuture, placeFuture).get(500, java.util.concurrent.TimeUnit.MILLISECONDS);
+                    translatedTitles = titleFuture.getNow(Map.of());
+                    translatedPlaceNames = placeFuture.getNow(Map.of());
+                } catch (java.util.concurrent.TimeoutException e) {
+                    log.warn("오늘 일정 번역이 0.5초 안에 끝나지 않아 한국어로 먼저 응답합니다. lang={}", lang);
+                } catch (Exception e) {
+                    log.warn("오늘 일정 번역 대기 중 오류가 발생했습니다. lang={}", lang, e);
+                }
+            }
 
             // MOIM_ID 기준으로 묶는다. 쿼리가 이미 MOIM_ID로 정렬돼 있어 LinkedHashMap으로
             // 순서를 그대로 유지한다.
@@ -549,6 +593,19 @@ public class MoimListServicelmpl implements MoimListService {
             // 막기 위해, INSERT 전에 이미 신청/가입된 상태인지 먼저 확인한다. 최종적인
             // 동시성 보장은 DB의 (MOIM_ID, USER_ID) 유니크 제약이 하지만, 여기서 미리
             // 걸러내면 사용자에게 더 친절한 메시지를 보여줄 수 있다.
+            // 프론트는 본인 모임이면 신청 버튼 자체를 숨기지만, API를 직접 호출하면
+            // 우회할 수 있어 서버에서도 막는다.
+            if (userId.equals(moimListMapper.moimHostUserId(moimId))) {
+                return new ApplyMoimResponse(
+                        false,
+                        400,
+                        "SELF_APPLY",
+                        "본인이 만든 모임에는 신청할 수 없습니다.",
+                        "/moimList/" + moimId + "/apply",
+                        ""
+                );
+            }
+
             MoimJoinStatusData existing = moimListMapper.moimJoinStatus(moimId, userId);
             if (existing != null) {
                 return new ApplyMoimResponse(
@@ -605,6 +662,56 @@ public class MoimListServicelmpl implements MoimListService {
         }
     }
 
+    //모임 삭제(소프트 삭제, 방장 본인만 가능)
+    @Override
+    public DeleteMoimResponse deleteMoim(String moimId, String userId) {
+
+        try {
+            // UPDATE 조건 자체에 CREATE_USER = userId를 포함시켜, 영향받은 행이
+            // 0이면 "존재하지 않거나 본인 소유가 아님"으로 한 번에 판단한다(별도
+            // 조회 후 삭제하는 TOCTOU 틈을 만들지 않는다).
+            int updated = moimListMapper.deleteMoim(moimId, userId);
+            if (updated == 0) {
+                return new DeleteMoimResponse(
+                        false,
+                        403,
+                        "FORBIDDEN",
+                        "본인이 만든 모임만 삭제할 수 있습니다.",
+                        "/moimList/" + moimId,
+                        ""
+                );
+            }
+
+            // 모임이 사라졌는데 채팅방 멤버로는 계속 남아있으면, 채팅 목록에 더 이상
+            // 존재하지 않는 모임의 대화방이 유령처럼 남아있게 된다. 멤버 전원을
+            // 채팅방에서 내보내(메시지 자체는 남겨둔 채) 채팅 목록에서 사라지게 한다.
+            try {
+                chatMapper.deleteAllChatMembersByRoom("moim-" + moimId);
+            } catch (Exception e) {
+                log.warn("모임 삭제 후 채팅방 멤버 정리에 실패했습니다. moimId={}", moimId, e);
+            }
+
+            return new DeleteMoimResponse(
+                    true,
+                    200,
+                    "SUCCESS",
+                    "모임이 삭제되었습니다.",
+                    "/moimList/" + moimId,
+                    ""
+            );
+        } catch (Exception e) {
+            log.error("처리 중 오류가 발생했습니다.", e);
+            return new DeleteMoimResponse(
+                    false,
+                    500,
+                    "FAIL",
+                    "모임 삭제 중 오류가 발생했습니다.",
+                    "/moimList/" + moimId,
+                    ""
+            );
+        }
+    }
+
     //모임 멤버 목록 조회
     @Override
     public MoimMembersResponse moimMembers(String moimId) {
@@ -655,6 +762,27 @@ public class MoimListServicelmpl implements MoimListService {
             }
 
             if (request.isApprove()) {
+                // 정원 체크 없이 승인만 되던 구멍을 막는다 — 특히 "전체선택 후 일괄승인"에서
+                // 한 번에 정원을 넘겨버릴 수 있었다. 이미 승인된 멤버 재승인(멱등 처리)은
+                // 정원 계산에서 제외해 막히지 않게 한다.
+                // FOR UPDATE로 모임 행을 잠가서, 여러 신청을 동시에(예: 전체선택 일괄승인)
+                // 승인해도 정원 체크가 한 번에 하나씩만 통과하게 한다.
+                Integer maxMember = moimListMapper.moimMaxMemberForUpdate(moimId);
+                if (maxMember != null) {
+                    MoimJoinStatusData targetStatus = moimListMapper.moimJoinStatus(moimId, targetUserId);
+                    boolean alreadyApproved = targetStatus != null && "Y".equals(targetStatus.getStateCd());
+                    if (!alreadyApproved && moimListMapper.approvedMemberCount(moimId) >= maxMember) {
+                        return new UpdateMoimMemberResponse(
+                                false,
+                                409,
+                                "MOIM_FULL",
+                                "모임 정원이 가득 찼습니다.",
+                                "/moimList/" + moimId + "/members/" + targetUserId,
+                                ""
+                        );
+                    }
+                }
+
                 moimListMapper.updateMoimMemberState(moimId, targetUserId, "Y", userId);
                 // 승인된 사람을 소모임 채팅방에도 자동으로 합류시킨다(모임 인원수와
                 // 채팅방 인원수가 어긋나지 않도록). 이미 들어와 있으면 INSERT IGNORE라 아무
@@ -783,6 +911,21 @@ public class MoimListServicelmpl implements MoimListService {
     public CreateMoimReviewResponse createMoimReview(String moimId, CreateMoimReviewRequest request, String userId) {
 
         try {
+            // 여행이 아직 끝나지 않은(종료일이 지나지 않은) 소모임에는 후기를 남길 수
+            // 없다. 검증 없이 등록만 됐던 걸 막는다.
+            MoimSearchData moimInfo = moimListMapper.moimInfo(moimId);
+            if (moimInfo == null || moimInfo.getMoimEndDt() == null
+                    || !moimInfo.getMoimEndDt().isBefore(java.time.LocalDate.now())) {
+                return new CreateMoimReviewResponse(
+                        false,
+                        400,
+                        "MOIM_NOT_FINISHED",
+                        "여행이 끝난 후에 후기를 남길 수 있습니다.",
+                        "/moimList/" + moimId + "/review",
+                        ""
+                );
+            }
+
             String imgUrls = request.getImageUrls() == null ? null : String.join(",", request.getImageUrls());
             String reviewId = "RVO" + UUID.randomUUID().toString().replace("-", "").substring(0, 12).toUpperCase();
             moimListMapper.insertMoimReview(reviewId, moimId, request, imgUrls, userId);
@@ -814,7 +957,17 @@ public class MoimListServicelmpl implements MoimListService {
 
         try {
             List<MoimReviewData> reviews = moimListMapper.moimReviews(moimId);
-            applyMoimReviewTranslations(reviews, lang);
+            // moimDetail과 같은 이유로, 캐시가 없는 후기 번역이 응답을 오래 붙잡지
+            // 않도록 최대 0.5초만 기다린다. 못 끝나면 한국어로 먼저 보여주고, 번역은
+            // 백그라운드에서 계속 돌아 캐시에 저장된다.
+            try {
+                CompletableFuture.runAsync(() -> applyMoimReviewTranslations(reviews, lang))
+                        .get(500, java.util.concurrent.TimeUnit.MILLISECONDS);
+            } catch (java.util.concurrent.TimeoutException e) {
+                log.warn("모임 후기 번역이 0.5초 안에 끝나지 않아 한국어로 먼저 응답합니다. moimId={}, lang={}", moimId, lang);
+            } catch (Exception e) {
+                log.warn("모임 후기 번역 대기 중 오류가 발생했습니다. moimId={}, lang={}", moimId, lang, e);
+            }
 
             return new MoimReviewsResponse(
                     true,
@@ -1027,6 +1180,27 @@ public class MoimListServicelmpl implements MoimListService {
         }
     }
 
+    // moimPlan은 캐시된 번역(TOUR_NM_EN/JA)만 읽어오는데, 아직 그 언어로 한 번도
+    // 조회된 적 없는 관광지는 캐시가 비어 있어 한국어 이름이 그대로 나온다. 여기서
+    // 한 번 더 번역을 시도해 캐시를 채우고 화면에도 바로 반영한다.
+    private void applyMoimPlanTranslation(List<MoimPlanData> moimPlan, String lang) {
+        if (moimPlan == null || moimPlan.isEmpty()) return;
+
+        // 공식 일어/영어 데이터나 Gemini 캐시로 이미 이름이 채워진 항목
+        // (NATIVE_MATCH_YN='Y')은 다시 번역할 필요가 없다.
+        List<String> tourIdsNeedingTranslation = moimPlan.stream()
+                .filter(item -> !"Y".equals(item.getNativeMatchYn()))
+                .map(MoimPlanData::getTourId)
+                .toList();
+        Map<String, String> translatedNames = tourListService.translateTourNames(tourIdsNeedingTranslation, lang);
+        for (MoimPlanData item : moimPlan) {
+            String translatedNm = translatedNames.get(item.getTourId());
+            if (translatedNm != null && !translatedNm.isBlank()) {
+                item.setTourNm(translatedNm);
+            }
+        }
+    }
+
     // 관광지 후기와 동일하게 REVIEW_ID 기준으로 캐시한다.
     private void applyMoimReviewTranslations(List<MoimReviewData> reviews, String lang) {
         if (!"en".equals(lang) && !"ja".equals(lang)) return;
@@ -1202,6 +1376,61 @@ public class MoimListServicelmpl implements MoimListService {
             }
         } catch (Exception e) {
             log.warn("소모임 제목 일괄 번역에 실패했습니다. lang={}", lang, e);
+        }
+        return result;
+    }
+
+    //translateMoimTitles와 동일한 용도로, 홈 화면처럼 소모임 설명만 필요한 다른
+    //화면에서 재사용한다. MOIM_DSCR_EN/JA 캐시를 우선 쓰고, 없는 것만 모아 번역한다.
+    @Override
+    public Map<String, String> translateMoimDescriptions(List<String> moimIds, String lang) {
+        if (!"en".equals(lang) && !"ja".equals(lang)) return Map.of();
+        if (moimIds == null || moimIds.isEmpty()) return Map.of();
+
+        List<String> distinctIds = moimIds.stream()
+                .filter(id -> id != null && !id.isBlank())
+                .distinct()
+                .toList();
+        if (distinctIds.isEmpty()) return Map.of();
+
+        List<MoimTitleTranslationData> moims = moimListMapper.moimTitlesByIds(distinctIds);
+
+        Map<String, String> result = new HashMap<>();
+        List<MoimTitleTranslationData> uncached = new ArrayList<>();
+        for (MoimTitleTranslationData moim : moims) {
+            if (moim.getMoimDscr() == null || moim.getMoimDscr().isBlank()) continue;
+
+            String cached = "en".equals(lang) ? moim.getMoimDscrEn() : moim.getMoimDscrJa();
+            if (cached != null && !cached.isBlank() && !AiJsonUtil.containsHangul(cached)) {
+                result.put(moim.getMoimId(), cached);
+            } else {
+                uncached.add(moim);
+            }
+        }
+        if (uncached.isEmpty()) return result;
+
+        try {
+            Map<String, String> toTranslate = new java.util.LinkedHashMap<>();
+            for (MoimTitleTranslationData moim : uncached) {
+                toTranslate.put(moim.getMoimId(), moim.getMoimDscr());
+            }
+
+            Map<String, String> translated = tourListService.translateFreeTexts(toTranslate, lang);
+            for (MoimTitleTranslationData moim : uncached) {
+                String dscr = translated.get(moim.getMoimId());
+                if (dscr == null || dscr.isBlank()) continue;
+
+                moimListMapper.updateMoimTranslation(
+                        moim.getMoimId(),
+                        null,
+                        null,
+                        "en".equals(lang) ? dscr : null,
+                        "ja".equals(lang) ? dscr : null
+                );
+                result.put(moim.getMoimId(), dscr);
+            }
+        } catch (Exception e) {
+            log.warn("소모임 설명 일괄 번역에 실패했습니다. lang={}", lang, e);
         }
         return result;
     }

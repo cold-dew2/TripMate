@@ -7,14 +7,29 @@
   font-weight: var(--fw-bold);
 }
 .step4-search {
+  position: relative;
   margin-bottom: var(--space-lg);
 }
 .step4-search input {
   width: 100%;
   padding: var(--space-lg);
+  padding-right: 44px;
   border: 1px solid var(--gray-200);
   border-radius: var(--radius-md);
   background: var(--white);
+  box-sizing: border-box;
+}
+.step4-search-btn {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  font-size: 16px;
+  line-height: 1;
+  padding: 8px;
+  cursor: pointer;
 }
 
 .filter-tabs {

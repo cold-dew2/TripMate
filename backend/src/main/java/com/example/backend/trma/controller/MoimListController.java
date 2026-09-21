@@ -142,6 +142,27 @@ public class MoimListController {
         return moimListService.applyMoim(moimId, userId);
     }
 
+    //모임 삭제(방장 본인만 가능)
+    @DeleteMapping("/{moimId}")
+    public DeleteMoimResponse deleteMoim(@PathVariable String moimId, Authentication authentication) {
+
+        if (authentication == null || !authentication.isAuthenticated()
+                || "anonymousUser".equals(authentication.getName())) {
+
+            return new DeleteMoimResponse(
+                    false,
+                    500,
+                    "NEED_LOGIN",
+                    "로그인이 필요합니다.",
+                    "/moimList/" + moimId,
+                    ""
+            );
+        }
+
+        String userId = authentication.getName();
+        return moimListService.deleteMoim(moimId, userId);
+    }
+
     //모임 멤버 목록 조회
     @GetMapping("/{moimId}/members")
     public MoimMembersResponse moimMembers(@PathVariable String moimId) {

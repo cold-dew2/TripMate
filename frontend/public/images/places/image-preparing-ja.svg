@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 200" width="400" height="200" role="img" aria-label="画像準備中">
+  <rect width="400" height="200" fill="#eeeff6"/>
+  <g fill="none" stroke="#b0b2c9" stroke-width="8" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="145" y="46" width="110" height="80" rx="10"/>
+    <path d="M145 106l26-26 21 19 21-27 37 35"/>
+  </g>
+  <circle cx="232" cy="58" r="20" fill="#eeeff6" stroke="#8b8fb3" stroke-width="6"/>
+  <path d="M232 48v9l7 5" fill="none" stroke="#8b8fb3" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="200" y="158" text-anchor="middle" font-family="'Hiragino Sans', 'Yu Gothic', sans-serif" font-size="20" font-weight="600" fill="#6b6d89">画像準備中</text>
+</svg>

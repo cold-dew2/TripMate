@@ -108,15 +108,21 @@
             ,b.STATE_CD AS MY_STATE
         FROM TB_TRMA_CHAT_ROOM a
         INNER JOIN TB_TRMA_CHAT_MEMBER b ON a.ROOM_ID = b.ROOM_ID
+        <!-- 마지막 메시지를 구하는 서브쿼리가 원래는 시스템 전체 채팅방의 메시지를 다
+             집계한 뒤 바깥 WHERE에서 이 사용자 방만 걸러냈다. 어차피 최종적으로는
+             b.USER_ID = #{userId}인 방만 남으므로, unreadCount 서브쿼리(u)처럼
+             TB_TRMA_CHAT_MEMBER로 먼저 이 사용자 방만 좁혀서 집계하도록 바꿨다. -->
         LEFT JOIN (
             SELECT
                 m1.ROOM_ID
                 ,m1.CONTENT
             FROM TB_TRMA_CHAT_MESSAGE m1
             INNER JOIN (
-                SELECT ROOM_ID, MAX(MESSAGE_ID) AS MESSAGE_ID
-                FROM TB_TRMA_CHAT_MESSAGE
-                GROUP BY ROOM_ID
+                SELECT cm1.ROOM_ID, MAX(cm1.MESSAGE_ID) AS MESSAGE_ID
+                FROM TB_TRMA_CHAT_MESSAGE cm1
+                INNER JOIN TB_TRMA_CHAT_MEMBER mem1
+                    ON cm1.ROOM_ID = mem1.ROOM_ID AND mem1.USER_ID = #{userId}
+                GROUP BY cm1.ROOM_ID
             ) m2 ON m1.ROOM_ID = m2.ROOM_ID AND m1.MESSAGE_ID = m2.MESSAGE_ID
         ) m ON a.ROOM_ID = m.ROOM_ID
         LEFT JOIN (
@@ -155,10 +161,15 @@
     <!-- ========================= -->
     <!-- 채팅방 읽음 처리 -->
     <!-- ========================= -->
+    <!-- LAST_READ_DT/CREATE_DT가 초 단위(DATETIME)로만 저장될 때는, 같은 초 안에
+         "읽음"과 "새 메시지 전송"이 일어나면(실시간 채팅에서 흔한 일) 아직 그
+         메시지를 볼 수 없었던 사람도 LAST_READ_DT = CREATE_DT가 되어(둘 다 초 단위로
+         반올림) "이미 읽음"으로 잘못 카운트되는 문제가 있었다. 두 컬럼 모두
+         DATETIME(3)(밀리초)로 넓히고 CURRENT_TIMESTAMP(3)을 써서 이 동시성 문제를 없앴다. -->
     <update id="updateLastRead">
 
         UPDATE TB_TRMA_CHAT_MEMBER
-        SET LAST_READ_DT = CURRENT_TIMESTAMP
+        SET LAST_READ_DT = CURRENT_TIMESTAMP(3)
         WHERE ROOM_ID = #{roomId}
         AND USER_ID = #{userId}
 
@@ -212,7 +223,7 @@
             #{roomId}
             ,#{senderId}
             ,#{content}
-            ,CURRENT_TIMESTAMP
+            ,CURRENT_TIMESTAMP(3)
         )
 
     </insert>
@@ -282,6 +293,16 @@
         DELETE FROM TB_TRMA_CHAT_MEMBER
         WHERE ROOM_ID = #{roomId}
             AND USER_ID = #{userId}
+
+    </delete>
+
+    <!-- ========================= -->
+    <!-- 소모임이 삭제됐을 때, 그 소모임 채팅방에 남아있던 멤버 전원을 내보낸다 -->
+    <!-- ========================= -->
+    <delete id="deleteAllChatMembersByRoom">
+
+        DELETE FROM TB_TRMA_CHAT_MEMBER
+        WHERE ROOM_ID = #{roomId}
 
     </delete>
 

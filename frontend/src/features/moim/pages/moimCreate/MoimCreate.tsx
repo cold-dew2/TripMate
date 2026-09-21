@@ -143,8 +143,13 @@ const MoimCreate = () => {
     setValue("moimPlanData", flattened);
   }, [itemsByDay, moimStartDt, setValue]);
 
+  // replace: true로 바꾸지 않으면 스텝을 옮길 때마다(1→2→...→7) 브라우저 히스토리에
+  // 엔트리가 하나씩 쌓인다. 이 마법사 안에서의 "이전" 버튼은 브라우저 뒤로가기가 아니라
+  // handleHeaderBack이 직접 처리하므로 이 히스토리 엔트리들은 원래 쓸모가 없는데, 생성
+  // 완료 후 상세 화면으로 넘어간 다음 뒤로가기를 누르면 모임 목록이 아니라 이 마법사의
+  // 이전 스텝들을 하나씩 거슬러 올라가는 문제가 있었다.
   const goToStep = (step: number) => {
-    setSearchParams({ step: String(step) });
+    setSearchParams({ step: String(step) }, { replace: true });
   };
 
   const handleNext = () => goToStep(currentStep + 1);
@@ -220,6 +225,7 @@ const MoimCreate = () => {
 
       {currentStep === 1 && (
         <Step1
+          watch={watch}
           setValue={setValue}
           onNext={handleNext}
           defaultThemeId={prefill?.themeId}
@@ -228,6 +234,7 @@ const MoimCreate = () => {
 
       {currentStep === 2 && (
         <Step2
+          watch={watch}
           setValue={setValue}
           onNext={handleNext}
           onPrev={handlePrev}

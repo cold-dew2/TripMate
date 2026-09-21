@@ -1,4 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import "./PageHeader.css"
 
 interface PageHeaderProps {
@@ -13,6 +14,7 @@ interface PageHeaderProps {
 
 const PageHeader = ({ pageTitle, contentTitle, href, linkText, current, total, onBack }: PageHeaderProps) => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   return (
     <div className="page-title">
@@ -20,7 +22,7 @@ const PageHeader = ({ pageTitle, contentTitle, href, linkText, current, total, o
         {contentTitle && (
           <>
             <button type="button" onClick={onBack ?? (() => navigate(-1))} className="btn-back">
-              <span className="blind">뒤로가기</span>
+              <span className="blind">{t("account.back")}</span>
             </button>
             <h1 className="coontent-title">{contentTitle}</h1>
           </>

@@ -1,5 +1,7 @@
+import { useState } from 'react';
 import Card from '../card/Card'
 import Skeleton from '../skeleton/Skeleton'
+import ImagePreparing from '../imagePreparing/ImagePreparing'
 import { useTranslation } from 'react-i18next';
 import "./MoimCard.css"
 
@@ -20,6 +22,7 @@ interface Props {
 
 const MoimCard = ({ loading = false, badge, imageUrl, title, date, member, maxMember, views, desc, place, userNm, userRating }: Props) => {
   const { t } = useTranslation();
+  const [imageBroken, setImageBroken] = useState(false);
   return (
     <Card className="moim-card">
       {loading ? (
@@ -49,11 +52,15 @@ const MoimCard = ({ loading = false, badge, imageUrl, title, date, member, maxMe
             </div>
           )}
           <div className="img">
-            <img
-              src={imageUrl || "/images/places/no-image.svg"}
-              alt={t("image.alt", { title })}
-              onError={(event) => { event.currentTarget.src = "/images/places/no-image.svg"; }}
-            />
+            {imageUrl && !imageBroken ? (
+              <img
+                src={imageUrl}
+                alt={t("image.alt", { title })}
+                onError={() => setImageBroken(true)}
+              />
+            ) : (
+              <ImagePreparing />
+            )}
             <p className="title">{title}</p>
           </div>
           {desc && (

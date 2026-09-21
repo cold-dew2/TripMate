@@ -88,7 +88,11 @@
             GROUP BY owner_id
         ) e ON a.CREATE_USER = e.CREATE_USER
         WHERE a.USE_YN = 'Y'
-            AND a.MOIM_START_DT > NOW()
+            <!-- MOIM_START_DT는 시각 없이 날짜만 저장되므로 NOW()와 직접 비교하면(> NOW())
+                 오늘 시작하는 모임이 자정(00:00:00) 취급되어 현재 시각보다 항상 작아
+                 검색 결과에서 통째로 빠지는 문제가 있었다. 날짜 단위로만 비교해 오늘
+                 시작하는 모임도 하루 종일 노출되게 한다. -->
+            AND a.MOIM_START_DT >= CURDATE()
             <if test="keyword != null and keyword != ''">
                 AND (
                 a.MOIM_TITLE LIKE CONCAT('%', #{keyword}, '%')
@@ -98,6 +102,10 @@
             <if test="cateCd != null and cateCd != ''">
                 AND c.CATE_CD = #{cateCd}
             </if>
+        <!-- 정렬 기준이 없으면 인덱스/조인 순서에 따라 매번 다른 순서로 보여, 목록이
+             새로고침할 때마다 뒤섞이는 것처럼 보였다. 최근에 등록된 모임이 먼저 보이도록
+             등록순(CREATE_DT 내림차순)으로 정렬한다. -->
+        ORDER BY a.CREATE_DT DESC, a.MOIM_ID DESC
         LIMIT 10 OFFSET #{offset}
     </select>
 
@@ -115,6 +123,56 @@
     </select>
 
     <!-- ========================= -->
+    <!-- 모임 삭제(소프트 삭제) -->
+    <!-- ========================= -->
+    <update id="deleteMoim">
+        UPDATE TB_TRMA_MOIM_LIST
+        SET USE_YN = 'N'
+        WHERE MOIM_ID = #{moimId} AND CREATE_USER = #{userId} AND USE_YN = 'Y'
+    </update>
+
+    <!-- ========================= -->
+    <!-- 모임 정원 조회 -->
+    <!-- ========================= -->
+    <select id="moimMaxMember"
+            parameterType="String"
+            resultType="Integer">
+
+        SELECT MAX_MEMBER
+        FROM TB_TRMA_MOIM_LIST
+        WHERE MOIM_ID = #{moimId}
+
+    </select>
+
+    <!-- ========================= -->
+    <!-- 모임 정원 조회(정원 체크+승인을 한 트랜잭션 안에서 직렬화하기 위해 행 잠금) -->
+    <!-- ========================= -->
+    <select id="moimMaxMemberForUpdate"
+            parameterType="String"
+            resultType="Integer">
+
+        SELECT MAX_MEMBER
+        FROM TB_TRMA_MOIM_LIST
+        WHERE MOIM_ID = #{moimId}
+        FOR UPDATE
+
+    </select>
+
+    <!-- ========================= -->
+    <!-- 모임 승인된 멤버 수(정원 초과 승인 방지용) -->
+    <!-- ========================= -->
+    <select id="approvedMemberCount"
+            parameterType="String"
+            resultType="int">
+
+        SELECT COUNT(1)
+        FROM TB_TRMA_MOIM_MEMBER
+        WHERE MOIM_ID = #{moimId}
+            AND STATE_CD = 'Y'
+
+    </select>
+
+    <!-- ========================= -->
     <!-- 소모임 제목 일괄 조회(번역 캐시 확인용) -->
     <!-- ========================= -->
     <select id="moimTitlesByIds"
@@ -125,6 +183,9 @@
             ,MOIM_TITLE
             ,MOIM_TITLE_EN
             ,MOIM_TITLE_JA
+            ,MOIM_DSCR
+            ,MOIM_DSCR_EN
+            ,MOIM_DSCR_JA
         FROM TB_TRMA_MOIM_LIST
         WHERE MOIM_ID IN
         <foreach collection="moimIds" item="moimId" open="(" separator="," close=")">
@@ -193,6 +254,14 @@
             a.MOIM_ID
             ,a.MOIM_TITLE
             ,a.MOIM_DSCR
+            <!-- 목록 화면(moimSearch)에서 이미 번역해 캐시해둔 값을 상세 화면도 그대로
+                 읽어온다. 이 컬럼들이 빠져 있으면 캐시가 있어도 DTO에 절대 채워지지
+                 않아 상세 화면은 매번 새로 Gemini를 불러야 했다(그마저도 0.5초 예산
+                 안에 못 끝나면 한국어로 고정). -->
+            ,a.MOIM_TITLE_EN
+            ,a.MOIM_TITLE_JA
+            ,a.MOIM_DSCR_EN
+            ,a.MOIM_DSCR_JA
             ,a.MOIM_START_DT
             ,a.MOIM_END_DT
             ,a.MAX_MEMBER
@@ -231,11 +300,17 @@
         FROM TB_TRMA_MOIM_LIST a
         LEFT JOIN TB_TRMA_USER_INFO b ON a.CREATE_USER = b.USER_ID
         LEFT JOIN TB_TRMA_MOIM_MEMBER c ON a.MOIM_ID = c.MOIM_ID AND c.ROLE_CD = 'A'
-        WHERE a.MOIM_ID = #{moimId}
+        <!-- 삭제된(USE_YN='N') 소모임은 조회되지 않게 해서, 서비스 레이어가 null로
+             판단해 "삭제됨" 응답을 내려줄 수 있게 한다. -->
+        WHERE a.MOIM_ID = #{moimId} AND a.USE_YN = 'Y'
         GROUP BY
             a.MOIM_ID
             ,a.MOIM_TITLE
             ,a.MOIM_DSCR
+            ,a.MOIM_TITLE_EN
+            ,a.MOIM_TITLE_JA
+            ,a.MOIM_DSCR_EN
+            ,a.MOIM_DSCR_JA
             ,a.MOIM_START_DT
             ,a.MOIM_END_DT
             ,a.MAX_MEMBER
@@ -281,6 +356,7 @@
                 <otherwise>,b.TOUR_NM</otherwise>
             </choose>
             ,b.ROAD_ADDR
+            ,b.FIRST_IMAGE
             ,d.CMM_CDV AS CATE_CD
             ,d.CMM_CM_NM AS CATE_NM
             <choose>

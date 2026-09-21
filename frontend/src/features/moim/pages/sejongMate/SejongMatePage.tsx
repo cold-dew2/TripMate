@@ -9,6 +9,7 @@ import useMoimList from "../../hooks/useMoimList";
 import type { MoimCreatePrefill } from "@/types/moim";
 import { translateCategoryList } from "@/shared/utils/category";
 import useUrlState from "@/shared/hooks/useUrlState";
+import { useIsLoggedIn } from "@/shared/hooks/useIsLoggedIn";
 import "./SejongMatePage.css";
 
 const STYLE_FILTER_IDS: { id: string; icon: string; label: string }[] = [
@@ -30,99 +31,26 @@ interface Course {
   eyebrow: string;
   title: string;
   duration: string;
-  themeId: string;
   dscr: string;
   stops: CourseStop[];
 }
 
-const COURSES: Record<string, Course> = {
-  all: {
-    eyebrow: "세종 추천 코스",
-    title: "세종 초록 산책 코스",
-    duration: "약 5시간",
-    themeId: "theme1",
-    dscr: "세종호수공원 → 국립세종수목원 → 금강보행교를 함께 걷는 코스예요. 편한 신발 신고 오세요!",
-    stops: [
-      { name: "세종호수공원", address: "세종특별자치시 세종동 1201" },
-      { name: "국립세종수목원", address: "세종특별자치시 수목원로 136" },
-      { name: "금강보행교", address: "세종특별자치시 나성동" },
-    ],
-  },
-  NAT: {
-    eyebrow: "자연 추천 코스",
-    title: "세종 초록 산책 코스",
-    duration: "약 5시간",
-    themeId: "theme1",
-    dscr: "세종호수공원 → 국립세종수목원 → 금강보행교를 함께 걷는 코스예요. 편한 신발 신고 오세요!",
-    stops: [
-      { name: "세종호수공원", address: "세종특별자치시 세종동 1201" },
-      { name: "국립세종수목원", address: "세종특별자치시 수목원로 136" },
-      { name: "금강보행교", address: "세종특별자치시 나성동" },
-    ],
-  },
-  NIG: {
-    eyebrow: "야경 추천 코스",
-    title: "세종 야경 산책 코스",
-    duration: "약 2시간",
-    themeId: "theme6",
-    dscr: "호수공원부터 금강보행교까지, 사진 찍으면서 천천히 걸어요.",
-    stops: [
-      { name: "세종호수공원", address: "세종특별자치시 세종동 1201" },
-      { name: "금강보행교", address: "세종특별자치시 나성동" },
-    ],
-  },
-  ACT: {
-    eyebrow: "자전거 추천 코스",
-    title: "세종 어울링 라이딩 코스",
-    duration: "약 3시간 20분",
-    themeId: "theme4",
-    dscr: "공공자전거 어울링을 타고 세종시 대표 명소를 둘러보는 코스예요.",
-    stops: [
-      { name: "세종호수공원", address: "세종특별자치시 세종동 1201" },
-      { name: "세종중앙공원", address: "세종특별자치시 중앙공원로 60" },
-      { name: "국립세종수목원", address: "세종특별자치시 수목원로 136" },
-      { name: "금강보행교", address: "세종특별자치시 나성동" },
-    ],
-  },
-  PHO: {
-    eyebrow: "사진 추천 코스",
-    title: "세종 포토스팟 코스",
-    duration: "약 3시간",
-    themeId: "theme6",
-    dscr: "금강보행교와 국립세종수목원, 세종을 대표하는 포토스팟을 함께 담아봐요.",
-    stops: [
-      { name: "금강보행교", address: "세종특별자치시 나성동" },
-      { name: "국립세종수목원", address: "세종특별자치시 수목원로 136" },
-    ],
-  },
-  RES: {
-    eyebrow: "맛집 추천 코스",
-    title: "세종 나성동 맛집 코스",
-    duration: "약 2시간 30분",
-    themeId: "theme3",
-    dscr: "나성동 맛집 거리를 둘러보고 호수공원까지 산책하는 코스예요.",
-    stops: [
-      { name: "나성동 맛집거리", address: "세종특별자치시 나성동" },
-      { name: "세종호수공원", address: "세종특별자치시 세종동 1201" },
-    ],
-  },
-  CUL: {
-    eyebrow: "도시탐방 추천 코스",
-    title: "세종 행정도시 투어",
-    duration: "약 4시간",
-    themeId: "theme2",
-    dscr: "대통령기록관부터 국립세종도서관까지, 행정중심도시 세종을 둘러보는 코스예요.",
-    stops: [
-      { name: "대통령기록관", address: "세종특별자치시 다솜로 250" },
-      { name: "정부세종청사", address: "세종특별자치시 한누리대로 2130" },
-      { name: "국립세종도서관", address: "세종특별자치시 다솜로 261" },
-      { name: "세종호수공원", address: "세종특별자치시 세종동 1201" },
-    ],
-  },
+// 코스 자체(제목/설명/경유지)는 고정 콘텐츠라 AI 번역 없이 translation.json에
+// 언어별로 미리 넣어두고 가져다 쓴다. themeId(Step2 프리필용 테마 코드)는 번역
+// 대상이 아니라 코드값이라 별도로 관리한다.
+const THEME_IDS: Record<string, string> = {
+  all: "theme1",
+  NAT: "theme1",
+  NIG: "theme6",
+  ACT: "theme4",
+  PHO: "theme6",
+  RES: "theme3",
+  CUL: "theme2",
 };
 
 const SejongMatePage = () => {
   const { t } = useTranslation();
+  const { isLoggedIn } = useIsLoggedIn();
   const [activeStyle, setActiveStyle] = useUrlState("style", "all");
   const STYLE_FILTERS: FilterOption[] = useMemo(
     () => STYLE_FILTER_IDS.map((option) => ({
@@ -140,11 +68,15 @@ const SejongMatePage = () => {
     return moims.filter((moim) => moim.cateCd?.split(",").includes(activeStyle));
   }, [moims, activeStyle]);
 
-  const course = COURSES[activeStyle] ?? COURSES.all;
+  const courses = useMemo(
+    () => t("sejongMate.courses", { returnObjects: true }) as Record<string, Course>,
+    [t]
+  );
+  const course = courses[activeStyle] ?? courses.all;
   const coursePrefill: MoimCreatePrefill = {
     title: course.title,
     dscr: course.dscr,
-    themeId: course.themeId,
+    themeId: THEME_IDS[activeStyle] ?? THEME_IDS.all,
     region: "세종",
     courseStops: course.stops,
   };
@@ -171,7 +103,9 @@ const SejongMatePage = () => {
           ))}
         </p>
         <p className="sejong-course-duration">🚶 {course.duration}</p>
-        <Button as={Link} to="/createMoim" state={coursePrefill} text={t("sejongMate.courseCta")} />
+        {isLoggedIn && (
+          <Button as={Link} to="/createMoim" state={coursePrefill} text={t("sejongMate.courseCta")} />
+        )}
       </section>
 
       <h2 className="sejong-mate-section-title">🔥 {t("sejongMate.recruitingTitle")}</h2>
@@ -186,7 +120,7 @@ const SejongMatePage = () => {
               <Link to={`/moim/${moim.moimId}`}>
                 <MoimCard
                   badge={translateCategoryList(moim.cateNm, t)}
-                  imageUrl={moim.imageUrl || "/images/places/no-image.svg"}
+                  imageUrl={moim.imageUrl}
                   title={moim.moimTitle}
                   desc={moim.moimDscr}
                   date={moim.moimStartDt}

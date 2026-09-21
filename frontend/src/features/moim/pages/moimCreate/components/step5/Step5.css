@@ -50,8 +50,3 @@
 .step5-transport-trigger {
   margin-bottom: var(--space-lg);
 }
-.step5-transport-error {
-  margin-top: var(--space-xs);
-  color: var(--red-700);
-  font-size: var(--fs-sm);
-}

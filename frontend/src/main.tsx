@@ -18,6 +18,14 @@ const queryClient = new QueryClient({
                 if (code === "NEED_LOGIN" || code === "AI_UNAVAILABLE") return false;
                 return failureCount < 1;
             },
+            // staleTime 기본값(0)이면 캐시가 있어도 "약간이라도 지난" 데이터로 취급해
+            // 다시 mount될 때마다 곧바로 백그라운드 재요청을 건다. 번역 API처럼 응답이
+            // 느린 화면(관광지 목록, 모임 상세 등)은 이 재요청 때문에 뒤로 갔다 다시
+            // 들어올 때마다 로딩이 다시 도는 것처럼 보였다. 이 정도 데이터(관광지/모임
+            // 정보)는 몇 분 안에 바뀔 일이 거의 없으니, 잠깐은 "신선하다"고 보고 재요청을
+            // 건너뛴다 — 실시간성이 필요한 화면(채팅, 알림 등)은 각자 자기 훅에서
+            // staleTime을 0으로 따로 지정해 이 기본값을 무시하면 된다.
+            staleTime: 60 * 1000,
         },
     },
 });

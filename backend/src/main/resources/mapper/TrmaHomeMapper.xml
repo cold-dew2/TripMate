@@ -57,6 +57,12 @@
     <select id="bestTourList"
             resultType="com.example.backend.trma.dto.dataList.BestTourListData">
 
+        <!-- 예전에는 전체 리뷰를 관광지/지역/카테고리까지 다 조인해서 부풀린 뒤에야
+             GROUP BY + LIMIT 5로 추렸다(13초 이상 걸림). 카테고리 조인이 관광지 하나당
+             여러 행으로 fan-out되기 때문에, 정작 필요한 건 상위 5개뿐인데 시스템 전체
+             리뷰 데이터를 다 부풀려 집계한 셈이었다. 리뷰 평점만으로 먼저 상위 5개
+             TOUR_ID를 가볍게(fan-out 없이) 추린 뒤, 그 5개에 대해서만 지역명/카테고리
+             같은 무거운 조인을 붙인다. -->
         SELECT
             b.TOUR_ID
             ,b.TOUR_NM
@@ -65,14 +71,23 @@
             ,b.SGG_CD
             ,c2.CMM_CM_NM AS SGG_NM
             ,b.ROAD_ADDR
+            ,b.ROAD_ADDR_EN
+            ,b.ROAD_ADDR_JA
             ,b.DETAIL_ADDR
             ,b.ZIP_CD
             ,CAST(GROUP_CONCAT(DISTINCT d.CATE_CD ORDER BY d.CATE_CD) AS CHAR) AS CATE_CD
             ,CAST(GROUP_CONCAT(DISTINCT e.CMM_CM_NM ORDER BY e.CMM_CM_NM) AS CHAR) AS CATE_NM
-            ,AVG(a.REVIEW_SCORE) AS AVG_SCORE
+            ,top.AVG_SCORE
             ,b.FIRST_IMAGE
-        FROM TB_TRMA_MOIM_REVIEW a
-        LEFT JOIN TB_TRMA_TOUR_LIST b ON a.TOUR_ID = b.TOUR_ID
+        FROM (
+            SELECT r.TOUR_ID, AVG(r.REVIEW_SCORE) AS AVG_SCORE
+            FROM TB_TRMA_MOIM_REVIEW r
+            INNER JOIN TB_TRMA_TOUR_LIST t ON r.TOUR_ID = t.TOUR_ID AND t.USE_YN = 'Y'
+            GROUP BY r.TOUR_ID
+            ORDER BY AVG_SCORE DESC
+            LIMIT 5
+        ) top
+        INNER JOIN TB_TRMA_TOUR_LIST b ON top.TOUR_ID = b.TOUR_ID
         LEFT JOIN TB_TRMA_CMM_CD_D c1 ON c1.CMM_CD_ID = 'SIDO_CD'
             AND c1.CMM_CDV LIKE CONCAT(LPAD(b.SIDO_CD, 2, '0'), '%')
         LEFT JOIN TB_TRMA_CMM_CD_D c2 ON c2.CMM_CD_ID = 'SGG_CD'
@@ -80,7 +95,6 @@
         LEFT JOIN TB_TRMA_TOUR_CATE d ON b.TOUR_ID = d.TOUR_ID
         LEFT JOIN TB_TRMA_CMM_CD_D e ON d.CATE_CD = e.CMM_CDV
             AND e.CMM_CD_ID = 'TOUR_LCLS_CD'
-        WHERE b.USE_YN = 'Y'
         GROUP BY
             b.TOUR_ID
             ,b.TOUR_NM
@@ -89,10 +103,13 @@
             ,b.SGG_CD
             ,c2.CMM_CM_NM
             ,b.ROAD_ADDR
+            ,b.ROAD_ADDR_EN
+            ,b.ROAD_ADDR_JA
             ,b.DETAIL_ADDR
             ,b.ZIP_CD
-        ORDER BY AVG_SCORE DESC
-        LIMIT 5;
+            ,top.AVG_SCORE
+            ,b.FIRST_IMAGE
+        ORDER BY top.AVG_SCORE DESC;
 
     </select>
 
@@ -126,18 +143,26 @@
               WHERE cal.MOIM_ID = b.MOIM_ID
               ORDER BY cal.START_DT ASC, cal.RMKS ASC
               LIMIT 1) AS IMAGE_URL
+        <!-- bestTourList와 동일한 이유로, 카테고리 조인의 fan-out이 상위 5개를 추리기 전
+             전체 모임에 걸려 있었다. 방문수로 상위 5개 MOIM_ID만 먼저 가볍게 추린 뒤,
+             그 5개에만 카테고리/작성자 조인을 붙인다. -->
         FROM (
-            SELECT
-            MOIM_ID,
-            COUNT(1) AS VISIT_CNT
-            FROM TB_TRMA_MOIM_VISIT_H
-            GROUP BY MOIM_ID
+            SELECT v1.MOIM_ID, v1.VISIT_CNT
+            FROM (
+                SELECT
+                MOIM_ID,
+                COUNT(1) AS VISIT_CNT
+                FROM TB_TRMA_MOIM_VISIT_H
+                GROUP BY MOIM_ID
+            ) v1
+            INNER JOIN TB_TRMA_MOIM_LIST m1 ON v1.MOIM_ID = m1.MOIM_ID AND m1.USE_YN = 'Y'
+            ORDER BY v1.VISIT_CNT DESC
+            LIMIT 5
         ) v
         INNER JOIN TB_TRMA_MOIM_LIST b ON v.MOIM_ID = b.MOIM_ID
         LEFT JOIN TB_TRMA_USER_INFO d ON b.CREATE_USER = d.USER_ID
         LEFT JOIN TB_TRMA_MOIM_CATE e ON e.MOIM_ID = b.MOIM_ID
         LEFT JOIN TB_TRMA_CMM_CD_D f ON e.CATE_CD = f.CMM_CDV AND f.CMM_CD_ID = 'CATE_ID'
-        WHERE b.USE_YN = 'Y'
         GROUP BY
             b.MOIM_ID
             ,b.MOIM_TITLE
@@ -148,8 +173,7 @@
             ,d.USER_NM
             ,b.MAX_MEMBER
             ,v.VISIT_CNT
-        ORDER BY v.VISIT_CNT DESC
-        LIMIT 5;
+        ORDER BY v.VISIT_CNT DESC;
 
     </select>
 

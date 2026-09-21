@@ -3,6 +3,7 @@ import { createBrowserRouter, RouterProvider } from "react-router-dom"
 import { contentRoutes, mainRoutes, myRoutes, noLayoutRoutes } from "./path/paths";
 import ContentLayout from "@/layouts/ContentLayout";
 import MyLayout from "@/layouts/MyLayout";
+import NoLayout from "@/layouts/NoLayout";
 
 const router = createBrowserRouter([
   {
@@ -17,7 +18,10 @@ const router = createBrowserRouter([
     element: <MyLayout />,
     children: myRoutes,
   },
-  ...noLayoutRoutes,
+  {
+    element: <NoLayout />,
+    children: noLayoutRoutes,
+  },
 ]);
 const Router = () => <RouterProvider router={router} />;
 export default Router

@@ -9,6 +9,8 @@ import type { PlanItem } from "../../MoimCreate";
 import type { UseFormSetValue, UseFormWatch } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { useAlert } from "@/shared/contexts/AlertContext";
+import useAiWaitNotice from "@/shared/hooks/useAiWaitNotice";
+import { getApiLang } from "@/shared/utils/lang";
 import "./Step3.css";
 
 interface Step3Props {
@@ -54,6 +56,7 @@ const Step3 = ({ watch, setValue, itemsByDay, setItemsByDay, onAddDay, onPrev, o
 
   const [isRecommending, setIsRecommending] = useState(false);
   const [recommendError, setRecommendError] = useState<string | null>(null);
+  useAiWaitNotice(isRecommending, t("common.aiScheduleWait"));
 
   useEffect(() => {
     setValue("dayCount", dayCount);
@@ -83,12 +86,13 @@ const Step3 = ({ watch, setValue, itemsByDay, setItemsByDay, onAddDay, onPrev, o
       const result = await apiClient.post<{ data: AiScheduleItem[] }>("/tourList/aiSchedule", {
         cateCd: moimCateData?.[0]?.cateCd,
         cateNms: (moimCateData ?? []).map((c) => c.cateNm).filter(Boolean).join(", "),
-        keyword: region,
+        region,
         dayCount,
         maxMember,
         moimStartDt,
         moimEndDt,
         existingItems,
+        lang: getApiLang(),
       });
       if (!result.success) {
         const message = result.code === "AI_UNAVAILABLE"

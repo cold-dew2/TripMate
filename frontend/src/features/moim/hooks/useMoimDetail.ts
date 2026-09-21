@@ -2,13 +2,14 @@ import { apiClient } from "@/shared/api/client";
 import { getApiLang } from "@/shared/utils/lang";
 import { useQuery } from "@tanstack/react-query";
 import type { MoimDetailResponse } from "@/types/moim";
+import useTranslationCatchup from "@/shared/hooks/useTranslationCatchup";
 
 // .env의 VITE_API_BASE_URL이 /data(로컬 목업 JSON)를 가리킬 때는
 // 쿼리스트링 대신 moimId별 정적 파일 경로로 요청한다.
 const isMock = (import.meta.env.VITE_API_BASE_URL ?? "").startsWith("/data");
 
 const useMoimDetail = (moimId: string) => {
-  return useQuery({
+  const query = useQuery({
     queryKey: ["moimDetail", moimId, getApiLang()],
     queryFn: async () => {
       const endpoint = isMock
@@ -24,6 +25,10 @@ const useMoimDetail = (moimId: string) => {
     },
     enabled: !!moimId,
   });
+
+  useTranslationCatchup(query.refetch, !query.isLoading && !!moimId);
+
+  return query;
 };
 
 export default useMoimDetail;

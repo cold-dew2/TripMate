@@ -3,11 +3,12 @@ import { useTranslation } from 'react-i18next';
 import Button from '@/shared/components/button/Button';
 import Checkbox from '@/shared/components/checkbox/Checkbox';
 import './Step1.css'
-import type { UseFormSetValue } from 'react-hook-form';
+import type { UseFormSetValue, UseFormWatch } from 'react-hook-form';
 import type { MoimCreateForm } from '@/types/moim';
 import { useEffect, useState } from 'react';
 
 interface Step1Props {
+  watch: UseFormWatch<MoimCreateForm>;
   setValue: UseFormSetValue<MoimCreateForm>;
   onNext: () => void;
   defaultThemeId?: string;
@@ -86,9 +87,19 @@ const themeList = [
     ],
   },
 ]
-const Step1 = ({ setValue, onNext, defaultThemeId }: Step1Props) => {
+const Step1 = ({ watch, setValue, onNext, defaultThemeId }: Step1Props) => {
   const { t } = useTranslation();
-  const [selectedThemes, setSelectedThemes] = useState<string[]>(defaultThemeId ? [defaultThemeId] : []);
+  // 이전 단계로 갔다가 돌아왔을 때 이미 골라둔 테마가 있으면(watch로 부모 폼에 남아있는
+  // moimCateData) 그 테마들의 체크 상태를 복원한다. 없으면(첫 진입) prefill을 쓴다.
+  const [selectedThemes, setSelectedThemes] = useState<string[]>(() => {
+    const existingCateCodes = new Set((watch('moimCateData') ?? []).map((c) => c.cateCd));
+    if (existingCateCodes.size > 0) {
+      return themeList
+        .filter((theme) => theme.categories.some((c) => existingCateCodes.has(c.cateCd)))
+        .map((theme) => theme.id);
+    }
+    return defaultThemeId ? [defaultThemeId] : [];
+  });
 
   useEffect(() => {
     if (!defaultThemeId) return;

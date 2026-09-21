@@ -7,6 +7,7 @@ import useUser from '@/shared/hooks/useUser';
 import { getApiLang } from '@/shared/utils/lang';
 import FilterTabs from '@/shared/components/filterTabs/FilterTabs';
 import PageState from '@/shared/components/pageState/PageState';
+import useTranslationCatchup from '@/shared/hooks/useTranslationCatchup';
 import './ChatListPage.css';
 
 interface Room {
@@ -46,6 +47,8 @@ export default function ChatListPage() {
     retry: 1,
     enabled: isLoggedIn,
   });
+
+  useTranslationCatchup(rooms.refetch, isLoggedIn && !rooms.isLoading);
 
   const visibleRooms = (rooms.data ?? []).filter((room) => filter === 'all' || room.unreadCount > 0);
 

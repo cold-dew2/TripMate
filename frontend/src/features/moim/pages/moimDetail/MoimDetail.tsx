@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next';
 import useMoimDetail from '../../hooks/useMoimDetail'
@@ -15,20 +15,34 @@ import PageState from '@/shared/components/pageState/PageState';
 import ReviewImageGrid from '@/shared/components/reviewImageGrid/ReviewImageGrid';
 import { useAlert } from '@/shared/contexts/AlertContext';
 import { resolveImageUrl } from '@/shared/utils/url';
+import useTranslationCatchup from '@/shared/hooks/useTranslationCatchup';
+import useAiWaitNotice from '@/shared/hooks/useAiWaitNotice';
 import './MoimDetail.css';
 
 const MoimDetail = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { moimId } = useParams<{ moimId: string }>();
-  const { data: result, isLoading, isError, refetch } = useMoimDetail(moimId!);
+  const { data: result, isLoading, isError, error, refetch } = useMoimDetail(moimId!);
+  useTranslationCatchup(refetch, !isLoading);
   const applyMoim = useApplyMoim(moimId!);
   const { data: reviews } = useMoimReviews(moimId!);
   const { data: user } = useUser();
   const { showAlert, showConfirm } = useAlert();
+
+  // 알림에 남아있는 링크 등으로 이미 삭제된 소모임에 들어온 경우, 빈 화면이나
+  // 일반 에러 화면 대신 삭제됐다는 걸 명확히 알리고 내 모임 관리 목록으로 돌려보낸다.
+  useEffect(() => {
+    if (isError && (error as { code?: string } | null)?.code === 'MOIM_DELETED') {
+      showAlert(t('moim.deletedNotice'));
+      navigate('/moimManage', { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isError, error]);
   // 업로드 기록은 있는데 실제 파일이 없어져 깨진 이미지 아이콘으로 뜨는 경우를 대비한 안전장치.
   const [hostAvatarBroken, setHostAvatarBroken] = useState(false);
   const transportRecommend = useMoimTransportRecommend(moimId!);
+  useAiWaitNotice(transportRecommend.isFetching, t('moim.transportAnalysisWait'));
   const legsByKey = useMemo(() => {
     const map = new Map<string, TransportLeg>();
     (transportRecommend.data ?? []).forEach((leg) => {
@@ -125,7 +139,7 @@ const MoimDetail = () => {
                 key={date}
                 day={day}
                 date={date}
-                items={planByDay[date].map((item) => ({ id: `${date}-${item.tourNm}`, time: item.rmks, placeName: item.tourNm, tourId: item.tourId }))}
+                items={planByDay[date].map((item) => ({ id: `${date}-${item.tourNm}`, time: item.rmks, placeName: item.tourNm, tourId: item.tourId, imageUrl: item.firstImage }))}
                 renderBetween={(prevItem, item) => {
                   const leg = legsByKey.get(`${day}-${prevItem.tourId}-${item.tourId}`);
                   return leg ? <TransportLegView leg={leg} /> : null;

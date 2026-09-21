@@ -110,10 +110,24 @@
   font-weight: var(--fw-bold);
   white-space: nowrap;
 }
+.manage-detail-delete-row {
+  margin-top: var(--space-xl);
+  padding-top: var(--space-lg);
+  border-top: 1px solid var(--gray-100);
+}
+.manage-delete-btn {
+  width: 100%;
+  height: 44px;
+  border-radius: var(--radius-md);
+  color: var(--red-700);
+  background: var(--white-300);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-bold);
+}
 .member-host-badge {
   margin-left: var(--space-sm);
   padding: 2px 8px;
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-xl);
   color: var(--purple-600);
   background: var(--purple-100);
   font-size: var(--fs-xs);

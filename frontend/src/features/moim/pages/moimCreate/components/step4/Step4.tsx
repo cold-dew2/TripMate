@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import Button from "@/shared/components/button/Button";
@@ -6,6 +7,7 @@ import Input from "@/shared/components/input/Input";
 import FilterTabs from "@/shared/components/filterTabs/FilterTabs";
 import { apiClient } from "@/shared/api/client";
 import { getApiLang } from "@/shared/utils/lang";
+import { translateCategoryList } from "@/shared/utils/category";
 import { useAlert } from "@/shared/contexts/AlertContext";
 import type { MoimCreateForm } from "@/types/moim";
 import type { Place } from "@/types/place";
@@ -37,30 +39,42 @@ const Step4 = ({ day, watch, items, onAddItem, onRemoveItem, onDone }: Step4Prop
   const { showAlert } = useAlert();
   const moimCateData = watch("moimCateData");
   const region = watch("region");
-  const cateCodes = useMemo(() => (moimCateData ?? []).map((c) => c.cateCd), [moimCateData]);
+  // 관광지는 관광공사 API 분류(TOUR_LCLS_CD) 코드를 쓰고 모임 테마는 이 앱의 자체
+  // 분류(CATE_ID) 코드를 쓰기 때문에 cateCd끼리는 서로 비교할 수 없다. 대신 선택한
+  // 테마의 한글 이름(예: 해변, 카페)을 검색 키워드로 사용해 이름/설명/주소에 그
+  // 단어가 포함된 관광지를 추천 목록으로 보여준다.
+  const cateNames = useMemo(
+    () => Array.from(new Set((moimCateData ?? []).map((c) => c.cateNm).filter(Boolean))).slice(0, 5) as string[],
+    [moimCateData]
+  );
 
   const [activeTab, setActiveTab] = useState<TabId>("all");
   const [keyword, setKeyword] = useState("");
-  const [results, setResults] = useState<Place[]>([]);
-  const [recommendResults, setRecommendResults] = useState<Place[]>([]);
+  // 검색어를 직접 입력하지 않은 기본 목록은 Step2에서 고른 지역으로 좁혀서 보여준다.
+  // (검색어를 입력하면 그 검색어를 우선한다 — 백엔드가 키워드 하나만 받기 때문에 동시 적용은 안 됨)
+  const [debouncedKeyword, setDebouncedKeyword] = useState(region ?? "");
   const [customSpots, setCustomSpots] = useState<Place[]>([]);
   const [customName, setCustomName] = useState("");
   const [customAddr, setCustomAddr] = useState("");
   const [isSaving, setIsSaving] = useState(false);
-  const [isSearching, setIsSearching] = useState(true);
-  // 테마를 아직 안 골랐으면 애초에 추천 목록을 불러올 게 없으니 기본값은 false로 둔다
-  // (true로 두면 "추천 관광지" 탭에서 영원히 "검색 중..."만 보이게 된다).
-  const [isRecommendLoading, setIsRecommendLoading] = useState(false);
 
-  const runSearch = async (searchKeyword: string) => {
-    setIsSearching(true);
-    try {
-      const result = await apiClient.get<{ data: Place[] }>("/tourList/tourSearch", { page: 1, keyword: searchKeyword, lang: getApiLang() });
-      if (!result.success) return;
+  useEffect(() => {
+    const searchKeyword = keyword.trim() || region || "";
+    const timer = window.setTimeout(() => setDebouncedKeyword(searchKeyword), 300);
+    return () => window.clearTimeout(timer);
+  }, [keyword, region]);
+
+  // useQuery는 같은 queryKey로 한 번 받아온 결과를 캐시해두고, 재방문 시 그 캐시를
+  // 즉시 보여준 뒤 백그라운드로 최신화한다("검색 중..."만 뜨던 문제 개선).
+  const { data: results = [], isLoading: isSearching } = useQuery({
+    queryKey: ["step4TourSearch", debouncedKeyword, getApiLang()],
+    queryFn: async () => {
+      const result = await apiClient.get<{ data: Place[] }>("/tourList/tourSearch", { page: 1, keyword: debouncedKeyword, lang: getApiLang() });
+      if (!result.success) throw result;
 
       let places = result.data.data ?? [];
-      if (isMock && searchKeyword) {
-        const lower = searchKeyword.toLowerCase();
+      if (isMock && debouncedKeyword) {
+        const lower = debouncedKeyword.toLowerCase();
         places = places.filter((place) =>
           place.tourNm?.toLowerCase().includes(lower)
           || place.roadAddr?.toLowerCase().includes(lower)
@@ -68,51 +82,31 @@ const Step4 = ({ day, watch, items, onAddItem, onRemoveItem, onDone }: Step4Prop
           || place.sggNm?.toLowerCase().includes(lower)
         );
       }
-      setResults(places);
-    } finally {
-      setIsSearching(false);
-    }
-  };
+      return places;
+    },
+  });
 
-  useEffect(() => {
-    // 검색어를 직접 입력하지 않은 기본 목록은 Step2에서 고른 지역으로 좁혀서 보여준다.
-    // (검색어를 입력하면 그 검색어를 우선한다 — 백엔드가 키워드 하나만 받기 때문에 동시 적용은 안 됨)
-    const searchKeyword = keyword.trim() || region || "";
-    const timer = window.setTimeout(() => void runSearch(searchKeyword), 300);
-    return () => window.clearTimeout(timer);
-  }, [keyword, region]);
+  const { data: recommendResults = [], isLoading: isRecommendLoading } = useQuery({
+    queryKey: ["step4Recommend", cateNames.join(","), getApiLang()],
+    // 테마 개수만큼(최대 5개) tourSearch를 병렬로 호출하는 무거운 조회라, 화면
+    // 진입 시 "전체" 탭 조회와 한꺼번에 나가면 그만큼 느려진다. 사용자가 실제로
+    // "추천" 탭을 열 때만 호출하도록 미룬다.
+    enabled: activeTab === "recommend",
+    queryFn: async () => {
+      if (cateNames.length === 0) return [];
 
-  useEffect(() => {
-    // 관광지는 관광공사 API 분류(TOUR_LCLS_CD) 코드를 쓰고 모임 테마는 이 앱의
-    // 자체 분류(CATE_ID) 코드를 쓰기 때문에 cateCd끼리는 서로 비교할 수 없다.
-    // 대신 선택한 테마의 한글 이름(예: 해변, 카페)을 검색 키워드로 사용해
-    // 이름/설명/주소에 그 단어가 포함된 관광지를 추천 목록으로 보여준다.
-    let cancelled = false;
-    (async () => {
-      const cateNames = Array.from(new Set((moimCateData ?? []).map((c) => c.cateNm).filter(Boolean))).slice(0, 5) as string[];
-      if (cateNames.length === 0) {
-        setRecommendResults([]);
-        return;
-      }
-
-      setIsRecommendLoading(true);
       const lists = await Promise.all(
         cateNames.map(async (name) => {
           const result = await apiClient.get<{ data: Place[] }>("/tourList/tourSearch", { page: 1, keyword: name, lang: getApiLang() });
           return result.success ? result.data.data ?? [] : [];
         })
       );
-      if (cancelled) return;
 
       const merged = new Map<string, Place>();
       lists.flat().forEach((place) => merged.set(place.tourId, place));
-      setRecommendResults(Array.from(merged.values()).sort((a, b) => (b.avgScore ?? 0) - (a.avgScore ?? 0)));
-      setIsRecommendLoading(false);
-    })();
-
-    return () => { cancelled = true; };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cateCodes.join(",")]);
+      return Array.from(merged.values()).sort((a, b) => (b.avgScore ?? 0) - (a.avgScore ?? 0));
+    },
+  });
 
   const tabs = [
     { id: "all", label: t("moimCreate.step4.tabAll") },
@@ -203,12 +197,20 @@ const Step4 = ({ day, watch, items, onAddItem, onRemoveItem, onDone }: Step4Prop
             // 않으면 검색이 아니라 그 상위 form이 그대로 제출(=모임 등록)돼 버린다.
             if (event.key === "Enter") {
               event.preventDefault();
-              void runSearch(keyword.trim() || region || "");
+              setDebouncedKeyword(keyword.trim() || region || "");
             }
           }}
           placeholder={t("moimCreate.step4.searchPlaceholder")}
           aria-label={t("moimCreate.step4.searchPlaceholder")}
         />
+        <button
+          type="button"
+          className="step4-search-btn"
+          aria-label={t("moimCreate.step4.searchPlaceholder")}
+          onClick={() => setDebouncedKeyword(keyword.trim() || region || "")}
+        >
+          🔍
+        </button>
       </div>
 
       <FilterTabs options={tabs} activeId={activeTab} onChange={(id) => setActiveTab(id as TabId)} />
@@ -230,7 +232,7 @@ const Step4 = ({ day, watch, items, onAddItem, onRemoveItem, onDone }: Step4Prop
                 </span>
                 <span className="step4-info">
                   <strong>{place.tourNm}</strong>
-                  <span className="step4-cate">{place.cateNm || t("moimCreate.step4.customCateNm")}</span>
+                  <span className="step4-cate">{place.cateNm ? translateCategoryList(place.cateNm, t) : t("moimCreate.step4.customCateNm")}</span>
                 </span>
                 <button
                   type="button"

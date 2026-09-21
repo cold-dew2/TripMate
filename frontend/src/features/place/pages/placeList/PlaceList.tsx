@@ -9,6 +9,7 @@ import { useTranslation } from "react-i18next";
 import { Link, useNavigate } from "react-router-dom";
 import { translateCategoryList } from "@/shared/utils/category";
 import useUrlState from "@/shared/hooks/useUrlState";
+import "./PlaceList.css";
 
 const PLACE_FILTER_IDS: FilterOption[] = [
   { id: "all", label: "전체" },
@@ -16,11 +17,15 @@ const PLACE_FILTER_IDS: FilterOption[] = [
   { id: "서울", label: "서울" },
   { id: "부산", label: "부산" },
   { id: "제주", label: "제주" },
+  { id: "OTHER", label: "그외" },
 ];
 
-// 지역 탭은 카테고리 코드(cateCd)가 아니라 주소 키워드 검색으로 처리해야
-// 실제로 해당 지역 관광지가 필터링된다(cateCd로 보내면 항상 결과가 0건이 되는 버그였음).
-const REGION_IDS = ["세종", "서울", "부산", "제주"];
+// 지역 탭은 카테고리 코드(cateCd)로 필터링할 수 없다(cateCd는 관광지 종류 분류라
+// 지역과 무관해 항상 결과가 0건이었다). 대신 백엔드의 전용 region 파라미터를 쓴다
+// (도로명주소가 그 지역명으로 "시작"하는 것만 정확히 매칭 — 예전엔 keyword 검색을
+// 재사용해서 "세종대로"/"세종대왕" 같은 주소·설명 속 우연한 일치까지 섞여 나왔다).
+// "OTHER"는 등록된 지역 어디에도 속하지 않는 관광지를 모아 보여준다.
+const REGION_IDS = ["세종", "서울", "부산", "제주", "OTHER"];
 
 const PlaceList = () => {
   const { t } = useTranslation();
@@ -50,7 +55,7 @@ const PlaceList = () => {
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
-  } = usePlaceList(isRegionFilter ? "all" : activeFilter, isRegionFilter ? activeFilter : undefined);
+  } = usePlaceList("all", undefined, isRegionFilter ? activeFilter : undefined);
 
   // 2. 다차원 배열로 오는 pages 데이터를 1차원 배열로 평탄화 (flat)
   const places = useMemo(() => {
@@ -93,7 +98,7 @@ const PlaceList = () => {
           href="/search?q=세종&tab=place"
         />
         <section>
-          <form onSubmit={handleSearchSubmit}>
+          <form onSubmit={handleSearchSubmit} className="place-search-form">
             <Input
                 className="search"
                 label={t("place.searchLabel")}
@@ -103,6 +108,7 @@ const PlaceList = () => {
                 blind
                 onChange={(e) => setQuery(e.target.value)}
             />
+            <button type="submit" className="place-search-btn" aria-label={t("place.searchLabel")}>🔍</button>
           </form>
 
           <FilterTabs
@@ -123,7 +129,7 @@ const PlaceList = () => {
                     <li key={place.tourId}>
                       <Link to={`/place/${place.tourId}`}>
                         <SpotCard
-                            imageUrl={place.firstImage || `/images/places/no-image.svg`}
+                            imageUrl={place.firstImage}
                             title={place.tourNm}
                             place={place.roadAddr}
                             rating={place.avgScore}

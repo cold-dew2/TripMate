@@ -12,11 +12,17 @@ const DATE_LOCALES = { ko, ja } as const;
 interface DateRangePickerProps {
   label: string;
   onChange: (startDate: string, endDate: string) => void;
+  defaultStart?: string;
+  defaultEnd?: string;
 }
 
-const DateRangePicker = ({ label, onChange }: DateRangePickerProps) => {
+const DateRangePicker = ({ label, onChange, defaultStart, defaultEnd }: DateRangePickerProps) => {
   const { t } = useTranslation();
-  const [dateRange, setDateRange] = useState<DateRange | undefined>();
+  // 이전 단계로 갔다가 돌아왔을 때(컴포넌트가 다시 mount될 때) 이미 골라둔 날짜가
+  // 있으면 그대로 복원한다 — 없으면 기존처럼 빈 상태로 시작한다.
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(() =>
+    defaultStart ? { from: new Date(defaultStart), to: defaultEnd ? new Date(defaultEnd) : undefined } : undefined
+  );
   const [isOpen, setIsOpen] = useState(false);
 
   // react-day-picker의 range 모드는 이미 선택된 시작일/종료일을 기준으로 새로

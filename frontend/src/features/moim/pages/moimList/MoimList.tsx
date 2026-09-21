@@ -11,6 +11,8 @@ import RegionBanner from "@/shared/components/regionBanner/RegionBanner";
 import { resolveImageUrl } from "@/shared/utils/url";
 import { translateCategoryList } from "@/shared/utils/category";
 import useUrlState from "@/shared/hooks/useUrlState";
+import { useIsLoggedIn } from "@/shared/hooks/useIsLoggedIn";
+import "./MoimList.css";
 
 const MOIM_FILTER_IDS: FilterOption[] = [
   { id: "all", label: "전체" },
@@ -27,6 +29,7 @@ const REGION_IDS = ["세종", "서울", "부산", "제주"];
 const MoimList = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const { isLoggedIn } = useIsLoggedIn();
   const [query, setQuery] = useState("");
   const [activeFilter, setActiveFilter] = useUrlState("region", "all");
   const MoimFilter = useMemo(
@@ -90,7 +93,7 @@ const MoimList = () => {
           href="/moimList/sejong"
         />
         <section>
-          <form onSubmit={handleSearchSubmit}>
+          <form onSubmit={handleSearchSubmit} className="place-search-form">
             <Input
                 className="search"
                 label={t("home.searchLabel")}
@@ -100,6 +103,7 @@ const MoimList = () => {
                 blind
                 onChange={(e) => setQuery(e.target.value)}
             />
+            <button type="submit" className="place-search-btn" aria-label={t("home.searchLabel")}>🔍</button>
           </form>
 
           <FilterTabs
@@ -148,12 +152,14 @@ const MoimList = () => {
         </section>
 
       
-      <Link to="/createMoim">
-        <Button
-          text={t("moim.button")}
-          variant="fixed"
-        />
-      </Link>
+      {isLoggedIn && (
+        <Link to="/createMoim">
+          <Button
+            text={t("moim.button")}
+            variant="fixed"
+          />
+        </Link>
+      )}
       </>
   );
 };

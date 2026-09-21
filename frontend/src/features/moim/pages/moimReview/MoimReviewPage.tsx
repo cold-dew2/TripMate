@@ -38,26 +38,38 @@ const uploadFiles = async (files: File[]) => {
   }));
 };
 
-const StarRating = ({ score, onChange, label }: { score: number; onChange: (value: number) => void; label: string }) => (
-  <div className="review-score-block">
-    <span className="review-score-block-label">{label}</span>
-    <div className="review-star-row">
-      <div className="review-star-rating" role="radiogroup" aria-label={label}>
-        {[1, 2, 3, 4, 5].map((star) => (
-          <button
-            key={star}
-            type="button"
-            role="radio"
-            aria-checked={score === star}
-            className={star <= score ? 'star-btn filled' : 'star-btn'}
-            onClick={() => onChange(star)}
-          >★</button>
-        ))}
+const SCORE_LABEL_KEYS: Record<number, string> = {
+  1: 'review.scoreLabel1',
+  2: 'review.scoreLabel2',
+  3: 'review.scoreLabel3',
+  4: 'review.scoreLabel4',
+  5: 'review.scoreLabel5',
+};
+
+const StarRating = ({ score, onChange, label }: { score: number; onChange: (value: number) => void; label: string }) => {
+  const { t } = useTranslation();
+  return (
+    <div className="review-score-block">
+      <span className="review-score-block-label">{label}</span>
+      <div className="review-star-row">
+        <div className="review-star-rating" role="radiogroup" aria-label={label}>
+          {[1, 2, 3, 4, 5].map((star) => (
+            <button
+              key={star}
+              type="button"
+              role="radio"
+              aria-checked={score === star}
+              aria-label={`${star} - ${t(SCORE_LABEL_KEYS[star])}`}
+              className={star <= score ? 'star-btn filled' : 'star-btn'}
+              onClick={() => onChange(star)}
+            >★</button>
+          ))}
+        </div>
+        <span className="review-score-value">{score.toFixed(1)}</span>
       </div>
-      <span className="review-score-value">{score.toFixed(1)}</span>
     </div>
-  </div>
-);
+  );
+};
 
 const ImagePicker = ({ files, onAdd, onRemove, label, removeLabel }: { files: File[]; onAdd: (list: FileList | null) => void; onRemove: (index: number) => void; label: string; removeLabel: string }) => (
   <div className="review-image-block">
@@ -150,8 +162,13 @@ const MoimReviewPage = () => {
   const removeMoimFile = (index: number) => setMoimFiles((prev) => prev.filter((_, i) => i !== index));
 
   const submitTourReview = async (values: TourFormValues) => {
-    const imageUrls = await uploadFiles(tourFiles);
-    await createTourReview.mutateAsync({ ...values, moimId, imageUrls });
+    try {
+      const imageUrls = await uploadFiles(tourFiles);
+      await createTourReview.mutateAsync({ ...values, moimId, imageUrls });
+    } catch (error) {
+      showAlert((error as { message?: string })?.message ?? t('review.submitFailed'));
+      return;
+    }
     setReviewedTourIds((prev) => [...prev, values.tourId]);
     setTourWritten(true);
     if (moimWritten) {
@@ -165,8 +182,13 @@ const MoimReviewPage = () => {
   // "추가리뷰 남기기": 현재 작성한 리뷰만 저장하고, 다음 관광지를 이어서 쓸 수 있게
   // writeTour 단계에 그대로 남아 폼을 초기화한다(다른 리뷰 유형으로 넘어가지 않음).
   const addAnotherTourReview = async (values: TourFormValues) => {
-    const imageUrls = await uploadFiles(tourFiles);
-    await createTourReview.mutateAsync({ ...values, moimId, imageUrls });
+    try {
+      const imageUrls = await uploadFiles(tourFiles);
+      await createTourReview.mutateAsync({ ...values, moimId, imageUrls });
+    } catch (error) {
+      showAlert((error as { message?: string })?.message ?? t('review.submitFailed'));
+      return;
+    }
     setReviewedTourIds((prev) => [...prev, values.tourId]);
     setTourWritten(true);
     setTourFiles([]);
@@ -174,8 +196,13 @@ const MoimReviewPage = () => {
   };
 
   const submitMoimReview = async (values: MoimFormValues) => {
-    const imageUrls = await uploadFiles(moimFiles);
-    await createMoimReview.mutateAsync({ ...values, imageUrls });
+    try {
+      const imageUrls = await uploadFiles(moimFiles);
+      await createMoimReview.mutateAsync({ ...values, imageUrls });
+    } catch (error) {
+      showAlert((error as { message?: string })?.message ?? t('review.submitFailed'));
+      return;
+    }
     setMoimWritten(true);
     if (tourWritten || places.length === 0) {
       showAlert(t('review.flowComplete'));
@@ -193,7 +220,12 @@ const MoimReviewPage = () => {
     }
   };
 
-  const title = result ? `${t(result.data.moimTitle)} ${t('review.flowTitle')}` : t('review.flowTitle');
+  // moimTitle은 사용자가 지은 모임 이름(서버가 이미 요청 언어로 번역해 내려줌)이라
+  // t()로 감싸면 안 된다 — t()는 translation.json의 고정 키를 찾는 함수라, 여기 감싸면
+  // 매번 없는 키를 찾다가 원본 문자열을 그대로 돌려주는 것뿐이라 사실상 아무 효과가
+  // 없지만 의미상 잘못됐고, 혹시라도 제목이 흔한 단어와 우연히 겹치면 엉뚱하게
+  // 바뀔 수도 있다.
+  const title = result ? `${result.data.moimTitle} ${t('review.flowTitle')}` : t('review.flowTitle');
 
   if (!result) {
     return (

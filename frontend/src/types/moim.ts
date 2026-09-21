@@ -83,6 +83,7 @@ export interface MoimPlan {
   tourId: string;
   tourNm: string;
   roadAddr: string;
+  firstImage?: string;
 }
 
 export interface MoimJoinStatus {

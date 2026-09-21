@@ -1,0 +1,26 @@
+.not-found-page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: var(--space-xl);
+  text-align: center;
+  gap: var(--space-sm);
+}
+.not-found-code {
+  font-size: 56px;
+  font-weight: var(--fw-bold);
+  color: var(--purple-600);
+}
+.not-found-title {
+  font-size: var(--fs-lg);
+  font-weight: var(--fw-bold);
+}
+.not-found-desc {
+  color: var(--gray-500);
+  margin-bottom: var(--space-lg);
+}
+.not-found-page .btn {
+  width: 200px;
+}

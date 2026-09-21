@@ -1,6 +1,8 @@
+import { useState } from 'react';
 import type { MoimCategory, MoimDetail } from '@/types/moim';
 import { useTranslation } from 'react-i18next';
 import { resolveImageUrl } from '@/shared/utils/url';
+import ImagePreparing from '@/shared/components/imagePreparing/ImagePreparing';
 import './Header.css';
 
 interface moimDetailProps {
@@ -11,11 +13,17 @@ interface moimDetailProps {
 
 const Header = ({ moim, cate, onShare }: moimDetailProps) => {
   const { t } = useTranslation();
+  const [imageBroken, setImageBroken] = useState(false);
+  const resolvedImageUrl = resolveImageUrl(moim.imageUrl);
 
   return (
     <div className="detail-header">
       <div className="detail-img">
-        <img src={resolveImageUrl(moim.imageUrl) || "/images/places/no-image.svg"} alt={t('image.alt', { title: moim.moimTitle })} />
+        {resolvedImageUrl && !imageBroken ? (
+          <img src={resolvedImageUrl} alt={t('image.alt', { title: moim.moimTitle })} onError={() => setImageBroken(true)} />
+        ) : (
+          <ImagePreparing />
+        )}
         <button type="button" className="detail-share-btn" onClick={onShare} aria-label={t('moim.share')}>
           <span aria-hidden="true">🔗</span>
         </button>

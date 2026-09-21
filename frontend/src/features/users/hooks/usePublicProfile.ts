@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "@/shared/api/client";
 import { getApiLang } from "@/shared/utils/lang";
 import type { MyMoim } from "@/types/moim";
+import useTranslationCatchup from "@/shared/hooks/useTranslationCatchup";
 
 export interface LanguageCard {
   langCd: string;
@@ -37,7 +38,7 @@ export interface PublicProfileResult {
 }
 
 export const usePublicProfile = (userId: string) => {
-  return useQuery({
+  const query = useQuery({
     queryKey: ["publicProfile", userId, getApiLang()],
     queryFn: async () => {
       const result = await apiClient.get<PublicProfileResult>(`/users/${userId}/profile?lang=${getApiLang()}`);
@@ -46,6 +47,10 @@ export const usePublicProfile = (userId: string) => {
     },
     enabled: !!userId,
   });
+
+  useTranslationCatchup(query.refetch, !query.isLoading && !!userId);
+
+  return query;
 };
 
 export default usePublicProfile;

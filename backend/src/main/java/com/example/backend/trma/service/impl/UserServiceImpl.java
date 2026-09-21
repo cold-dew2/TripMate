@@ -15,6 +15,7 @@ import com.example.backend.trma.mapper.UserMapper;
 import com.example.backend.trma.service.MoimListService;
 import com.example.backend.trma.service.TourListService;
 import com.example.backend.trma.service.UserService;
+import com.example.backend.trma.util.AiJsonUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -27,6 +28,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 @Service
 @RequiredArgsConstructor
@@ -45,6 +49,36 @@ public class UserServiceImpl implements UserService {
 
     @Value("${jwt.rememberMeExpiration}")
     private long rememberMeExpiration;
+
+    // 로그인 무제한 시도(브루트포스) 방어용 — 인스턴스 하나짜리 배포라 인메모리로 충분하다.
+    // 아이디당 실패 횟수를 세다가 LOGIN_MAX_ATTEMPTS번 연속 실패하면 잠깐 잠근다.
+    private static final int LOGIN_MAX_ATTEMPTS = 5;
+    private static final long LOGIN_LOCK_DURATION_MILLIS = 60_000;
+    private static class LoginFailureState {
+        int failCount = 0;
+        long lockedUntilMillis = 0;
+    }
+    private final Map<String, LoginFailureState> loginFailures = new java.util.concurrent.ConcurrentHashMap<>();
+
+    private boolean isLoginLocked(String userId) {
+        if (userId == null) return false;
+        LoginFailureState state = loginFailures.get(userId);
+        return state != null && state.lockedUntilMillis > System.currentTimeMillis();
+    }
+
+    private synchronized void recordLoginFailure(String userId) {
+        if (userId == null) return;
+        LoginFailureState state = loginFailures.computeIfAbsent(userId, k -> new LoginFailureState());
+        state.failCount++;
+        if (state.failCount >= LOGIN_MAX_ATTEMPTS) {
+            state.lockedUntilMillis = System.currentTimeMillis() + LOGIN_LOCK_DURATION_MILLIS;
+            state.failCount = 0;
+        }
+    }
+
+    private void clearLoginFailure(String userId) {
+        if (userId != null) loginFailures.remove(userId);
+    }
 
     //아이디 중복확인
     @Override
@@ -259,20 +293,26 @@ public class UserServiceImpl implements UserService {
     public LoginResponse login(LoginRequest request) {
 
         try {
-            String userPw = userMapper.login(request);
-
-            if (userPw == null) {
+            // 무제한으로 비밀번호를 계속 시도할 수 있어(브루트포스 방어가 전혀 없었음),
+            // 같은 아이디로 짧은 시간 안에 실패가 반복되면 잠깐 잠근다.
+            if (isLoginLocked(request.getUserId())) {
                 return new LoginResponse(
                         false,
-                        401,
-                        "UNAUTHORIZED",
-                        "아이디가 올바르지 않습니다.",
+                        429,
+                        "LOGIN_LOCKED",
+                        "로그인 시도가 너무 많습니다. 잠시 후 다시 시도해주세요.",
                         "/login/login",
                         null
                 );
             }
 
-            if (!passwordEncoder.matches(request.getUserPw(), userPw)) {
+            String userPw = userMapper.login(request);
+
+            // "아이디가 없음"과 "비밀번호가 틀림"을 다른 메시지로 구분해서 보여주면
+            // 존재하는 아이디를 무작위로 찾아내는 계정 열거 공격에 악용될 수 있어,
+            // 두 경우 모두 같은 메시지로 응답한다.
+            if (userPw == null || !passwordEncoder.matches(request.getUserPw(), userPw)) {
+                recordLoginFailure(request.getUserId());
                 return new LoginResponse(
                         false,
                         401,
@@ -282,6 +322,7 @@ public class UserServiceImpl implements UserService {
                         null
                 );
             }
+            clearLoginFailure(request.getUserId());
 
             String token = jwtUtil.createToken(
                     request.getUserId(),
@@ -362,6 +403,7 @@ public class UserServiceImpl implements UserService {
             request.setOffset(offset);
 
             List<UserReviewData> userReview = userMapper.reviewList(request);
+            translateWithBudget(() -> applyMyReviewTranslations(userReview, request.getLang()), "마이페이지 리뷰");
 
             return new UserReviewResponse(
                     true,
@@ -394,11 +436,23 @@ public class UserServiceImpl implements UserService {
             UserDetailRequest detailRequest = new UserDetailRequest();
             detailRequest.setUserId(userId);
             UserDetailData userDetail = userMapper.userDetail(detailRequest);
-            applyProfileTranslation(userDetail, userId, lang);
 
             UserReviewRequest reviewRequest = new UserReviewRequest();
             reviewRequest.setUserId(userId);
             List<UserReviewData> reviewList = userMapper.reviewList(reviewRequest);
+
+            // 프로필 번역과 리뷰 번역은 서로 무관하니 동시에 실행한다.
+            CompletableFuture<Void> profileTranslation = CompletableFuture.runAsync(
+                    () -> applyProfileTranslation(userDetail, userId, lang));
+            CompletableFuture<Void> reviewTranslation = CompletableFuture.runAsync(
+                    () -> applyMyReviewTranslations(reviewList, lang));
+            try {
+                CompletableFuture.allOf(profileTranslation, reviewTranslation).get(500, TimeUnit.MILLISECONDS);
+            } catch (TimeoutException e) {
+                log.warn("마이페이지 번역이 0.5초 안에 끝나지 않아 한국어로 먼저 응답합니다. userId={}, lang={}", userId, lang);
+            } catch (Exception e) {
+                log.warn("마이페이지 번역 대기 중 오류가 발생했습니다. userId={}, lang={}", userId, lang, e);
+            }
 
             List<LanguageCardData> languages = userMapper.userLanguages(userId);
 
@@ -502,6 +556,19 @@ public class UserServiceImpl implements UserService {
         );
     }
 
+    // 캐시가 없어 Gemini를 불러야 하는 최초 조회에서도 응답이 오래 붙잡히지 않도록
+    // 번역 작업마다 최대 0.5초만 기다린다. 못 끝나면 한국어로라도 바로 응답하고, 번역은
+    // 백그라운드에서 계속 돌아 캐시에 저장되어 다음 조회부터는 즉시 나온다.
+    private void translateWithBudget(Runnable task, String label) {
+        try {
+            CompletableFuture.runAsync(task).get(500, TimeUnit.MILLISECONDS);
+        } catch (TimeoutException e) {
+            log.warn("{} 번역이 0.5초 안에 끝나지 않아 한국어로 먼저 응답합니다.", label);
+        } catch (Exception e) {
+            log.warn("{} 번역 대기 중 오류가 발생했습니다.", label, e);
+        }
+    }
+
     // 관광지명/모임 제목과 동일한 방식(최초 조회 시 번역해 캐시)으로 지역/소개글을
     // 번역한다. 본인이 프로필을 수정하면 updateProfile에서 캐시를 지워버리므로 다음
     // 조회 때 여기서 다시 번역된다.
@@ -547,6 +614,50 @@ public class UserServiceImpl implements UserService {
         }
     }
 
+    // 마이페이지/공개 프로필의 리뷰 목록 번역. 관광지 상세에서 같은 리뷰를 볼 때 이미
+    // REVIEW_CONTENT_EN/JA에 캐시된 값이 있으면 재사용하고, 없는 것만 모아 번역 후
+    // 캐시에 저장한다(TB_TRMA_MOIM_REVIEW 캐시를 다른 화면과 공유).
+    private void applyMyReviewTranslations(List<UserReviewData> reviews, String lang) {
+        if (!"en".equals(lang) && !"ja".equals(lang)) return;
+        if (reviews == null || reviews.isEmpty()) return;
+
+        Map<String, String> toTranslate = new HashMap<>();
+        for (UserReviewData review : reviews) {
+            if (review.getReviewContent() == null || review.getReviewContent().isBlank()) continue;
+
+            String cached = "en".equals(lang) ? review.getReviewContentEn() : review.getReviewContentJa();
+            if (cached != null && !cached.isBlank() && !AiJsonUtil.containsHangul(cached)) {
+                review.setReviewContent(cached);
+            } else {
+                toTranslate.put(review.getReviewId(), review.getReviewContent());
+            }
+        }
+        if (toTranslate.isEmpty()) return;
+
+        try {
+            Map<String, String> translated = tourListService.translateFreeTexts(toTranslate, lang);
+            if (translated.isEmpty()) return;
+
+            Map<String, UserReviewData> byId = new HashMap<>();
+            for (UserReviewData review : reviews) byId.put(review.getReviewId(), review);
+
+            for (Map.Entry<String, String> entry : translated.entrySet()) {
+                UserReviewData review = byId.get(entry.getKey());
+                String content = entry.getValue();
+                if (review == null || content == null || content.isBlank()) continue;
+
+                moimListMapper.updateReviewTranslation(
+                        entry.getKey(),
+                        "en".equals(lang) ? content : null,
+                        "ja".equals(lang) ? content : null
+                );
+                review.setReviewContent(content);
+            }
+        } catch (Exception e) {
+            log.warn("마이페이지 리뷰 번역에 실패해 한국어로 표시합니다. lang={}", lang, e);
+        }
+    }
+
     //공개 사용자 프로필 조회
     @Override
     public PublicProfileResponse publicProfile(String targetUserId, String lang) {
@@ -555,7 +666,6 @@ public class UserServiceImpl implements UserService {
             UserDetailRequest detailRequest = new UserDetailRequest();
             detailRequest.setUserId(targetUserId);
             UserDetailData userDetail = userMapper.userDetail(detailRequest);
-            applyProfileTranslation(userDetail, targetUserId, lang);
 
             List<LanguageCardData> languages = userMapper.userLanguages(targetUserId);
 
@@ -563,14 +673,28 @@ public class UserServiceImpl implements UserService {
             reviewRequest.setUserId(targetUserId);
             List<UserReviewData> reviews = userMapper.reviewList(reviewRequest);
 
+            CompletableFuture<Void> profileTranslation = CompletableFuture.runAsync(
+                    () -> applyProfileTranslation(userDetail, targetUserId, lang));
+            CompletableFuture<Void> reviewTranslation = CompletableFuture.runAsync(
+                    () -> applyMyReviewTranslations(reviews, lang));
+            try {
+                CompletableFuture.allOf(profileTranslation, reviewTranslation).get(500, TimeUnit.MILLISECONDS);
+            } catch (TimeoutException e) {
+                log.warn("공개 프로필 번역이 0.5초 안에 끝나지 않아 한국어로 먼저 응답합니다. userId={}, lang={}", targetUserId, lang);
+            } catch (Exception e) {
+                log.warn("공개 프로필 번역 대기 중 오류가 발생했습니다. userId={}, lang={}", targetUserId, lang, e);
+            }
+
             List<MyMoimData> moims = moimListMapper.myMoim(targetUserId);
             if ("en".equals(lang) || "ja".equals(lang)) {
                 List<String> moimIds = moims.stream().map(MyMoimData::getMoimId).toList();
-                Map<String, String> titles = moimListService.translateMoimTitles(moimIds, lang);
-                for (MyMoimData moim : moims) {
-                    String title = titles.get(moim.getMoimId());
-                    if (title != null && !title.isBlank()) moim.setMoimTitle(title);
-                }
+                translateWithBudget(() -> {
+                    Map<String, String> titles = moimListService.translateMoimTitles(moimIds, lang);
+                    for (MyMoimData moim : moims) {
+                        String title = titles.get(moim.getMoimId());
+                        if (title != null && !title.isBlank()) moim.setMoimTitle(title);
+                    }
+                }, "공개 프로필 모임 목록");
             }
 
             PublicProfileData profile = new PublicProfileData(

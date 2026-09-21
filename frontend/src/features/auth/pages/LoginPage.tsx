@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/shared/api/client";
 import Input from "@/shared/components/input/Input";
 import Button from "@/shared/components/button/Button";
@@ -17,6 +18,7 @@ interface LoginFormValues {
 const LoginPage = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const location = useLocation();
   const signupSuccess = Boolean((location.state as { signupSuccess?: boolean } | null)?.signupSuccess);
   const [loginError, setLoginError] = useState("");
@@ -36,10 +38,15 @@ const LoginPage = () => {
     });
 
     if (!result.success) {
-      setLoginError(t("account.loginFailed"));
+      setLoginError(
+        result.code === "LOGIN_LOCKED" ? t("account.loginLocked") : t("account.loginFailed")
+      );
       return;
     }
 
+    // 로그아웃 때와 마찬가지로, 로그인 전(게스트) 상태로 캐시된 데이터(로그인 여부
+    // 확인 결과 등)가 남아있으면 로그인 직후에도 게스트로 보일 수 있어 캐시를 비운다.
+    queryClient.clear();
     navigate("/", { replace: true });
   };
 

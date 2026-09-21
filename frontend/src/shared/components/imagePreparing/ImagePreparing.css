@@ -1,0 +1,19 @@
+.image-preparing {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  align-items: center;
+  justify-content: center;
+  background: var(--purple-300);
+}
+.image-preparing img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+@media screen and (max-width: 440px) {
+  .image-preparing img  {
+    object-fit: cover;
+  }
+}

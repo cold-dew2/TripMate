@@ -6,7 +6,10 @@ import { apiClient } from '@/shared/api/client';
 import { resolveImageUrl } from '@/shared/utils/url';
 import { getApiLang } from '@/shared/utils/lang';
 import PageState from '@/shared/components/pageState/PageState';
+import ReviewImageGrid from '@/shared/components/reviewImageGrid/ReviewImageGrid';
+import useTranslationCatchup from '@/shared/hooks/useTranslationCatchup';
 import './MyPageScreen.css';
+import { useNavigate } from 'react-router-dom';
 
 interface LanguageCard {
   langCd: string;
@@ -45,6 +48,7 @@ const LANG_NAME_KEY: Record<string, string> = { ko: 'lang.ko', en: 'lang.en', ja
 const MyPageScreen = () => {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   // 업로드 기록은 있는데 실제 파일이 사라졌거나 경로가 잘못된 경우(깨진 이미지 아이콘) 조용히
   // 기본 아바타로 대체하기 위한 상태. 프로필 사진 하나 + 최신 후기 목록(reviewId로 구분) 각각 추적.
   const [avatarBroken, setAvatarBroken] = useState(false);
@@ -60,6 +64,8 @@ const MyPageScreen = () => {
       return r.data.data;
     },
   });
+
+  useTranslationCatchup(profile.refetch, !profile.isLoading);
 
   const uploadPhoto = useMutation({
     mutationFn: async (file: File) => {
@@ -227,11 +233,7 @@ const MyPageScreen = () => {
                   <div className="mypage-review-content">
                     <p>{review.reviewContent}</p>
                     {review.imgUrls && (
-                      <ul className="mypage-review-images">
-                        {review.imgUrls.split(',').map((url, index) => (
-                          <li key={url}><img src={resolveImageUrl(url)} alt={t('image.reviewPhoto', { index: index + 1 })} /></li>
-                        ))}
-                      </ul>
+                      <ReviewImageGrid urls={review.imgUrls.split(',')} maxVisible={1} />
                     )}
                   </div>
                 </div>
@@ -247,12 +249,35 @@ const MyPageScreen = () => {
         <li><Link to="/safetyReport">{t('my.declaration')}<i aria-hidden="true">›</i></Link></li>
       </ul>
 
-      <button type="button" className="mypage-logout" onClick={async () => {
-        await apiClient.logout();
-        window.location.href = '/auth';
-      }}>
-        {t('my.logout')}
-      </button>
+      <Link
+        to="/auth"
+        className="mypage-logout"
+        onClick={async (e) => {
+          e.preventDefault();
+
+          // 서버 쿠키 삭제 요청이 네트워크 문제 등으로 실패하더라도, 사용자 입장에서는
+          // "로그아웃 버튼을 눌렀는데 아무 반응이 없다(=로그아웃 실패)"로 보이면 안 된다.
+          // 클라이언트 쪽 로그인 상태(캐시, 화면)는 항상 즉시 정리해 로그아웃을 완료시키고,
+          // 서버 요청은 최선을 다해 보내되 결과와 무관하게 진행한다.
+          try {
+            const result = await apiClient.logout();
+            if (!result.success) {
+              console.error("로그아웃 요청 실패(클라이언트 상태는 정리됨):", result.message);
+            }
+          } catch (error) {
+            console.error("로그아웃 요청 실패(클라이언트 상태는 정리됨):", error);
+          }
+
+          // 로그아웃 후에도 react-query 캐시에 로그인 상태의 데이터(프로필, 모임 상세 등)가
+          // 그대로 남아있으면, 뒤로가기로 이전 페이지에 돌아왔을 때 그 캐시를 그대로
+          // 보여줘서 마치 여전히 로그인된 것처럼 보이는 문제가 있었다. 로그아웃 시점에
+          // 캐시를 전부 비워서 다음 조회부터는 항상 서버에 다시 물어보게 한다.
+          queryClient.clear();
+          navigate("/auth", { replace: true });
+        }}
+      >
+        {t("my.logout")}
+      </Link>
     </main>
   );
 };

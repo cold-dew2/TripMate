@@ -15,6 +15,8 @@ public class BestTourListData {
     private String sggCd;
     private String sggNm;
     private String roadAddr;
+    private String roadAddrEn;
+    private String roadAddrJa;
     private String detailAddr;
     private String zipCd;
     private String cateCd;

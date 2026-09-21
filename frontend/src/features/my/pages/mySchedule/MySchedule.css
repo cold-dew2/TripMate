@@ -29,7 +29,8 @@
   gap: var(--space-xs);
   flex-shrink: 0;
 }
-.schedule-manage-btn {
+.schedule-manage-btn,
+.schedule-chat-btn {
   padding: 7px 12px 8px;
   border: 1px solid var(--purple-300);
   border-radius: var(--radius-sm);

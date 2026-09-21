@@ -13,4 +13,5 @@ public class UserReviewRequest {
     private int offset;
     // "latest"(최신순, 기본값) 또는 "rating"(별점순)
     private String sort;
+    private String lang;
 }

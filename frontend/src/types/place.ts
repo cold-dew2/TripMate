@@ -43,6 +43,9 @@ export interface PlaceDetail {
   overview?: string;
   latitude?: number;
   longitude?: number;
+  // 좌표가 없을 때 지도가 주소로 검색하는데, roadAddr은 화면 언어로 번역돼 있어
+  // 한국 주소 전용 지오코더가 인식하지 못한다. 지도 검색에는 이 원문 주소를 쓴다.
+  roadAddrKo?: string;
 }
 
 export interface PlaceAIDetail {

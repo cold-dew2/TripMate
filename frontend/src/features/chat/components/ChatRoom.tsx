@@ -71,6 +71,7 @@ export default function ChatRoom({ roomId, title, showLeave = true }: ChatRoomPr
   const [isLeaving, setIsLeaving] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isConnected, setIsConnected] = useState(true);
   // 번역 버튼을 눌러 번역본을 보고 있는 메시지 id 집합. 기본값은 항상 원문이다.
   const [translatedIds, setTranslatedIds] = useState<Set<string>>(new Set());
   const messagesRef = useRef<HTMLDivElement>(null);
@@ -96,19 +97,19 @@ export default function ChatRoom({ roomId, title, showLeave = true }: ChatRoomPr
   // 전체 메시지(내용/발신자 등)를 다시 불러오는 건 방에 처음 들어올 때 한 번만 하고,
   // 그 뒤로는 "읽음" 자체만 가볍게 알리거나(markRead) 서버가 보내주는 안읽음 수
   // 델타만 반영해서 서버에 부담을 주지 않는다.
-  const load = async () => {
-    setIsLoading(true);
+  const load = async (opts: { silent?: boolean } = {}) => {
+    if (!opts.silent) setIsLoading(true);
     try {
       const r = await apiClient.get<{ data: Message[]; memberCount: number; myState: string | null }>(`/chat/rooms/${roomId}/messages`);
       if (r.success) {
         setMessages(r.data.data);
         setMemberCount(r.data.memberCount ?? 0);
         setMyState(r.data.myState ?? null);
-      } else {
+      } else if (!opts.silent) {
         setError(t('chat.loadFailed'));
       }
     } finally {
-      setIsLoading(false);
+      if (!opts.silent) setIsLoading(false);
     }
   };
 
@@ -129,14 +130,29 @@ export default function ChatRoom({ roomId, title, showLeave = true }: ChatRoomPr
 
   useEffect(() => {
     void load();
+    // 연결이 끊겼다가 자동 재연결되면(네트워크 순단 등) onConnect가 다시 불리는데,
+    // 그 사이 다른 사람이 보낸 메시지는 실시간 구독이 끊겨 있어 아예 못 받는다.
+    // 재연결 시점(최초 연결 제외)에 조용히(스피너 없이) 목록을 다시 불러와 메운다.
+    let hasConnectedBefore = false;
     const api = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
     const wsUrl = api.replace(/^http/, 'ws') + '/ws/chat-native';
     const stomp = new Client({
       brokerURL: wsUrl,
       reconnectDelay: 3000,
       onConnect: () => {
+        setIsConnected(true);
+        if (hasConnectedBefore) {
+          void load({ silent: true });
+        }
+        hasConnectedBefore = true;
         stomp.subscribe(`/topic/chat/${roomId}`, (packet) => {
-          setMessages((current) => [...current, JSON.parse(packet.body) as Message]);
+          const incoming = JSON.parse(packet.body) as Message;
+          // 내가 보낸 메시지는 REST 응답을 받은 시점에 이미 화면에 반영해두므로(WS가
+          // 끊겨 있어도 메시지가 사라지지 않도록), 여기 에코가 나중에 와도 같은
+          // messageId면 중복 추가하지 않는다.
+          setMessages((current) => (
+            current.some((m) => m.messageId === incoming.messageId) ? current : [...current, incoming]
+          ));
           // 방을 열어둔 채로 새 메시지를 실시간으로 받는 것도 "읽은" 것이므로 읽음
           // 처리만 가볍게 알린다(전체 메시지 재조회 없음). 그 결과(델타)는 아래
           // /read 구독으로 돌아온다.
@@ -154,6 +170,10 @@ export default function ChatRoom({ roomId, title, showLeave = true }: ChatRoomPr
           applyTranslationDelta(JSON.parse(packet.body) as TranslationDelta);
         });
       },
+      // 연결이 끊기면(네트워크 순단, 서버 재시작 등) 사용자가 그걸 알 방법이 전혀
+      // 없었다 — 실시간 수신이 멈춘 채로 계속 채팅 중인 것처럼 보였다.
+      onDisconnect: () => setIsConnected(false),
+      onWebSocketClose: () => setIsConnected(false),
     });
     stomp.activate();
     return () => { void stomp.deactivate(); };
@@ -165,8 +185,18 @@ export default function ChatRoom({ roomId, title, showLeave = true }: ChatRoomPr
     if (!content.trim() || isSending) return;
     setIsSending(true);
     try {
-      const r = await apiClient.post<unknown>(`/chat/rooms/${roomId}/messages`, { content, title });
+      const r = await apiClient.post<{ data: Message }>(`/chat/rooms/${roomId}/messages`, { content, title });
       if (r.success) {
+        // WebSocket이 끊겨 있으면 전송은 REST로 성공하고 입력창도 비워지는데 정작
+        // 메시지는 화면에 안 뜨는 문제가 있었다(표시가 전적으로 WS 에코에만 의존했음).
+        // 응답에 담긴 메시지를 바로 반영한다 — 나중에 WS 에코가 와도 위에서 messageId로
+        // 중복을 막는다.
+        if (r.data?.data) {
+          const sent = r.data.data;
+          setMessages((current) => (
+            current.some((m) => m.messageId === sent.messageId) ? current : [...current, sent]
+          ));
+        }
         setContent('');
         setError('');
       } else {
@@ -248,6 +278,7 @@ export default function ChatRoom({ roomId, title, showLeave = true }: ChatRoomPr
         })}
       </div>
       {error && <p className="chat-room-error" role="alert">{error}</p>}
+      {!isConnected && <p className="chat-room-error" role="status">{t('chat.reconnecting')}</p>}
       <form onSubmit={send}>
         <input
           value={content}

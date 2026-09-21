@@ -4,10 +4,11 @@ import DateRangePicker from '@/shared/components/datePicker/DateRangePicker';
 import Input from '@/shared/components/input/Input';
 import Select from '@/shared/components/select/Select';
 import type { MoimCreateForm } from '@/types/moim';
-import type { UseFormSetValue } from 'react-hook-form';
+import type { UseFormSetValue, UseFormWatch } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 
 interface Step2Props {
+  watch: UseFormWatch<MoimCreateForm>;
   setValue: UseFormSetValue<MoimCreateForm>;
   onPrev: () => void;
   onNext: () => void;
@@ -25,12 +26,14 @@ const REGION_OPTIONS = [
   { value: "제주", option: "제주" },
 ];
 
-const Step2 = ({ setValue, onNext, onPrev, defaultTitle, defaultDscr, defaultRegion }: Step2Props) => {
+const Step2 = ({ watch, setValue, onNext, onPrev, defaultTitle, defaultDscr, defaultRegion }: Step2Props) => {
   const { t } = useTranslation();
-  const [title, setTitle] = useState(defaultTitle ?? '');
-  const [dscr, setDscr] = useState(defaultDscr ?? '');
-  const [dateRange, setDateRange] = useState({ start: '', end: '' });
-  const [region, setRegion] = useState(defaultRegion ?? '');
+  // 이전 단계에서 이미 입력해뒀다가(watch로 부모 폼에 남아있는 값) 뒤로 갔다 다시
+  // 돌아온 경우 그 값을 우선 쓰고, 처음 진입(둘 다 비어있음)일 때만 prefill을 쓴다.
+  const [title, setTitle] = useState(watch('moimTitle') || defaultTitle || '');
+  const [dscr, setDscr] = useState(watch('moimDscr') || defaultDscr || '');
+  const [dateRange, setDateRange] = useState({ start: watch('moimStartDt') || '', end: watch('moimEndDt') || '' });
+  const [region, setRegion] = useState(watch('region') || defaultRegion || '');
 
   const handleDateChange = (startDate: string, endDate: string) => {
     setValue("moimStartDt", startDate);
@@ -48,7 +51,7 @@ const Step2 = ({ setValue, onNext, onPrev, defaultTitle, defaultDscr, defaultReg
             label={t("moimCreate.step2.name")}
             placeholder={t("moimCreate.step2.namePlaceholder")}
             name="moimTitle"
-            defaultValue={defaultTitle}
+            defaultValue={title}
             onChange={(event) => {
               setValue("moimTitle", event.target.value, { shouldValidate: true });
               setTitle(event.target.value);
@@ -58,20 +61,25 @@ const Step2 = ({ setValue, onNext, onPrev, defaultTitle, defaultDscr, defaultReg
             label={t("moimCreate.step2.info")}
             placeholder={t("moimCreate.step2.infoPlaceholder")}
             name="moimDscr"
-            defaultValue={defaultDscr}
+            defaultValue={dscr}
             onChange={(event) => {
               setValue("moimDscr", event.target.value, { shouldValidate: true });
               setDscr(event.target.value);
             }}
           />
-          <DateRangePicker label={t("moimCreate.step2.travelType")} onChange={handleDateChange} />
+          <DateRangePicker
+            label={t("moimCreate.step2.travelType")}
+            onChange={handleDateChange}
+            defaultStart={dateRange.start}
+            defaultEnd={dateRange.end}
+          />
           <Select
             label={t("moimCreate.step2.region")}
             id="region"
             name="region"
             placeholder={t("moimCreate.step2.regionPlaceholder")}
             options={REGION_OPTIONS}
-            defaultValue={defaultRegion}
+            defaultValue={region}
             onChange={(event) => {
               setValue("region", event.target.value, { shouldValidate: true });
               setRegion(event.target.value);
@@ -83,7 +91,7 @@ const Step2 = ({ setValue, onNext, onPrev, defaultTitle, defaultDscr, defaultReg
             min={2}
             max={50}
             name="maxMember"
-            defaultValue={8}
+            defaultValue={watch('maxMember') || 8}
             onChange={(event) => setValue("maxMember", Number(event.target.value), { shouldValidate: true })}
           />
         </div>

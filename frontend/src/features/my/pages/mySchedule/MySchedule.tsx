@@ -51,11 +51,19 @@ const MySchedule = () => {
                     <span className={`schedule-badge schedule-badge-${status}`}>
                       {status === "done" ? t("my.statusDone") : status === "pending" ? t("my.statusPending") : getDDay(moim.moimStartDt)}
                     </span>
-                    {isHost && (
+                    {isHost ? (
                       <Link to={`/moimManage/${moim.moimId}`} className="schedule-manage-btn">
                         {t("moim.manageBtn")}
                       </Link>
-                    )}
+                    ) : moim.stateCd === "Y" ? (
+                      <Link
+                        to={`/chat/moim-${moim.moimId}`}
+                        state={{ title: moim.moimTitle }}
+                        className="schedule-chat-btn"
+                      >
+                        {t("moim.chatWithMembers")}
+                      </Link>
+                    ) : null}
                   </div>
                 </div>
                 {status === "done" && (

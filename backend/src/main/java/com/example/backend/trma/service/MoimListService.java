@@ -31,6 +31,9 @@ public interface MoimListService {
     //모임 신청
     ApplyMoimResponse applyMoim(String moimId, String userId);
 
+    //모임 삭제(방장 본인만 가능)
+    DeleteMoimResponse deleteMoim(String moimId, String userId);
+
     //모임 멤버 목록 조회
     MoimMembersResponse moimMembers(String moimId);
 
@@ -53,4 +56,8 @@ public interface MoimListService {
     //소모임 제목 일괄 번역(캐시 우선, 없으면 번역 후 캐시에 저장). 홈 화면처럼 다른
     //화면에서 소모임 제목만 필요할 때 재사용한다(관광지의 translateTourNames와 동일한 용도).
     Map<String, String> translateMoimTitles(List<String> moimIds, String lang);
+
+    //소모임 설명 일괄 번역(캐시 우선, 없으면 번역 후 캐시에 저장). translateMoimTitles와
+    //동일한 용도로, 홈 화면처럼 다른 화면에서 소모임 설명만 필요할 때 재사용한다.
+    Map<String, String> translateMoimDescriptions(List<String> moimIds, String lang);
 }

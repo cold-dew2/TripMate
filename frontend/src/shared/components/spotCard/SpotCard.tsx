@@ -1,7 +1,9 @@
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import Card from "../card/Card"
 import "./SpotCard.css"
 import Skeleton from "../skeleton/Skeleton";
+import ImagePreparing from "../imagePreparing/ImagePreparing";
 
 interface Props {
   loading?: boolean;
@@ -14,6 +16,7 @@ interface Props {
 
 const SpotCard = ({ loading = false, badge, imageUrl, title, place, rating }: Props) => {
   const { t } = useTranslation();
+  const [imageBroken, setImageBroken] = useState(false);
   return (
     <Card className="spot-card">
       {loading ? (
@@ -43,11 +46,15 @@ const SpotCard = ({ loading = false, badge, imageUrl, title, place, rating }: Pr
             </div>
           )}
           <div className="img">
-            <img
-              src={imageUrl || "/images/places/no-image.svg"}
-              alt={t("image.alt", { title })}
-              onError={(event) => { event.currentTarget.src = "/images/places/no-image.svg"; }}
-            />
+            {imageUrl && !imageBroken ? (
+              <img
+                src={imageUrl}
+                alt={t("image.alt", { title })}
+                onError={() => setImageBroken(true)}
+              />
+            ) : (
+              <ImagePreparing />
+            )}
           </div>
           <div className="info">
             <div className="info-top">

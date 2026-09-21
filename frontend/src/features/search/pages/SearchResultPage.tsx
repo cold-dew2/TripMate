@@ -39,7 +39,7 @@ const SearchResultPage = () => {
   return (
     <>
       <section>
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} className="search-result-form">
           <Input
             className="search"
             label={t("search.placeholder")}
@@ -50,6 +50,7 @@ const SearchResultPage = () => {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
           />
+          <button type="submit" className="search-result-btn" aria-label={t("search.placeholder")}>🔍</button>
         </form>
 
         <FilterTabs
@@ -75,7 +76,7 @@ const SearchResultPage = () => {
               <li key={place.tourId}>
                 <Link to={`/place/${place.tourId}`}>
                   <SpotCard
-                    imageUrl={place.firstImage || "/images/places/no-image.svg"}
+                    imageUrl={place.firstImage}
                     title={place.tourNm}
                     place={place.roadAddr}
                     rating={place.avgScore}
@@ -100,7 +101,7 @@ const SearchResultPage = () => {
                 <Link to={`/moim/${moim.moimId}`}>
                   <MoimCard
                     badge={translateCategoryList(moim.cateNm, t)}
-                    imageUrl="/images/places/no-image.svg"
+                    imageUrl={moim.imageUrl}
                     title={moim.moimTitle}
                     desc={moim.moimDscr}
                     date={moim.moimStartDt}

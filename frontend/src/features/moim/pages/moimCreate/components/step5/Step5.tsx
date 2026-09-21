@@ -9,6 +9,7 @@ import type { MoimCreateForm } from "@/types/moim";
 import type { PlanItem } from "../../MoimCreate";
 import type { UseFormWatch } from "react-hook-form";
 import { useAlert } from "@/shared/contexts/AlertContext";
+import useAiWaitNotice from "@/shared/hooks/useAiWaitNotice";
 import "./Step5.css";
 
 interface Step5Props {
@@ -33,6 +34,7 @@ const Step5 = ({ watch, itemsByDay, onEditPlan, onNext }: Step5Props) => {
     : "";
 
   const transportRecommend = useTransportRecommend();
+  useAiWaitNotice(transportRecommend.isPending, t("moimCreate.step5.transportRecommendWait"));
   const legsByKey = useMemo(() => {
     const map = new Map<string, TransportLeg>();
     (transportRecommend.data ?? []).forEach((leg) => {
@@ -60,21 +62,20 @@ const Step5 = ({ watch, itemsByDay, onEditPlan, onNext }: Step5Props) => {
             text={transportRecommend.isPending ? t("common.saving") : t("moimCreate.step5.transportRecommend")}
             variant="secondary"
             onClick={() => transportRecommend.mutate(toTransportStops(itemsByDay), {
-              onError: (error) => {
-                if ((error as { code?: string } | null)?.code === "AI_UNAVAILABLE") {
-                  showAlert(t("common.aiUnavailable"));
+              onSuccess: (legs) => {
+                if (!legs.length) {
+                  showAlert(t("moimCreate.step5.transportRecommendEmpty"));
                 }
+              },
+              onError: (error) => {
+                const message = (error as { code?: string } | null)?.code === "AI_UNAVAILABLE"
+                  ? t("common.aiUnavailable")
+                  : t("moimCreate.step5.transportRecommendError");
+                showAlert(message);
               },
             })}
             disabled={transportRecommend.isPending}
           />
-          {transportRecommend.isError && (
-            <p className="step5-transport-error">
-              {(transportRecommend.error as { code?: string } | null)?.code === "AI_UNAVAILABLE"
-                ? t("common.aiUnavailable")
-                : t("moimCreate.step5.transportRecommendError")}
-            </p>
-          )}
         </div>
       )}
 

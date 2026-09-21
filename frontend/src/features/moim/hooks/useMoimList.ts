@@ -2,13 +2,14 @@ import { apiClient } from "@/shared/api/client";
 import { getApiLang } from "@/shared/utils/lang";
 import type { MoimResponse } from "@/types/moim";
 import { useInfiniteQuery } from "@tanstack/react-query";
+import useTranslationCatchup from "@/shared/hooks/useTranslationCatchup";
 
 // .env의 VITE_API_BASE_URL이 /data(로컬 목업 JSON)를 가리킬 때는 정적 파일이라
 // 쿼리스트링(keyword/cateCd)을 반영하지 못하므로 프론트에서 직접 필터링한다.
 const isMock = (import.meta.env.VITE_API_BASE_URL ?? "").startsWith("/data");
 
 const useMoimList = (category?: string, keyword?: string) => {
-  return useInfiniteQuery({
+  const query = useInfiniteQuery({
     queryKey: ["moimList", category, keyword ?? "", getApiLang()],
     queryFn: async ({ pageParam = 1 }) => {
       const queryParams = new URLSearchParams({
@@ -53,6 +54,10 @@ const useMoimList = (category?: string, keyword?: string) => {
       return allPages.length + 1;
     },
   });
+
+  useTranslationCatchup(query.refetch, !query.isLoading);
+
+  return query;
 };
 
 export default useMoimList;
