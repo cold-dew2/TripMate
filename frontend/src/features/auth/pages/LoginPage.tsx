@@ -52,12 +52,13 @@ const LoginPage = () => {
 
   return (
     <main className="auth-screen">
-      <div className="auth-logo">
-        <Link to="/"><span className="auth-logo-icon" aria-hidden="true">📍</span></Link>
-      </div>
-      <h1 className="auth-title">{t("account.loginTitle")}</h1>
-      <p className="auth-subtitle">{t("account.loginSubtitle")}</p>
-
+      <Link to="/">
+        <div className="auth-logo">
+          <span className="auth-logo-icon" aria-hidden="true">📍</span>
+          <h1 className="auth-title">{t("account.loginTitle")}</h1>
+          <p className="auth-subtitle">{t("account.loginSubtitle")}</p>
+        </div>
+      </Link>
       {signupSuccess && <p className="auth-success">{t("account.signupSuccess")}</p>}
 
       <form className="auth-form" onSubmit={handleSubmit(onSubmit)} noValidate>
