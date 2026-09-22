@@ -65,12 +65,19 @@
         FROM (
             SELECT
                 b.TOUR_ID,
-                IFNULL(a.AVG_SCORE,0) AS AVG_SCORE
+                IFNULL(a.AVG_SCORE,0) AS AVG_SCORE,
+                <!-- 리뷰가 4500여 건 관광지 중 대부분(4400여 건)은 0건이라, 리뷰가 딱
+                     1개뿐인 관광지도 평점 5.0으로 계산돼 정렬 1순위로 올라와 버렸다(실제로
+                     세종의 한 캠핑장이 리뷰 1개만으로 검색 결과 맨 위를 차지한 사례 확인함).
+                     화면에 보여줄 평점(AVG_SCORE)은 실제 값 그대로 두되, 정렬에만 쓰는
+                     RANK_SCORE는 리뷰 2개 미만이면 신뢰하지 않고 0점(미평가) 취급한다. -->
+                (CASE WHEN IFNULL(a.REVIEW_CNT,0) >= 2 THEN IFNULL(a.AVG_SCORE,0) ELSE 0 END) AS RANK_SCORE
             FROM TB_TRMA_TOUR_LIST b
                 LEFT JOIN (
                     SELECT
                     TOUR_ID,
-                    AVG(REVIEW_SCORE) AS AVG_SCORE
+                    AVG(REVIEW_SCORE) AS AVG_SCORE,
+                    COUNT(REVIEW_SCORE) AS REVIEW_CNT
                     FROM TB_TRMA_MOIM_REVIEW
                     GROUP BY TOUR_ID
                 ) a ON b.TOUR_ID = a.TOUR_ID
@@ -134,10 +141,14 @@
                 )
             </if>
             AND dup.TOUR_ID IS NULL
-            <!-- 사용자가 직접 등록한 관광지(UGC, TOUR_ID가 "UGC"로 시작, 65건)는 공공데이터
-                 기반 정식 관광지(4500여 건)보다 뒤에 나오도록 먼저 구분하고, 그 안에서는
-                 기존처럼 평점 높은 순으로 정렬한다. -->
-            ORDER BY (CASE WHEN b.TOUR_ID LIKE 'UGC%' THEN 1 ELSE 0 END) ASC, AVG_SCORE DESC
+            <!-- 정렬 우선순위: 1) 전국적으로 유명한 대표 관광지(POPULAR_YN='Y', Gemini로
+                 한 번 분류해 DB에 저장해둔 104건 - 경복궁/해운대 같은 이름만 들어도 아는
+                 곳)를 가장 먼저, 2) 사용자가 직접 등록한 관광지(UGC, TOUR_ID가 "UGC"로
+                 시작, 65건)는 공공데이터 기반 정식 관광지보다 뒤에, 3) 그 안에서는 리뷰
+                 신뢰도를 반영한 평점 순으로 정렬한다. -->
+            ORDER BY (CASE WHEN b.POPULAR_YN = 'Y' THEN 0 ELSE 1 END) ASC,
+                     (CASE WHEN b.TOUR_ID LIKE 'UGC%' THEN 1 ELSE 0 END) ASC,
+                     RANK_SCORE DESC
             LIMIT 10 OFFSET #{offset}
         ) ids
             JOIN TB_TRMA_TOUR_LIST b ON b.TOUR_ID = ids.TOUR_ID
@@ -156,7 +167,9 @@
             LEFT JOIN TB_TRMA_CMM_CD_D c2 ON CONCAT(b.SIDO_CD,b.SGG_CD,'00000') = c2.CMM_CDV AND c2.CMM_CD_ID = 'SGG_CD'
             <if test="lang == 'en'">LEFT JOIN TB_TRMA_TOUR_EN_LIST en ON b.TOUR_ID = en.TOUR_ID</if>
             <if test="lang == 'ja'">LEFT JOIN TB_TRMA_TOUR_JP_LIST jp ON b.TOUR_ID = jp.TOUR_ID</if>
-        ORDER BY (CASE WHEN b.TOUR_ID LIKE 'UGC%' THEN 1 ELSE 0 END) ASC, ids.AVG_SCORE DESC
+        ORDER BY (CASE WHEN b.POPULAR_YN = 'Y' THEN 0 ELSE 1 END) ASC,
+                 (CASE WHEN b.TOUR_ID LIKE 'UGC%' THEN 1 ELSE 0 END) ASC,
+                 ids.RANK_SCORE DESC
 
     </select>
 

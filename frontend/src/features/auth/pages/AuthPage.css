@@ -117,6 +117,9 @@
 .auth-links [aria-hidden] {
   color: var(--gray-300);
 }
+.auth-links-browse {
+  margin-top: var(--space-lg);
+}
 .auth-link-signup {
   color: var(--purple-600);
   font-weight: var(--fw-bold);

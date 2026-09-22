@@ -23,9 +23,12 @@ const Information = ({ tourId }: InformationProps) => {
 
       {isLoading && <PageState status="loading" message={t("place.infoLoading")} fullScreen={false} />}
       {isError && (
+        // AI가 잠시 응답하지 못하는 경우(외부 AI 서비스 과부하 등)까지 "실패했다"는
+        // 경고성 문구를 보여주면 사용자가 앱이 고장난 것처럼 느낀다. 아직 준비 중인
+        // 콘텐츠라는 부담 없는 톤으로 대신 안내한다.
         <PageState
-          status="error"
-          message={isAiUnavailable ? t('common.aiUnavailable') : t('place.infoError')}
+          status={isAiUnavailable ? 'empty' : 'error'}
+          message={isAiUnavailable ? t('place.infoComingSoon') : t('place.infoError')}
           fullScreen={false}
         />
       )}

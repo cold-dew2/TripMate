@@ -212,6 +212,7 @@
     "findId": "아이디 찾기",
     "findPw": "비밀번호 찾기",
     "signup": "회원가입",
+    "browseGuest": "둘러보기",
     "signupTitle": "회원가입",
     "name": "이름",
     "namePlaceholder": "이름을 입력하세요",
@@ -476,6 +477,7 @@
     "mapUnavailable": "지도를 불러올 수 없습니다.",
     "infoLoading": "이용 정보를 불러오는 중이에요...",
     "infoError": "이용 정보를 불러오지 못했어요.",
+    "infoComingSoon": "준비중이에요! 빠른 시일 내에 만나요!",
     "detailLoading": "관광지 정보를 불러오는 중이에요...",
     "detailError": "관광지 정보를 불러오지 못했어요."
   },

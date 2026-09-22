@@ -52,13 +52,12 @@ const LoginPage = () => {
 
   return (
     <main className="auth-screen">
-      <Link to="/">
-        <div className="auth-logo">
-          <span className="auth-logo-icon" aria-hidden="true">📍</span>
-        </div>
-        <h1 className="auth-title">{t("account.loginTitle")}</h1>
-        <p className="auth-subtitle">{t("account.loginSubtitle")}</p>
-      </Link>
+      <div className="auth-logo">
+        <span className="auth-logo-icon" aria-hidden="true">📍</span>
+      </div>
+      <h1 className="auth-title">{t("account.loginTitle")}</h1>
+      <p className="auth-subtitle">{t("account.loginSubtitle")}</p>
+
       {signupSuccess && <p className="auth-success">{t("account.signupSuccess")}</p>}
 
       <form className="auth-form" onSubmit={handleSubmit(onSubmit)} noValidate>
@@ -95,6 +94,11 @@ const LoginPage = () => {
         <Link to="/auth/find-password">{t("account.findPw")}</Link>
         <span aria-hidden="true">|</span>
         <Link to="/auth/signup" className="auth-link-signup">{t("account.signup")}</Link>
+      </div>
+      {/* 로그인하지 않고도 메인 홈을 둘러보고 싶은 게스트를 위한 링크. 헤더/하단
+          네비게이션이 없는 독립 화면이라 이 화면을 벗어날 다른 방법이 없었다. */}
+      <div className="auth-links auth-links-browse">
+        <Link to="/">{t("account.browseGuest")}</Link>
       </div>
     </main>
   );

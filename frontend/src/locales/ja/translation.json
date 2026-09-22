@@ -212,6 +212,7 @@
     "findId": "ID検索",
     "findPw": "パスワード検索",
     "signup": "会員登録",
+    "browseGuest": "ログインせずに見る",
     "signupTitle": "会員登録",
     "name": "名前",
     "namePlaceholder": "名前を入力してください",
@@ -476,6 +477,7 @@
     "mapUnavailable": "地図を読み込めませんでした。",
     "infoLoading": "利用案内を読み込んでいます...",
     "infoError": "利用案内を読み込めませんでした。",
+    "infoComingSoon": "準備中です！近日中にお会いしましょう！",
     "detailLoading": "観光地情報を読み込んでいます...",
     "detailError": "観光地情報を読み込めませんでした。"
   },
