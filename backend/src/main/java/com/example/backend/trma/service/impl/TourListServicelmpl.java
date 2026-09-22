@@ -833,6 +833,16 @@ public class TourListServicelmpl implements TourListService {
         try {
             String tourId = "UGC" + UUID.randomUUID().toString().replace("-", "").substring(0, 10).toUpperCase();
             tourListMapper.insertCustomTour(tourId, request, userId);
+            // 관광지 검색 조회는 매번 자기조인으로 중복 주소를 걸러내는 대신 DUP_YN
+            // 플래그만 확인하도록 바꿨다(조회 성능을 위해). 그 플래그가 계속 정확하려면
+            // 새 관광지가 등록되는 이 시점에 기존 주소와 겹치는지 확인해 표시해둬야 한다.
+            if (request.getRoadAddr() != null && !request.getRoadAddr().isBlank()) {
+                try {
+                    tourListMapper.markDuplicateIfAddressExists(tourId, request.getRoadAddr());
+                } catch (Exception e) {
+                    log.warn("신규 관광지 중복 주소 표시에 실패했습니다. tourId={}", tourId, e);
+                }
+            }
 
             CustomTourData data = new CustomTourData();
             data.setTourId(tourId);

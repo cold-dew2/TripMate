@@ -37,6 +37,9 @@ public interface TourListMapper {
     int insertCustomTour(@Param("tourId") String tourId,
                           @Param("request") CustomTourRequest request,
                           @Param("userId") String userId);
+    //방금 등록한 관광지와 같은 주소를 쓰는 활성 관광지가 이미 있으면 DUP_YN='Y'로 표시
+    //(검색 조회 시 매번 자기조인으로 계산하지 않도록, 등록 시점에 한 번만 계산해서 저장해둔다)
+    int markDuplicateIfAddressExists(@Param("tourId") String tourId, @Param("roadAddr") String roadAddr);
     //관광지명/개요/주소 번역 캐시 저장
     int updateTourTranslation(@Param("tourId") String tourId,
                                @Param("tourNmEn") String tourNmEn,
