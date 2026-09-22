@@ -37,7 +37,7 @@ const Step5 = ({ watch, itemsByDay, onEditPlan, onNext }: Step5Props) => {
   useAiWaitNotice(transportRecommend.isPending, t("moimCreate.step5.transportRecommendWait"));
   const legsByKey = useMemo(() => {
     const map = new Map<string, TransportLeg>();
-    (transportRecommend.data ?? []).forEach((leg) => {
+    (transportRecommend.data?.legs ?? []).forEach((leg) => {
       map.set(`${leg.day}-${leg.fromTourId}-${leg.toTourId}`, leg);
     });
     return map;
@@ -62,9 +62,13 @@ const Step5 = ({ watch, itemsByDay, onEditPlan, onNext }: Step5Props) => {
             text={transportRecommend.isPending ? t("common.saving") : t("moimCreate.step5.transportRecommend")}
             variant="secondary"
             onClick={() => transportRecommend.mutate(toTransportStops(itemsByDay), {
-              onSuccess: (legs) => {
+              onSuccess: ({ legs, code }) => {
                 if (!legs.length) {
-                  showAlert(t("moimCreate.step5.transportRecommendEmpty"));
+                  // 같은 날 일정이 원래 2곳 미만이었던 경우와, 구간은 있었는데 AI가
+                  // 일시적으로 응답하지 못한 경우를 다른 문구로 안내한다.
+                  showAlert(code === "AI_TEMPORARILY_UNAVAILABLE"
+                    ? t("moimCreate.step5.transportRecommendUnavailable")
+                    : t("moimCreate.step5.transportRecommendEmpty"));
                 }
               },
               onError: (error) => {

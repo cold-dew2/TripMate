@@ -326,6 +326,7 @@
       "transportRecommend": "Get transport suggestions",
       "transportRecommendError": "Couldn't get transport suggestions.\nPlease try again in a moment.",
       "transportRecommendEmpty": "No transport suggestions available.\nYou need at least 2 stops on the same day to get suggestions between them.",
+      "transportRecommendUnavailable": "Couldn't analyze transport right now.\nPlease try again in a moment.",
       "transportRecommendWait": "Analyzing transport options. Please wait a moment!"
     },
     "step6": {
@@ -422,6 +423,8 @@
     "planEndDateInvalid": "The end date can't be before the start date.",
     "transportRecommend": "Analyze congestion & transport",
     "transportRecommendError": "Couldn't analyze transport.\nPlease try again in a moment.",
+    "transportRecommendEmpty": "No route segments to analyze.",
+    "transportRecommendUnavailable": "Couldn't analyze transport right now.\nPlease try again in a moment.",
     "waitingCount": "{{count}} waiting",
     "approveSelected": "Approve {{count}} selected",
     "approveFailed": "Some approvals failed.\nPlease try again.",
@@ -431,6 +434,7 @@
     "transportAnalysisBtn": "Analyze congestion",
     "transportAnalysisError": "Couldn't analyze congestion.\nPlease try again later.",
     "transportAnalysisEmpty": "No route segments to analyze.",
+    "transportAnalysisUnavailable": "Couldn't analyze transport right now.\nPlease try again in a moment.",
     "transportAnalysisWait": "Analyzing transport options. Please wait a moment!",
     "applyBtn": "Apply",
     "manageBtn": "Manage Group",

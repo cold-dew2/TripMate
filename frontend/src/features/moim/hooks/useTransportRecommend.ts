@@ -40,12 +40,20 @@ export const toTransportStops = (itemsByDay: Record<number, PlanItem[]>): Transp
     }))
   );
 
+export interface TransportRecommendResult {
+  legs: TransportLeg[];
+  // legs가 비어있는 이유를 구분하기 위한 코드. "같은 날 2곳 이상 없어서 애초에
+  // 분석할 구간이 없었다"와 "구간은 있었는데 AI가 일시적으로 응답하지 못했다"를
+  // 같은 빈 배열로 뭉뚱그리면 사용자에게 안내할 문구를 고를 수 없어서 넘겨받는다.
+  code?: string;
+}
+
 export const useTransportRecommend = () => {
   return useMutation({
-    mutationFn: async (items: TransportStopInput[]) => {
-      const result = await apiClient.post<{ data: TransportLeg[] }>("/tourList/transportRecommend", { items, lang: getApiLang() });
+    mutationFn: async (items: TransportStopInput[]): Promise<TransportRecommendResult> => {
+      const result = await apiClient.post<{ data: TransportLeg[]; code?: string }>("/tourList/transportRecommend", { items, lang: getApiLang() });
       if (!result.success) throw result;
-      return result.data.data ?? [];
+      return { legs: result.data.data ?? [], code: result.data.code };
     },
   });
 };

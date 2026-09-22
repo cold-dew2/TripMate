@@ -326,6 +326,7 @@
       "transportRecommend": "교통편 추천받기",
       "transportRecommendError": "교통편 추천에 실패했어요.\n잠시 후 다시 시도해주세요.",
       "transportRecommendEmpty": "추천할 교통편이 없어요.\n같은 날짜에 일정이 2곳 이상 있어야 구간별 교통편을 추천받을 수 있어요.",
+      "transportRecommendUnavailable": "지금은 교통편을 분석하지 못했어요.\n잠시 후 다시 시도해주세요.",
       "transportRecommendWait": "교통편을 분석하고 있어요. 조금만 기다려주세요!"
     },
     "step6": {
@@ -422,6 +423,8 @@
     "planEndDateInvalid": "종료일은 시작일보다 이전일 수 없어요.",
     "transportRecommend": "혼잡도 · 교통편 분석받기",
     "transportRecommendError": "교통편 분석에 실패했어요.\n잠시 후 다시 시도해주세요.",
+    "transportRecommendEmpty": "분석할 이동 구간이 없어요.",
+    "transportRecommendUnavailable": "지금은 교통편을 분석하지 못했어요.\n잠시 후 다시 시도해주세요.",
     "waitingCount": "대기 {{count}}",
     "approveSelected": "선택한 {{count}}명 승인하기",
     "approveFailed": "승인 처리 중 일부 오류가 발생했습니다.\n다시 시도해 주세요.",
@@ -431,6 +434,7 @@
     "transportAnalysisBtn": "혼잡도 분석받기",
     "transportAnalysisError": "혼잡도 분석에 실패했어요.\n잠시 후 다시 시도해주세요.",
     "transportAnalysisEmpty": "분석할 이동 구간이 없어요.",
+    "transportAnalysisUnavailable": "지금은 교통편을 분석하지 못했어요.\n잠시 후 다시 시도해주세요.",
     "transportAnalysisWait": "교통편을 분석하고 있어요. 조금만 기다려주세요!",
     "applyBtn": "신청하기",
     "manageBtn": "모임 관리하기",

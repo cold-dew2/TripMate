@@ -326,6 +326,7 @@
       "transportRecommend": "交通手段を提案してもらう",
       "transportRecommendError": "交通手段の提案取得に失敗しました。\nしばらくしてからもう一度お試しください。",
       "transportRecommendEmpty": "提案できる交通手段がありません。\n同じ日に2か所以上の予定がある場合のみ、区間ごとの交通手段を提案できます。",
+      "transportRecommendUnavailable": "現在、交通手段を分析できませんでした。\nしばらくしてからもう一度お試しください。",
       "transportRecommendWait": "交通手段を分析しています。少々お待ちください！"
     },
     "step6": {
@@ -422,6 +423,8 @@
     "planEndDateInvalid": "終了日は開始日より前にできません。",
     "transportRecommend": "混雑度・交通手段を分析",
     "transportRecommendError": "交通分析に失敗しました。\nしばらくしてからもう一度お試しください。",
+    "transportRecommendEmpty": "分析する移動区間がありません。",
+    "transportRecommendUnavailable": "現在、交通手段を分析できませんでした。\nしばらくしてからもう一度お試しください。",
     "waitingCount": "待機 {{count}}",
     "approveSelected": "選択した{{count}}人を承認",
     "approveFailed": "一部の承認処理に失敗しました。\nもう一度お試しください。",
@@ -431,6 +434,7 @@
     "transportAnalysisBtn": "混雑度を分析する",
     "transportAnalysisError": "混雑度の分析に失敗しました。\nしばらくしてからもう一度お試しください。",
     "transportAnalysisEmpty": "分析する移動区間がありません。",
+    "transportAnalysisUnavailable": "現在、交通手段を分析できませんでした。\nしばらくしてからもう一度お試しください。",
     "transportAnalysisWait": "交通手段を分析しています。少々お待ちください！",
     "applyBtn": "申し込む",
     "manageBtn": "グループを管理する",

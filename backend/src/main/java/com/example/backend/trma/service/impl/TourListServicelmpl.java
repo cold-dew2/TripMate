@@ -1073,6 +1073,13 @@ public class TourListServicelmpl implements TourListService {
             // AI 추정이 필요했던 경우에도 이미 구한 4개까지 통째로 사라졌었다(같은 이유로
             // 첫 시도만 실패하고 재시도하면 되던 것도 사용자 입장에선 "AI 추천이 아예
             // 안 된다"처럼 보였다).
+            // AI 추정이 필요했는데 끝내 실패한 구간이 있었는지 표시해둔다. "원래 분석할
+            // 구간 자체가 없던 경우"와 "구간은 있었는데 분석에 실패한 경우"를 응답에서
+            // 구분해야, 프론트가 "분석할 구간이 없어요"(구조적으로 맞는 말)와 "지금은
+            // 분석하지 못했어요, 다시 시도해주세요"(일시적 AI 장애)를 다른 문구로
+            // 보여줄 수 있다. 둘 다 legs가 비어있는 건 같아서 이 표시가 없으면 구분이
+            // 불가능했다.
+            boolean aiFallbackFailed = false;
             if (!aiFallbackLegs.isEmpty()) {
                 try {
                     StringBuilder legPrompt = new StringBuilder();
@@ -1165,16 +1172,21 @@ public class TourListServicelmpl implements TourListService {
                         }
                     }
                 } catch (Exception e) {
+                    aiFallbackFailed = true;
                     log.warn("교통편 AI 추정 구간 계산에 실패해 해당 구간은 생략하고 나머지 결과만 반환합니다. 실패 구간 수={}",
                             aiFallbackLegs.size(), e);
                 }
             }
 
+            boolean allFailed = legs.isEmpty() && aiFallbackFailed;
+
             return new TransportRecommendResponse(
                     true,
                     200,
-                    "SUCCESS",
-                    "교통편 추천을 정상적으로 생성했습니다.",
+                    allFailed ? "AI_TEMPORARILY_UNAVAILABLE" : "SUCCESS",
+                    allFailed
+                            ? "지금은 교통편을 분석하지 못했습니다. 잠시 후 다시 시도해주세요."
+                            : "교통편 추천을 정상적으로 생성했습니다.",
                     "/tourList/transportRecommend",
                     "",
                     legs

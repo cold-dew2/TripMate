@@ -45,7 +45,7 @@ const MoimDetail = () => {
   useAiWaitNotice(transportRecommend.isFetching, t('moim.transportAnalysisWait'));
   const legsByKey = useMemo(() => {
     const map = new Map<string, TransportLeg>();
-    (transportRecommend.data ?? []).forEach((leg) => {
+    (transportRecommend.data?.legs ?? []).forEach((leg) => {
       map.set(`${leg.day}-${leg.fromTourId}-${leg.toTourId}`, leg);
     });
     return map;
@@ -126,8 +126,12 @@ const MoimDetail = () => {
             />
           )}
         </div>
-        {transportRecommend.isSuccess && transportRecommend.data.length === 0 && (
-          <p className="moim-detail-transport-empty">{t('moim.transportAnalysisEmpty')}</p>
+        {transportRecommend.isSuccess && transportRecommend.data.legs.length === 0 && (
+          <p className="moim-detail-transport-empty">
+            {transportRecommend.data.code === 'AI_TEMPORARILY_UNAVAILABLE'
+              ? t('moim.transportAnalysisUnavailable')
+              : t('moim.transportAnalysisEmpty')}
+          </p>
         )}
         {days.length === 0 ? (
           <p className="moim-detail-empty">{t('moim.step3.emptyView')}</p>

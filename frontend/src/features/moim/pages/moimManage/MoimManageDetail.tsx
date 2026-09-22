@@ -257,7 +257,7 @@ const MoimManageDetail = () => {
   const transportRecommend = useTransportRecommend();
   const legsByKey = useMemo(() => {
     const map = new Map<string, TransportLeg>();
-    (transportRecommend.data ?? []).forEach((leg) => {
+    (transportRecommend.data?.legs ?? []).forEach((leg) => {
       map.set(`${leg.day}-${leg.fromTourId}-${leg.toTourId}`, leg);
     });
     return map;
@@ -275,6 +275,13 @@ const MoimManageDetail = () => {
       }))
     );
     transportRecommend.mutate(items, {
+      onSuccess: ({ legs, code }) => {
+        if (!legs.length) {
+          showAlert(code === 'AI_TEMPORARILY_UNAVAILABLE'
+            ? t('moim.transportRecommendUnavailable')
+            : t('moim.transportRecommendEmpty'));
+        }
+      },
       onError: (error) => {
         if ((error as { code?: string } | null)?.code === 'AI_UNAVAILABLE') {
           showAlert(t('common.aiUnavailable'));
