@@ -344,8 +344,12 @@
     <select id="moimPlan"
             resultType="com.example.backend.trma.dto.dataList.MoimPlanData">
 
+        <!-- TB_TRMA_MOIM_CALENDAR.START_DT 컬럼이 DATE가 아니라 DATETIME이라, 그대로
+             내려주면 "2026-10-10 00:00:00"처럼 실제로는 쓰지 않는 시각(00:00:00)까지
+             그대로 붙어 나가 "DAY 1 (2026-10-10 00:00:00)"처럼 화면에 새어나왔다.
+             날짜만 필요하므로 DATE_FORMAT으로 잘라서 내려준다. -->
         SELECT
-            a.START_DT
+            DATE_FORMAT(a.START_DT, '%Y-%m-%d') AS START_DT
             ,a.RMKS
             ,a.TOUR_ID
             <!-- 한국관광공사 공식 일어/영어 데이터(TB_TRMA_TOUR_JP_LIST/EN_LIST) > Gemini

@@ -10,6 +10,7 @@ import useUser from '@/shared/hooks/useUser';
 import Header from './components/header/Header';
 import DaySchedule from '@/shared/components/daySchedule/DaySchedule';
 import TransportLegView from '@/shared/components/transportLeg/TransportLegView';
+import ItineraryMap from '@/shared/components/itineraryMap/ItineraryMap';
 import Button from '@/shared/components/button/Button';
 import PageState from '@/shared/components/pageState/PageState';
 import ReviewImageGrid from '@/shared/components/reviewImageGrid/ReviewImageGrid';
@@ -136,21 +137,35 @@ const MoimDetail = () => {
         {days.length === 0 ? (
           <p className="moim-detail-empty">{t('moim.step3.emptyView')}</p>
         ) : (
-          days.map((date, index) => {
-            const day = index + 1;
-            return (
-              <DaySchedule
-                key={date}
-                day={day}
-                date={date}
-                items={planByDay[date].map((item) => ({ id: `${date}-${item.tourNm}`, time: item.rmks, placeName: item.tourNm, tourId: item.tourId, imageUrl: item.firstImage }))}
-                renderBetween={(prevItem, item) => {
-                  const leg = legsByKey.get(`${day}-${prevItem.tourId}-${item.tourId}`);
-                  return leg ? <TransportLegView leg={leg} /> : null;
-                }}
+          <>
+            {days.map((date, index) => {
+              const day = index + 1;
+              return (
+                <DaySchedule
+                  key={date}
+                  day={day}
+                  date={date}
+                  items={planByDay[date].map((item) => ({ id: `${date}-${item.tourNm}`, time: item.rmks, placeName: item.tourNm, tourId: item.tourId, imageUrl: item.firstImage }))}
+                  renderBetween={(prevItem, item) => {
+                    const leg = legsByKey.get(`${day}-${prevItem.tourId}-${item.tourId}`);
+                    return leg ? <TransportLegView leg={leg} /> : null;
+                  }}
+                />
+              );
+            })}
+            <div className="moim-detail-map">
+              <ItineraryMap
+                stops={days.flatMap((date, index) =>
+                  planByDay[date].map((item) => ({
+                    id: `${date}-${item.tourNm}`,
+                    placeName: item.tourNm,
+                    roadAddr: item.roadAddr,
+                    day: index + 1,
+                  }))
+                )}
               />
-            );
-          })
+            </div>
+          </>
         )}
       </section>
 

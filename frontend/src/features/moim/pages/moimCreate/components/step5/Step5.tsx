@@ -44,7 +44,7 @@ const Step5 = ({ watch, itemsByDay, onEditPlan, onNext }: Step5Props) => {
   }, [transportRecommend.data]);
 
   const totalStops = days.reduce((sum, day) => sum + (itemsByDay[day]?.length ?? 0), 0);
-  const mapStops = days.flatMap((day) => itemsByDay[day] ?? []);
+  const mapStops = days.flatMap((day) => (itemsByDay[day] ?? []).map((item) => ({ ...item, day })));
 
   return (
     <div className="create-content step5-content">
