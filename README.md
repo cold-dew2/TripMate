@@ -732,8 +732,6 @@ GEMINI_API_KEY=
 TOUR_API_KEY=
 ```
 
-> ⚠️ 배포/공개 Repository에서는 실제 API Key와 Secret을 `.env` 파일에 넣어 커밋하지 마세요. 이미 외부에 노출된 키가 있다면 해당 서비스에서 키를 재발급하거나 제한하는 것이 안전합니다.
-
 ---
 
 ## 🗄️ Database
