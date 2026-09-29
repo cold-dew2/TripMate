@@ -8,60 +8,42 @@ React와 TypeScript를 기반으로 여행지 탐색, 여행 소모임 탐색 �
 
 ---
 
-## 📌 주요 기능
+# 🚀 실행 방법
 
-### 🏠 Home
+```bash
+npm install
+```
 
-- 인기 여행지 조회
-- 인기 소모임 조회
-- 여행 테마 카테고리
-- 주요 페이지 바로가기
+### 개발 서버
 
-### 📍 Place
+```bash
+npm run dev
+```
 
-- 여행지 목록 및 검색
-- 지역별 필터링
-- 무한 스크롤
-- 여행지 상세 정보
-- 이용 정보
-- 리뷰 및 평점
+### 빌드
 
-### 👥 Moim
+```bash
+npm run build
+```
 
-- 소모임 목록 및 검색
-- 지역 및 조건별 필터링
-- 무한 스크롤
-- 소모임 상세 정보
-- 소모임 생성 Step UI
-- 소모임 관리
+### Lint
 
-### 👤 My
+```bash
+npm run lint
+```
 
-- 사용자 프로필
-- 사용자 활동 정보
-- 리뷰 목록
-- 마이페이지
+### Production Preview
 
-### 💬 Chat
+```bash
+npm run preview
+```
 
-- 채팅방 목록
-- 실시간 메시지
-- 읽음 상태
-- WebSocket / STOMP 기반 통신
+환경 변수:
 
-### 🌐 i18n
-
-- 한국어 / 영어 지원
-- `i18next`, `react-i18next` 사용
-- 동적 콘텐츠의 언어 변경 대응
-
-### 🤖 AI
-
-- AI 여행지 검색
-- AI 여행지 정보
-- AI 소모임 검색
-- AI 기반 여행 일정 / 추천 기능 연동
-
+```env
+VITE_API_BASE_URL=<BACKEND_API_URL>
+VITE_KAKAO_MAP_KEY=<KAKAO_MAP_API_KEY>
+```
 ---
 
 # 🧩 기술을 선택한 이유
@@ -170,11 +152,11 @@ locales/
 }
 ```
 
-이를 일반 배열처럼 사용하면서 필터링 과정에서 `filter is not a function` 오류가 발생했습니다.
+이를 일반 배열처럼 사용하면서 `filter is not a function` 오류가 발생했습니다.
 
 ### 해결
 
-각 페이지의 데이터를 하나의 배열로 합친 후 화면에 전달했습니다.
+각 페이지를 하나의 배열로 합친 후 화면에 전달했습니다.
 
 ```tsx
 const places = useMemo(() => {
@@ -182,7 +164,7 @@ const places = useMemo(() => {
 }, [data]);
 ```
 
-그리고 다음 페이지 요청은 `IntersectionObserver`로 목록 하단을 감지하고, 이미 요청 중인 경우 중복 요청하지 않도록 처리했습니다.
+다음 페이지 요청은 `IntersectionObserver`로 하단을 감지하고, 이미 요청 중인 경우 중복 요청하지 않도록 처리했습니다.
 
 ```tsx
 if (
@@ -196,20 +178,27 @@ if (
 
 ### 선택 이유
 
-스크롤 위치를 직접 계산하는 방식보다 `IntersectionObserver`가 목록 하단 감지라는 목적에 적합하고, `useInfiniteQuery`가 페이지 상태와 캐시를 관리하기 때문에 두 기능을 조합했습니다.
+스크롤 위치를 직접 계산하기보다 `IntersectionObserver`가 목록 하단 감지에 적합하고, `useInfiniteQuery`가 페이지 상태와 캐시를 관리하기 때문에 두 기능을 조합했습니다.
 
 ---
 
-
-## 3. API 실패 시 요청이 불필요하게 반복되는 문제
+## 2. API 오류와 네트워크 오류를 구분하지 않으면 불필요한 재요청이 발생하는 문제
 
 ### 문제
 
-TanStack Query의 기본 retry 동작 때문에 로그인하지 않은 사용자가 접근할 때와 같이 재시도해도 결과가 바뀌지 않는 요청까지 반복되는 문제가 있었습니다.
+HTTP 오류와 Backend 서버 자체에 연결할 수 없는 상황은 서로 다른데, 모든 실패를 동일하게 처리하면 불필요한 retry가 발생하거나 사용자에게 원인을 제대로 안내하기 어려웠습니다.
+
+```text
+HTTP 401 / 403 / 500
+→ Backend는 응답함
+
+Failed to fetch
+→ 서버 연결 자체가 실패
+```
 
 ### 해결
 
-에러 종류에 따라 재시도 여부를 구분했습니다.
+React Query에서는 재시도해도 결과가 달라지지 않는 비즈니스 오류는 retry하지 않고, 일시적인 네트워크 오류만 제한적으로 재시도했습니다.
 
 ```tsx
 retry: (failureCount, error) => {
@@ -226,38 +215,33 @@ retry: (failureCount, error) => {
 }
 ```
 
-### 선택 이유
-
-모든 오류를 동일하게 처리하면 비즈니스 오류에도 불필요한 재요청이 발생합니다.
-
-따라서:
+`fetch` 자체가 실패한 경우에는 API Client에서 별도의 네트워크 상태 이벤트를 발생시켜 UI에서 서버 연결 문제를 안내하도록 구성했습니다.
 
 ```text
-비즈니스 오류
-→ 재시도하지 않음
-
-일시적인 네트워크 오류
-→ 1회 재시도
+apiClient
+   ↓
+fetch 실패
+   ↓
+notifyBackendUnreachable()
+   ↓
+React UI 안내
 ```
 
-로 구분했습니다.
+### 선택 이유
+
+HTTP 비즈니스 오류와 네트워크 장애는 해결 방법이 다르기 때문에 요청 정책과 사용자 안내를 분리했습니다.
 
 ---
 
-## 4. API 응답이 JSON이 아닐 때 `response.json()` 오류
+## 3. API 응답이 JSON이 아닐 때 `response.json()` 오류
 
 ### 문제
 
-모든 API 응답을 JSON이라고 가정하고 `response.json()`을 바로 호출하면 다음 상황에서 오류가 발생할 수 있었습니다.
-
-- 204 No Content
-- 빈 응답
-- JSON이 아닌 응답
-- 로그아웃처럼 Body가 없는 응답
+모든 API 응답을 JSON이라고 가정하면 `204 No Content`, 빈 응답, 로그아웃과 같은 요청에서 `response.json()` 오류가 발생할 수 있었습니다.
 
 ### 해결
 
-공통 API Client에서 먼저 응답을 문자열로 확인한 후 JSON을 파싱하도록 변경했습니다.
+공통 API Client에서 응답을 먼저 문자열로 확인한 뒤 JSON을 파싱하도록 변경했습니다.
 
 ```text
 Response
@@ -271,158 +255,276 @@ text()
 JSON.parse()
 ```
 
-### 선택 이유
-
-각 API에서 개별적으로 예외를 처리하지 않고 공통 API Client에서 처리하여 모든 화면에서 동일한 응답 처리 규칙을 사용할 수 있도록 했습니다.
-
----
-
-## 5. Backend 서버 자체가 내려간 경우의 오류 처리
-
-### 문제
-
-HTTP 401, 500과 같이 서버가 응답하는 오류와 서버 자체에 연결할 수 없는 상황은 서로 다른 문제입니다.
-
-```text
-HTTP 401
-→ 서버 연결 성공 + 인증 문제
-
-fetch 실패
-→ 서버 연결 / 네트워크 문제 가능성
-```
-
-### 해결
-
-`apiClient`에서 `fetch` 자체가 실패하면 별도의 네트워크 상태 이벤트를 발생시키고 React 화면에서 사용자에게 서버 연결 문제를 안내하도록 구성했습니다.
-
-```text
-apiClient
- ↓
-fetch 실패
- ↓
-notifyBackendUnreachable()
- ↓
-React UI에서 안내
-```
-
-### 선택 이유
-
-API Client는 React 컴포넌트가 아니므로 UI Hook을 직접 사용할 수 없습니다.
-
-따라서 API 계층은 이벤트만 발생시키고 React 계층에서 이를 구독하도록 분리했습니다.
-
----
-
-## 6. DateRangePicker에서 시작일을 선택하자마자 종료일까지 선택되는 문제
-
-### 문제
-
-`react-day-picker`의 Range Mode는 첫 번째 날짜 선택 시 내부적으로 하나의 Range가 완성된 형태로 전달될 수 있었습니다.
-
-소모임 생성에서는:
-
-```text
-시작일 선택
- ↓
-종료일 선택
-```
-
-순서가 필요했습니다.
-
-### 해결
-
-첫 번째 선택에서는 `to` 값을 비우고, 시작일과 종료일이 모두 선택됐을 때만 캘린더를 닫도록 처리했습니다.
+또한 API 응답 구조가 예상과 다를 경우 Hook/API 계층에서 데이터를 정규화한 후 컴포넌트에 전달했습니다.
 
 ```tsx
-const isFirstPick = !dateRange?.from;
-
-const nextRange =
-  isFirstPick && range?.from
-    ? {
-        from: range.from,
-        to: undefined,
-      }
-    : range;
-
-if (nextRange?.from && nextRange?.to) {
-  setIsOpen(false);
-}
+const items = Array.isArray(data)
+  ? data
+  : [];
 ```
 
 ### 선택 이유
 
-날짜 범위 계산 자체는 라이브러리의 기능을 사용하면서, TripMate에 필요한 사용자 경험만 추가로 보정했습니다.
+각 화면에서 응답 오류와 데이터 구조를 개별적으로 처리하면 동일한 코드가 반복되기 때문에 공통 API Client와 Hook 계층에서 책임을 분리했습니다.
 
 ---
 
-## 7. 소모임 생성 Step 이동 시 입력값이 사라지는 문제
+## 4. 검색·필터 변경 후 이전 목록이 남는 문제
 
 ### 문제
 
-소모임 생성 Step을 URL Query String으로 변경하면서 `location.state`에 있던 초기 데이터가 사라지는 문제가 있었습니다.
-
-```text
-Step 1
- ↓
-URL 변경
- ↓
-Step 2
- ↓
-location.state 초기화
-```
+여행지와 소모임 목록에서 검색어, 지역, 카테고리가 변경될 때 이전 결과가 남거나 무한 스크롤이 이전 검색 조건의 다음 페이지를 요청할 수 있었습니다.
 
 ### 해결
 
-페이지 최초 진입 시 `location.state`를 상위 컴포넌트의 State에 저장하고 이후 Step 변경에서는 저장된 값을 사용했습니다.
+검색 및 필터 조건을 Query Key에 포함했습니다.
 
 ```tsx
-const [prefill] = useState(
-  () => location.state as MoimCreatePrefill | null
-);
+useInfiniteQuery({
+  queryKey: [
+    "placeList",
+    keyword,
+    region,
+    category,
+  ],
+  queryFn: ({ pageParam }) =>
+    getPlaceList({
+      keyword,
+      region,
+      category,
+      page: pageParam,
+    }),
+});
+```
+
+```text
+검색 조건 변경
+      ↓
+Query Key 변경
+      ↓
+새 Query 생성
+      ↓
+첫 페이지부터 조회
+      ↓
+무한 스크롤 재시작
 ```
 
 ### 선택 이유
 
-Step 변경과 초기 데이터 전달을 분리하여 URL 이동이 Form 데이터에 영향을 주지 않도록 했습니다.
+검색 조건을 별도의 전역 상태로 관리하기보다 서버 데이터의 식별자인 Query Key에 포함하는 것이 TanStack Query의 캐싱 구조와 잘 맞는다고 판단했습니다.
 
 ---
 
-## 8. WebSocket 연결이 끊긴 동안 메시지가 누락될 수 있는 문제
+## 5. 소모임 생성에서 DatePicker와 Form 상태가 충돌하는 문제
 
 ### 문제
 
-WebSocket 연결이 끊기면 자동 재연결이 되더라도 연결이 끊긴 동안 발생한 메시지를 놓칠 수 있습니다.
+소모임 생성 과정에서 `react-day-picker`와 React Hook Form을 연결하면서 `DateRange | undefined` 타입 처리와 Form 값 동기화 문제가 발생했습니다.
+
+또한 Step 이동 시 입력값이 초기화되거나 시작일을 선택하자 종료일까지 선택되는 문제가 있었습니다.
 
 ### 해결
+
+DatePicker의 선택 상태와 제출용 Form 상태를 분리하고 `setValue`를 통해 필요한 값만 Form에 반영했습니다.
+
+```tsx
+const handleSelect = (range: DateRange | undefined) => {
+  if (!range) return;
+
+  setValue("startDate", range.from);
+  setValue("endDate", range.to);
+};
+```
+
+전체 Form은 상위에서 유지하고 현재 Step은 URL Query String으로 관리했습니다.
+
+```text
+/createMoim?step=1
+        ↓
+/createMoim?step=2
+        ↓
+/createMoim?step=3
+```
+
+시작일과 종료일이 모두 선택된 경우에만 달력을 닫도록 처리했습니다.
+
+### 선택 이유
+
+Step은 화면 상태이고 입력 데이터는 하나의 Form 데이터이므로 두 책임을 분리하는 것이 유지보수에 유리했습니다.
+
+---
+
+## 6. WebSocket 연결이 끊긴 동안 채팅 메시지가 누락되는 문제
+
+### 문제
+
+WebSocket이 끊겼다가 재연결되더라도 연결이 끊긴 동안 발생한 메시지를 놓칠 수 있었습니다.
+
+### 해결
+
+WebSocket은 실시간 전달에 사용하고, 재연결 후 REST API로 최신 메시지를 다시 조회하도록 구성했습니다.
 
 ```text
 WebSocket 연결
-→ 실시간 메시지
+      ↓
+실시간 메시지 수신
 
 연결 끊김
-→ 자동 재연결
+      ↓
+자동 재연결
 
 재연결 성공
-→ REST로 최신 메시지 재조회
+      ↓
+REST API로 최신 메시지 조회
+      ↓
+누락 메시지 보완
 ```
 
-또한 사용자가 메시지를 전송한 경우 REST API 응답을 이용해 자신의 메시지를 즉시 화면에 반영하고, WebSocket Echo가 도착하면 `messageId`를 기준으로 중복을 방지했습니다.
+사용자가 메시지를 보낸 경우에도 REST 응답과 WebSocket Echo가 중복 표시되지 않도록 `messageId` 기준으로 중복을 방지했습니다.
+
+### 선택 이유
+
+WebSocket만으로 데이터 정합성을 보장하기보다 REST를 조회의 기준으로 두고 WebSocket을 실시간 전달 채널로 사용하는 것이 안정적이라고 판단했습니다.
+
+---
+
+## 7. 이미지 로딩 실패로 목록 UI가 깨지는 문제
+
+### 문제
+
+여행지나 소모임의 외부 이미지 URL이 존재하지 않거나 이미지 서버 응답이 실패하면 카드 이미지 영역이 깨지고 목록 정렬에도 영향을 줄 수 있었습니다.
+
+### 해결
+
+이미지 로딩 실패 시 fallback 이미지를 사용했습니다.
+
+```tsx
+const handleImageError = (
+  e: React.SyntheticEvent<HTMLImageElement>
+) => {
+  e.currentTarget.src = fallbackImage;
+};
+```
+
+이미지가 없는 데이터에도 동일한 이미지 영역을 유지하도록 구성했습니다.
+
+### 선택 이유
+
+모든 이미지 URL을 API 호출 단계에서 검증하기보다 실제 렌더링 단계에서 실패를 감지하고 대체하는 것이 프론트의 책임에 적합하다고 판단했습니다.
+
+---
+
+## 8. AI 응답을 기존 서비스 UI와 연결하는 문제
+
+### 문제
+
+AI 여행지 검색이나 추천 결과를 단순 텍스트로 표시하면 기존 여행지 탐색 기능과 분리되어 사용자가 다시 검색해야 하는 문제가 있었습니다.
+
+### 해결
+
+AI 응답을 서비스의 여행지 데이터 형태로 변환하고 기존 카드 UI와 연결했습니다.
 
 ```text
-메시지 전송
- ↓
-REST 성공
- ↓
-내 화면에 즉시 표시
- ↓
-WebSocket Echo
- ↓
-messageId 중복 검사
+사용자 질문
+    ↓
+AI API
+    ↓
+AI 추천 결과
+    ↓
+여행지 데이터 변환
+    ↓
+Card UI
+    ↓
+상세 페이지
+```
+
+메시지 타입도 추천 데이터를 구분할 수 있도록 구성했습니다.
+
+```tsx
+type MessageType =
+  | "user"
+  | "bot"
+  | "products";
 ```
 
 ### 선택 이유
 
-WebSocket을 실시간 통신에 사용하면서도 데이터 정합성은 REST 조회를 통해 보완하는 방식으로 구성했습니다.
+AI를 별도의 기능으로 분리하기보다 기존 여행지 탐색 경험 안에서 바로 활용할 수 있도록 연결했습니다.
+
+---
+
+## 9. 다국어 변경 후 이전 언어의 데이터가 표시되는 문제
+
+### 문제
+
+UI 문자열은 `i18next`로 변경할 수 있지만 여행지명, 소모임명, 리뷰 등의 동적 데이터는 Backend 번역 결과와 함께 관리해야 했습니다.
+
+언어만 변경하고 기존 Query Cache를 그대로 사용하면 이전 언어의 데이터가 남을 수 있었습니다.
+
+### 해결
+
+현재 언어를 Query Key에 포함했습니다.
+
+```tsx
+const { i18n } = useTranslation();
+
+useQuery({
+  queryKey: [
+    "placeDetail",
+    placeId,
+    i18n.language,
+  ],
+  queryFn: () =>
+    getPlaceDetail(
+      placeId,
+      i18n.language
+    ),
+});
+```
+
+```text
+한국어
+["placeDetail", "P001", "ko"]
+
+      ↓ 언어 변경
+
+영어
+["placeDetail", "P001", "en"]
+```
+
+또한 HTML의 `lang` 속성도 현재 언어에 맞게 변경했습니다.
+
+### 선택 이유
+
+언어별 서버 데이터를 별도의 전역 상태로 복제하기보다 Query Key로 분리하여 캐시 구조를 명확하게 유지했습니다.
+
+---
+
+## 10. API 데이터 구조가 예상과 다를 때 화면이 깨지는 문제
+
+### 문제
+
+API가 정상적으로 응답하더라도 실제 데이터가 배열이 아닐 경우 `map`, `filter` 등의 배열 메서드에서 런타임 오류가 발생할 수 있었습니다.
+
+### 해결
+
+API Client 또는 Custom Hook에서 화면에 필요한 형태로 데이터를 정리한 후 컴포넌트에 전달했습니다.
+
+```tsx
+const items = Array.isArray(data)
+  ? data
+  : [];
+```
+
+무한 스크롤의 페이지 병합도 목록 Hook에서 담당하도록 구성했습니다.
+
+```tsx
+const items = data?.pages.flat() ?? [];
+```
+
+### 선택 이유
+
+각 컴포넌트에서 API 응답을 개별적으로 검증하면 동일한 로직이 반복되기 때문에 데이터 가공 책임을 Hook/API 계층에 두었습니다.
 
 ---
 
@@ -614,63 +716,6 @@ AI 요청
 
 형태의 Progressive UI를 적용하고, AI 요청 실패 시 일반 검색이나 기존 데이터로 전환하는 Fallback을 추가할 수 있습니다.
 
----
-
-
-# 🚀 실행 방법
-
-```bash
-npm install
-```
-
-### 개발 서버
-
-```bash
-npm run dev
-```
-
-### 빌드
-
-```bash
-npm run build
-```
-
-### Lint
-
-```bash
-npm run lint
-```
-
-### Production Preview
-
-```bash
-npm run preview
-```
-
-환경 변수:
-
-```env
-VITE_API_BASE_URL=<BACKEND_API_URL>
-VITE_KAKAO_MAP_KEY=<KAKAO_MAP_API_KEY>
-```
-
----
-
-# 📂 주요 경로
-
-| 경로 | 화면 |
-|---|---|
-| `/` | 홈 |
-| `/placeList` | 여행지 목록 |
-| `/place/:tourId` | 여행지 상세 |
-| `/moimList` | 소모임 목록 |
-| `/moim/:moimId` | 소모임 상세 |
-| `/createMoim` | 소모임 생성 |
-| `/moimManage` | 소모임 관리 |
-| `/my` | 마이페이지 |
-| `/guide` | 이용 가이드 |
-| `/chat` | 채팅 목록 |
-| `/chat/:roomId` | 채팅방 |
 
 ---
 
