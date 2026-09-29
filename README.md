@@ -12,6 +12,22 @@ frontend: 한이슬 / backend: 연찬민
 
 ---
 
+## 🌐 배포 서비스
+
+**TripMate 바로가기**
+
+https://trip-mate-ten-chi.vercel.app
+
+### 배포 환경
+
+| 구분 | 환경 |
+|---|---|
+| Frontend | Vercel |
+| Backend | Google Cloud Platform (GCP) |
+| Database | Google Cloud Platform (GCP) |
+
+---
+
 ## ✨ 주요 기능
 
 ### 🏠 홈
