@@ -8,36 +8,6 @@ Spring Boot와 Java를 기반으로 여행지 탐색, 여행 소모임, 사용�
 
 ---
 
-# 🌐 배포 서비스
-
-**TripMate 바로가기**
-
-https://trip-mate-ten-chi.vercel.app
-
-### 배포 환경
-
-| 구분 | 환경 |
-|---|---|
-| Frontend | Vercel |
-| Backend | Google Cloud Platform (GCP) |
-| Database | Google Cloud Platform (GCP) |
-
-```text
-사용자
-  │
-  ▼
-Vercel
-  │
-  │ REST API
-  │ WebSocket / STOMP
-  ▼
-GCP Backend
-  │
-  ▼
-GCP Database
-```
----
-
 # 🚀 실행 방법
 
 ### macOS / Linux
