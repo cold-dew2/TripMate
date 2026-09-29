@@ -26,6 +26,26 @@ https://trip-mate-ten-chi.vercel.app
 | Backend | Google Cloud Platform (GCP) |
 | Database | Google Cloud Platform (GCP) |
 
+
+### 배포 구성
+
+```text
+사용자
+  │
+  ▼
+Vercel
+  │
+  │ API 요청
+  ▼
+GCP Backend
+  │
+  ▼
+GCP Database
+```
+
+- **Frontend**: Vercel을 통해 배포
+- **Backend**: GCP 환경에서 Spring Boot 서버 운영
+- **Database**: GCP 환경에서 애플리케이션과 연동하여 운영
 ---
 
 ## ✨ 주요 기능
