@@ -443,6 +443,53 @@ test("E2E-21 비멤버는 남의 소모임 채팅을 조회/실시간 수신할 
   await expect(c.getByText(msg)).toHaveCount(0);
 });
 
+test("E2E-27 채팅 번역 - 요청 시 메시지 한 건만 번역하고, 실패해도 원문을 유지하며 비멤버는 거절된다", async ({ browser }) => {
+  test.skip(!ALLOW_WRITES, WRITE_SKIP_REASON);
+  const a = await (await browser.newContext()).newPage();
+  const b = await (await browser.newContext()).newPage();
+  const c = await (await browser.newContext()).newPage();
+  await login(a, userA());
+  await login(b, userB());
+  await login(c, userC());
+  const room = await sharedRoom(a, b);
+  expect(room, "A/B 공통 채팅방이 없음").toBeTruthy();
+  const roomId = room!.replace("/chat/", "");
+
+  // 전송은 번역과 무관하게 바로 성공하고, 응답에 원문 언어가 실린다(미리 번역하지 않음).
+  const sent = await (await a.request.post(`${API_BASE}/chat/rooms/${roomId}/messages`, {
+    data: { content: `Hello from E2E ${Date.now()}` },
+  })).json();
+  expect(sent.success, JSON.stringify(sent).slice(0, 200)).toBe(true);
+  expect(sent.data.srcLangCd).toBe("en");
+  expect(sent.data.contentKo ?? null).toBeNull();
+  const messageId = sent.data.messageId;
+  const translate = (page: Page, lang: string) =>
+    page.request.post(`${API_BASE}/chat/rooms/${roomId}/messages/${messageId}/translate?lang=${lang}`, { data: {} });
+
+  // 원문과 같은 언어는 AI 없이 원문 그대로(SOURCE).
+  const same = await (await translate(b, "en")).json();
+  expect(same.data.state).toBe("SOURCE");
+  expect(same.data.content).toBe(sent.data.content);
+
+  // 한국어 요청: AI가 되면 TRANSLATED/CACHED(한글), 안 되면 FAILED + 원문. 어느 쪽이든 요청 자체는 성공.
+  const ko = await (await translate(b, "ko")).json();
+  expect(ko.success, JSON.stringify(ko).slice(0, 200)).toBe(true);
+  expect(["TRANSLATED", "CACHED", "FAILED"]).toContain(ko.data.state);
+  if (ko.data.state === "FAILED") expect(ko.data.content).toBe(sent.data.content);
+  else expect(HANGUL.test(ko.data.content)).toBe(true);
+
+  // 비멤버/지원하지 않는 언어는 거절.
+  expect((await (await translate(c, "ko")).json()).code).toBe("NOT_MEMBER");
+  expect((await (await translate(b, "zh")).json()).code).toBe("UNSUPPORTED_LANG");
+
+  // 화면: 한국어 화면에서 영어 메시지에는 번역 버튼이 보이고, 한국어 메시지에는 보이지 않는다.
+  await b.goto(room!);
+  const english = b.locator("article", { hasText: sent.data.content });
+  await expect(english.getByRole("button", { name: /번역|원문 보기/ })).toBeVisible();
+  const korean = b.locator("article", { hasText: "[E2E]" }).last();
+  if (await korean.count()) await expect(korean.getByRole("button", { name: "번역" })).toHaveCount(0);
+});
+
 test("E2E-22 채팅 목록의 방은 모두 열 수 있다(예전 자동 입장으로 남은 방 점검)", async ({ browser }) => {
   const broken: string[] = [];
   for (const user of [userA(), userB(), userC()]) {

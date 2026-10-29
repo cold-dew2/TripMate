@@ -193,7 +193,8 @@
     "kickedLabel": "追放済み",
     "translate": "翻訳",
     "showOriginal": "原文を見る",
-    "translating": "翻訳中..."
+    "translating": "翻訳中...",
+    "translateFailed": "翻訳できませんでした。しばらくしてからもう一度お試しください。"
   },
   "account": {
     "loading": "読み込み中…",

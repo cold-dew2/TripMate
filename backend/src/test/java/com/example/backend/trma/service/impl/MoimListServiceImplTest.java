@@ -88,6 +88,58 @@ class MoimListServiceImplTest {
             assertThat(response.getStatus()).isEqualTo(500);
             assertThat(response.getData()).isNull();
         }
+
+        @Test
+        @DisplayName("등록이 커밋되면 백그라운드에서 제목/소개를 원문 외 언어(한국어 원문이면 영어·일본어)로 미리 번역해 저장한다")
+        void createMoim_pretranslatesAfterCommit() {
+            CreateMoimRequest request = new CreateMoimRequest();
+            request.setMoimTitle("세종 나들이");
+            request.setMoimDscr("함께 걸어요");
+            when(tourListService.translateFreeTexts(any(), eq("en"))).thenReturn(java.util.Map.of("title", "Sejong Outing", "dscr", "Let's walk"));
+            when(tourListService.translateFreeTexts(any(), eq("ja"))).thenReturn(java.util.Map.of("title", "世宗のお出かけ", "dscr", "一緒に歩こう"));
+
+            org.springframework.transaction.support.TransactionSynchronizationManager.initSynchronization();
+            try {
+                String moimId = service.createMoim(request, HOST).getData().getMoimId();
+                // 커밋 전에는 번역하지 않는다(롤백되면 번역할 모임이 없으므로)
+                verify(tourListService, never()).translateFreeTexts(any(), any());
+
+                org.springframework.transaction.support.TransactionSynchronizationManager.getSynchronizations()
+                        .forEach(org.springframework.transaction.support.TransactionSynchronization::afterCommit);
+
+                verify(moimListMapper, timeout(2000)).updateMoimTranslationLang(moimId, "EN", "Sejong Outing", "Let's walk");
+                verify(moimListMapper, timeout(2000)).updateMoimTranslationLang(moimId, "JA", "世宗のお出かけ", "一緒に歩こう");
+                // 원문이 한국어라 한국어 번역은 요청하지 않는다
+                verify(tourListService, never()).translateFreeTexts(any(), eq("ko"));
+            } finally {
+                org.springframework.transaction.support.TransactionSynchronizationManager.clearSynchronization();
+            }
+        }
+
+        @Test
+        @DisplayName("미리 번역: 한 언어가 실패해도 다른 언어는 저장하고, 번역 결과가 비면 저장하지 않는다")
+        void pretranslate_partialFailure() {
+            when(tourListService.translateFreeTexts(any(), eq("en"))).thenThrow(new RuntimeException("ai down"));
+            when(tourListService.translateFreeTexts(any(), eq("ja"))).thenReturn(java.util.Map.of("title", "世宗", "dscr", " "));
+
+            service.pretranslateMoim(MOIM, "세종", "소개");
+
+            verify(moimListMapper).updateMoimTranslationLang(MOIM, "JA", "世宗", null);
+            verify(moimListMapper, never()).updateMoimTranslationLang(eq(MOIM), eq("EN"), any(), any());
+        }
+
+        @Test
+        @DisplayName("미리 번역: 영어로 쓴 모임은 한국어·일본어로 번역하고 영어는 번역하지 않는다")
+        void pretranslate_englishSource() {
+            when(tourListService.translateFreeTexts(any(), eq("ko"))).thenReturn(java.util.Map.of("title", "세종 나들이", "dscr", "함께 걸어요"));
+            when(tourListService.translateFreeTexts(any(), eq("ja"))).thenReturn(java.util.Map.of("title", "世宗のお出かけ", "dscr", "一緒に歩こう"));
+
+            service.pretranslateMoim(MOIM, "Sejong Outing", "Let's walk together");
+
+            verify(moimListMapper).updateMoimTranslationLang(MOIM, "KO", "세종 나들이", "함께 걸어요");
+            verify(moimListMapper).updateMoimTranslationLang(MOIM, "JA", "世宗のお出かけ", "一緒に歩こう");
+            verify(tourListService, never()).translateFreeTexts(any(), eq("en"));
+        }
     }
 
     @Nested

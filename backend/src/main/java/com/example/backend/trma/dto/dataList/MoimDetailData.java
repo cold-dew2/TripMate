@@ -24,6 +24,8 @@ public class MoimDetailData {
     private String imageUrl;
     private String moimTitleEn;
     private String moimTitleJa;
+    private String moimTitleKo;
     private String moimDscrEn;
     private String moimDscrJa;
+    private String moimDscrKo;
 }

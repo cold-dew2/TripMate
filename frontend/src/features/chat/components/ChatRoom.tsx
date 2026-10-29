@@ -15,10 +15,12 @@ interface Message {
   senderId: string;
   senderName: string;
   content: string;
-  // 전송 시점에 백그라운드로 번역해서 채워지는 캐시. 아직 번역 전이거나 AI가
-  // 끊겨 있었으면 비어 있고, 그때는 content(원문)를 그대로 보여준다.
+  // 누군가 번역을 요청했을 때 서버에 저장되는 언어별 번역. 없으면 번역 버튼을 누를 때 요청한다.
   contentEn?: string;
   contentJa?: string;
+  contentKo?: string;
+  // 원문 언어(ko/en/ja). 화면 언어와 같으면 번역 버튼을 보여주지 않는다.
+  srcLangCd?: string | null;
   createdAt: string;
   // 이 메시지를 아직 안 읽은 참여자 수(카카오톡의 "1" 배지와 같은 의미). 0이 되면
   // 모두 읽은 것이라 배지를 숨긴다.
@@ -33,21 +35,21 @@ interface UnreadDelta {
   unreadCount: number;
 }
 
-// 메시지 번역이 끝났을 때 서버가 별도 채널로 보내주는 패치 — 번역된 문구만 담겨 있어
-// 이 값으로 기존 메시지의 contentEn/contentJa만 채워 넣는다.
-interface TranslationDelta {
+// 메시지 한 건 번역 요청의 결과. FAILED면 AI가 실패한 것이라 원문을 그대로 둔다.
+interface MessageTranslation {
   messageId: string;
-  contentEn: string;
-  contentJa: string;
+  lang: string;
+  content: string;
+  state: 'SOURCE' | 'CACHED' | 'TRANSLATED' | 'FAILED';
 }
 
-// 현재 화면 언어로 번역된 문구. 화면 언어가 한국어면 번역할 대상이 없으므로 undefined.
-// 아직 번역이 끝나지 않았으면(전송 직후이거나 AI가 끊겨 있었으면)도 undefined.
+const translationKey = { ko: 'contentKo', en: 'contentEn', ja: 'contentJa' } as const;
+
+// 현재 화면 언어로 저장된 번역. 아직 아무도 요청하지 않았으면 undefined.
 const getTranslation = (message: Message): string | undefined => {
-  const lang = getApiLang();
-  if (lang === 'en') return message.contentEn || undefined;
-  if (lang === 'ja') return message.contentJa || undefined;
-  return undefined;
+  const lang = getApiLang() as keyof typeof translationKey;
+  const key = translationKey[lang];
+  return key ? message[key] || undefined : undefined;
 };
 
 interface ChatRoomProps {
@@ -76,13 +78,39 @@ export default function ChatRoom({ roomId, title, showLeave = true }: ChatRoomPr
   const [translatedIds, setTranslatedIds] = useState<Set<string>>(new Set());
   const messagesRef = useRef<HTMLDivElement>(null);
 
-  const toggleTranslation = (messageId: string) => {
+  const setTranslated = (messageId: string, on: boolean) => {
     setTranslatedIds((current) => {
       const next = new Set(current);
-      if (next.has(messageId)) next.delete(messageId);
-      else next.add(messageId);
+      if (on) next.add(messageId);
+      else next.delete(messageId);
       return next;
     });
+  };
+
+  // 번역이 저장돼 있으면 바로 전환하고, 없을 때만 서버에 요청한다(서버가 메시지·언어별로 저장해
+  // 같은 메시지를 다시 번역하지 않음). 실패하면 원문으로 되돌리고 알린다.
+  const toggleTranslation = async (message: Message) => {
+    const { messageId } = message;
+    if (translatedIds.has(messageId)) {
+      setTranslated(messageId, false);
+      return;
+    }
+    setTranslated(messageId, true);
+    if (getTranslation(message)) return;
+    const lang = getApiLang() as keyof typeof translationKey;
+    const r = await apiClient.post<{ data: MessageTranslation }>(
+      `/chat/rooms/${roomId}/messages/${messageId}/translate?lang=${lang}`,
+      {},
+    );
+    const result = r.success ? r.data?.data : undefined;
+    if (!result || result.state === 'FAILED' || !translationKey[lang]) {
+      setTranslated(messageId, false);
+      showAlert(t('chat.translateFailed'));
+      return;
+    }
+    setMessages((current) => current.map((m) => (
+      m.messageId === messageId ? { ...m, [translationKey[lang]]: result.content } : m
+    )));
   };
 
   const kicked = myState === 'K';
@@ -120,14 +148,6 @@ export default function ChatRoom({ roomId, title, showLeave = true }: ChatRoomPr
     }));
   };
 
-  const applyTranslationDelta = (delta: TranslationDelta) => {
-    setMessages((current) => current.map((m) => (
-      m.messageId === delta.messageId
-        ? { ...m, contentEn: delta.contentEn || m.contentEn, contentJa: delta.contentJa || m.contentJa }
-        : m
-    )));
-  };
-
   useEffect(() => {
     void load();
     // 연결이 끊겼다가 자동 재연결되면(네트워크 순단 등) onConnect가 다시 불리는데,
@@ -163,11 +183,6 @@ export default function ChatRoom({ roomId, title, showLeave = true }: ChatRoomPr
         stomp.subscribe(`/topic/chat/${roomId}/read`, (packet) => {
           const delta = JSON.parse(packet.body) as UnreadDelta[];
           applyUnreadDelta(delta);
-        });
-        // 전송 직후 백그라운드로 진행되는 번역이 끝나면, 해당 메시지의 문구만
-        // 채워 넣는다(전체 메시지 재조회 없음).
-        stomp.subscribe(`/topic/chat/${roomId}/translated`, (packet) => {
-          applyTranslationDelta(JSON.parse(packet.body) as TranslationDelta);
         });
       },
       // 연결이 끊기면(네트워크 순단, 서버 재시작 등) 사용자가 그걸 알 방법이 전혀
@@ -248,7 +263,7 @@ export default function ChatRoom({ roomId, title, showLeave = true }: ChatRoomPr
           const translation = getTranslation(m);
           const wantsTranslation = translatedIds.has(m.messageId);
           const showingTranslation = wantsTranslation && !!translation;
-          const canTranslate = getApiLang() !== 'ko';
+          const canTranslate = !!m.srcLangCd && m.srcLangCd !== getApiLang();
           return (
             <article key={m.messageId} className={mine ? 'mine' : ''}>
               <b>{mine ? t('chat.me') : m.senderName}</b>
@@ -260,7 +275,7 @@ export default function ChatRoom({ roomId, title, showLeave = true }: ChatRoomPr
                     <button
                       type="button"
                       className="chat-translate-btn"
-                      onClick={() => toggleTranslation(m.messageId)}
+                      onClick={() => { void toggleTranslation(m); }}
                       disabled={wantsTranslation && !translation}
                     >
                       {showingTranslation

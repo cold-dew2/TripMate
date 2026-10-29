@@ -193,7 +193,8 @@
     "kickedLabel": "Removed",
     "translate": "Translate",
     "showOriginal": "Show original",
-    "translating": "Translating..."
+    "translating": "Translating...",
+    "translateFailed": "Couldn't translate. Please try again in a moment."
   },
   "account": {
     "loading": "Loading…",

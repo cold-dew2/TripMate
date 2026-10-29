@@ -21,6 +21,8 @@ public class TourDetailReviewData {
     // 번역 캐시(응답에는 그대로 노출되지만, 화면에서는 reviewTitle/reviewContent만 씀)
     private String reviewTitleEn;
     private String reviewTitleJa;
+    private String reviewTitleKo;
     private String reviewContentEn;
     private String reviewContentJa;
+    private String reviewContentKo;
 }

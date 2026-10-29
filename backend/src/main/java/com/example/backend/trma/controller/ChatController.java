@@ -6,6 +6,7 @@ import com.example.backend.trma.dto.response.ChatRoomsResponse;
 import com.example.backend.trma.dto.response.LeaveChatRoomResponse;
 import com.example.backend.trma.dto.response.MarkChatReadResponse;
 import com.example.backend.trma.dto.response.SendChatMessageResponse;
+import com.example.backend.trma.dto.response.TranslateChatMessageResponse;
 import com.example.backend.trma.dto.response.UnreadCountResponse;
 import com.example.backend.trma.service.ChatService;
 import org.springframework.security.core.Authentication;
@@ -59,6 +60,22 @@ public class ChatController {
         }
 
         return chatService.sendMessage(roomId, request, authentication.getName());
+    }
+
+    //채팅 메시지 한 건 번역(요청 시)
+    @PostMapping("/rooms/{roomId}/messages/{messageId}/translate")
+    public TranslateChatMessageResponse translateMessage(@PathVariable String roomId,
+                                                         @PathVariable long messageId,
+                                                         @RequestParam String lang,
+                                                         Authentication authentication) {
+
+        if (authentication == null || !authentication.isAuthenticated()
+                || "anonymousUser".equals(authentication.getName())) {
+
+            return new TranslateChatMessageResponse(false, 500, "NEED_LOGIN", "로그인이 필요합니다.", "/chat/rooms/" + roomId + "/messages/" + messageId + "/translate", null);
+        }
+
+        return chatService.translateMessage(roomId, messageId, lang, authentication.getName());
     }
 
     //전체 안읽은 메시지 수 조회

@@ -19,8 +19,10 @@
             ,a.MOIM_DSCR
             ,a.MOIM_TITLE_EN
             ,a.MOIM_TITLE_JA
+            ,a.MOIM_TITLE_KO
             ,a.MOIM_DSCR_EN
             ,a.MOIM_DSCR_JA
+            ,a.MOIM_DSCR_KO
             ,a.MOIM_START_DT
             ,a.MOIM_END_DT
             ,d.USER_NM
@@ -183,9 +185,11 @@
             ,MOIM_TITLE
             ,MOIM_TITLE_EN
             ,MOIM_TITLE_JA
+            ,MOIM_TITLE_KO
             ,MOIM_DSCR
             ,MOIM_DSCR_EN
             ,MOIM_DSCR_JA
+            ,MOIM_DSCR_KO
         FROM TB_TRMA_MOIM_LIST
         WHERE MOIM_ID IN
         <foreach collection="moimIds" item="moimId" open="(" separator="," close=")">
@@ -260,8 +264,10 @@
                  안에 못 끝나면 한국어로 고정). -->
             ,a.MOIM_TITLE_EN
             ,a.MOIM_TITLE_JA
+            ,a.MOIM_TITLE_KO
             ,a.MOIM_DSCR_EN
             ,a.MOIM_DSCR_JA
+            ,a.MOIM_DSCR_KO
             ,a.MOIM_START_DT
             ,a.MOIM_END_DT
             ,a.MAX_MEMBER
@@ -309,8 +315,10 @@
             ,a.MOIM_DSCR
             ,a.MOIM_TITLE_EN
             ,a.MOIM_TITLE_JA
+            ,a.MOIM_TITLE_KO
             ,a.MOIM_DSCR_EN
             ,a.MOIM_DSCR_JA
+            ,a.MOIM_DSCR_KO
             ,a.MOIM_START_DT
             ,a.MOIM_END_DT
             ,a.MAX_MEMBER
@@ -794,6 +802,7 @@
             ,a.REVIEW_CONTENT
             ,a.REVIEW_CONTENT_EN
             ,a.REVIEW_CONTENT_JA
+            ,a.REVIEW_CONTENT_KO
             ,a.IMG_URLS
             ,a.CREATE_DT
         FROM TB_TRMA_MOIM_REVIEW a
@@ -807,6 +816,16 @@
     <!-- ========================= -->
     <!-- 모임 후기 번역 캐시 저장 -->
     <!-- ========================= -->
+    <!-- 후기 번역 캐시 저장(언어 하나: KO/EN/JA, 서비스에서 검증한 값만 넘긴다) -->
+    <update id="updateReviewTranslationLang">
+        UPDATE TB_TRMA_MOIM_REVIEW
+        <set>
+            <if test="title != null">REVIEW_TITLE_${lang} = #{title},</if>
+            <if test="content != null">REVIEW_CONTENT_${lang} = #{content},</if>
+        </set>
+        WHERE REVIEW_ID = #{reviewId}
+    </update>
+
     <update id="updateReviewTranslation">
 
         UPDATE TB_TRMA_MOIM_REVIEW
@@ -819,6 +838,16 @@
     </update>
 
     <!-- ========================= -->
+    <!-- 소모임 제목/소개 번역 캐시 저장(언어 하나). lang은 서비스에서 ko/en/ja로 검증해 넘긴다 -->
+    <update id="updateMoimTranslationLang">
+        UPDATE TB_TRMA_MOIM_LIST
+        <set>
+            <if test="title != null">MOIM_TITLE_${lang} = #{title},</if>
+            <if test="dscr != null">MOIM_DSCR_${lang} = #{dscr},</if>
+        </set>
+        WHERE MOIM_ID = #{moimId}
+    </update>
+
     <!-- 소모임 제목/소개 번역 캐시 저장 -->
     <!-- ========================= -->
     <update id="updateMoimTranslation">

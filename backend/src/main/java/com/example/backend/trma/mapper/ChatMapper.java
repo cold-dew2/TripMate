@@ -36,9 +36,9 @@ public interface ChatMapper {
     ChatMessageData messageDetail(long messageId);
 
     //채팅 메시지 번역 캐시 저장
-    int updateMessageTranslation(@Param("messageId") long messageId,
-                                  @Param("contentEn") String contentEn,
-                                  @Param("contentJa") String contentJa);
+    int updateMessageTranslationLang(@Param("messageId") long messageId,
+                                      @Param("lang") String lang,
+                                      @Param("content") String content);
 
     //전체 안읽은 메시지 수
     int unreadTotal(String userId);

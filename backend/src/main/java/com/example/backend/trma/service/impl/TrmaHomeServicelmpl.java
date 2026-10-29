@@ -14,6 +14,7 @@ import com.example.backend.trma.service.TourListService;
 import com.example.backend.trma.service.TourTranslationService;
 import com.example.backend.trma.service.TrmaHomeService;
 import com.example.backend.trma.util.AiJsonUtil;
+import com.example.backend.trma.util.ContentLangUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -219,7 +220,8 @@ public class TrmaHomeServicelmpl implements TrmaHomeService {
     }
 
     private void applyBestMoimTranslations(List<BestMoimListData> moims, String lang) {
-        if (!"en".equals(lang) && !"ja".equals(lang)) return;
+        // 외국어로 쓴 모임은 한국어 화면에서도 번역이 필요하므로 ko도 처리한다(원문과 같은 언어면 번역하지 않음).
+        if (!ContentLangUtil.isSupported(lang)) return;
         if (moims == null || moims.isEmpty()) return;
 
         List<String> moimIds = moims.stream().map(BestMoimListData::getMoimId).toList();

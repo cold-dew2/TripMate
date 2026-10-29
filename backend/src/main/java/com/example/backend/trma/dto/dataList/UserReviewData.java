@@ -13,6 +13,7 @@ public class UserReviewData {
     private String reviewContent;
     private String reviewContentEn;
     private String reviewContentJa;
+    private String reviewContentKo;
     private int reviewScore;
     private String userNm;
     private String profileImgUrl;

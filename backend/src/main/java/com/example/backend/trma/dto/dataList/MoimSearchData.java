@@ -16,8 +16,10 @@ public class MoimSearchData {
     // 번역 캐시 확인용(응답에는 최종적으로 moimTitle/moimDscr에 반영된 값만 실려 나간다).
     private String moimTitleEn;
     private String moimTitleJa;
+    private String moimTitleKo;
     private String moimDscrEn;
     private String moimDscrJa;
+    private String moimDscrKo;
     private LocalDate moimStartDt;
     private LocalDate moimEndDt;
     private String userNm;

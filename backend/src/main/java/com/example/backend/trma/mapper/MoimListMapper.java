@@ -110,4 +110,16 @@ public interface MoimListMapper {
                               @Param("moimTitleJa") String moimTitleJa,
                               @Param("moimDscrEn") String moimDscrEn,
                               @Param("moimDscrJa") String moimDscrJa);
+
+    //소모임 제목/소개 번역 캐시 저장(언어 하나: KO/EN/JA, 서비스에서 검증한 값만 넘긴다)
+    int updateMoimTranslationLang(@Param("moimId") String moimId,
+                                  @Param("lang") String lang,
+                                  @Param("title") String title,
+                                  @Param("dscr") String dscr);
+
+    //후기 번역 캐시 저장(언어 하나: KO/EN/JA, 서비스에서 검증한 값만 넘긴다)
+    int updateReviewTranslationLang(@Param("reviewId") String reviewId,
+                                    @Param("lang") String lang,
+                                    @Param("title") String title,
+                                    @Param("content") String content);
 }

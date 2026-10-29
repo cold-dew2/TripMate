@@ -6,6 +6,7 @@ import com.example.backend.trma.dto.response.ChatRoomsResponse;
 import com.example.backend.trma.dto.response.LeaveChatRoomResponse;
 import com.example.backend.trma.dto.response.MarkChatReadResponse;
 import com.example.backend.trma.dto.response.SendChatMessageResponse;
+import com.example.backend.trma.dto.response.TranslateChatMessageResponse;
 import com.example.backend.trma.dto.response.UnreadCountResponse;
 
 public interface ChatService {
@@ -29,4 +30,7 @@ public interface ChatService {
 
     //채팅방 대화 내용을 볼 수 있는지(REST 조회와 실시간 구독 권한 확인에 공통으로 사용)
     boolean canReadRoom(String roomId, String userId);
+
+    //채팅 메시지 한 건 번역(요청 시 번역, 메시지·언어별 캐시)
+    TranslateChatMessageResponse translateMessage(String roomId, long messageId, String lang, String userId);
 }

@@ -17,6 +17,8 @@ import com.example.backend.trma.service.MoimListService;
 import com.example.backend.trma.service.TourListService;
 import com.example.backend.trma.service.UserService;
 import com.example.backend.trma.util.AiJsonUtil;
+import com.example.backend.trma.util.ContentTranslationHelper;
+import com.example.backend.trma.util.ContentLangUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -571,6 +573,7 @@ public class UserServiceImpl implements UserService {
 
         try {
             userMapper.updateProfile(request, userId);
+            pretranslateProfile(userId, request.getAreaNm(), request.getDescription());
 
             if (request.getLanguages() != null) {
                 userMapper.deleteUserLanguages(userId);
@@ -632,26 +635,20 @@ public class UserServiceImpl implements UserService {
     // 관광지명/모임 제목과 동일한 방식(최초 조회 시 번역해 캐시)으로 지역/소개글을
     // 번역한다. 본인이 프로필을 수정하면 updateProfile에서 캐시를 지워버리므로 다음
     // 조회 때 여기서 다시 번역된다.
+    // 지역/소개글을 화면 언어로 표시한다. 원문이 그 언어면 원문, 검증된 캐시가 있으면 캐시,
+    // 없을 때만 번역해 캐시에 저장한다(외국어로 쓴 소개글은 한국어 화면에서도 번역). 실패하면 원문 그대로.
     private void applyProfileTranslation(UserDetailData userDetail, String userId, String lang) {
-        if (userDetail == null) return;
-        if (!"en".equals(lang) && !"ja".equals(lang)) return;
-
-        String cachedArea = "en".equals(lang) ? userDetail.getAreaNmEn() : userDetail.getAreaNmJa();
-        String cachedDesc = "en".equals(lang) ? userDetail.getDescriptionEn() : userDetail.getDescriptionJa();
+        if (userDetail == null || !ContentLangUtil.isSupported(lang)) return;
 
         Map<String, String> needsTranslation = new HashMap<>();
-        boolean areaCached = cachedArea != null && !cachedArea.isBlank();
-        boolean descCached = cachedDesc != null && !cachedDesc.isBlank();
-        if (areaCached) {
-            userDetail.setAreaNm(cachedArea);
-        } else if (userDetail.getAreaNm() != null && !userDetail.getAreaNm().isBlank()) {
-            needsTranslation.put("areaNm", userDetail.getAreaNm());
-        }
-        if (descCached) {
-            userDetail.setDescription(cachedDesc);
-        } else if (userDetail.getDescription() != null && !userDetail.getDescription().isBlank()) {
-            needsTranslation.put("description", userDetail.getDescription());
-        }
+        String shownArea = ContentLangUtil.displayFromCache(userDetail.getAreaNm(), lang,
+                userDetail.getAreaNmKo(), userDetail.getAreaNmEn(), userDetail.getAreaNmJa());
+        if (shownArea != null) userDetail.setAreaNm(shownArea);
+        else needsTranslation.put("areaNm", userDetail.getAreaNm());
+        String shownDesc = ContentLangUtil.displayFromCache(userDetail.getDescription(), lang,
+                userDetail.getDescriptionKo(), userDetail.getDescriptionEn(), userDetail.getDescriptionJa());
+        if (shownDesc != null) userDetail.setDescription(shownDesc);
+        else needsTranslation.put("description", userDetail.getDescription());
         if (needsTranslation.isEmpty()) return;
 
         try {
@@ -659,63 +656,38 @@ public class UserServiceImpl implements UserService {
             String translatedArea = translated.get("areaNm");
             String translatedDesc = translated.get("description");
             if (translatedArea == null && translatedDesc == null) return;
-
-            userMapper.updateProfileTranslation(
-                    userId,
-                    "en".equals(lang) ? translatedArea : null,
-                    "ja".equals(lang) ? translatedArea : null,
-                    "en".equals(lang) ? translatedDesc : null,
-                    "ja".equals(lang) ? translatedDesc : null
-            );
             if (translatedArea != null) userDetail.setAreaNm(translatedArea);
             if (translatedDesc != null) userDetail.setDescription(translatedDesc);
+            userMapper.updateProfileTranslationLang(userId, lang.toUpperCase(), translatedArea, translatedDesc);
         } catch (Exception e) {
-            log.warn("프로필 번역에 실패해 한국어로 표시합니다. userId={}, lang={}", userId, lang, e);
+            log.warn("프로필 번역에 실패해 원문으로 표시합니다. userId={}, lang={}", userId, lang, e);
         }
+    }
+
+    // 프로필 저장 직후 바뀐 지역/소개글을 원문 언어 외의 언어로 미리 번역해 둔다(커밋 후 백그라운드).
+    // 수정 SQL이 기존 번역을 비우므로 예전 번역이 다시 쓰이지 않는다.
+    private void pretranslateProfile(String userId, String areaNm, String description) {
+        Map<String, String> fields = new HashMap<>();
+        if (areaNm != null && !areaNm.isBlank()) fields.put("areaNm", areaNm);
+        if (description != null && !description.isBlank()) fields.put("description", description);
+        if (fields.isEmpty()) return;
+        ContentTranslationHelper.runAfterCommit(() -> ContentTranslationHelper.pretranslate(fields,
+                tourListService::translateFreeTexts,
+                (lang, t) -> userMapper.updateProfileTranslationLang(userId, lang.toUpperCase(),
+                        t.get("areaNm"), t.get("description"))));
     }
 
     // 마이페이지/공개 프로필의 리뷰 목록 번역. 관광지 상세에서 같은 리뷰를 볼 때 이미
     // REVIEW_CONTENT_EN/JA에 캐시된 값이 있으면 재사용하고, 없는 것만 모아 번역 후
     // 캐시에 저장한다(TB_TRMA_MOIM_REVIEW 캐시를 다른 화면과 공유).
     private void applyMyReviewTranslations(List<UserReviewData> reviews, String lang) {
-        if (!"en".equals(lang) && !"ja".equals(lang)) return;
-        if (reviews == null || reviews.isEmpty()) return;
-
-        Map<String, String> toTranslate = new HashMap<>();
-        for (UserReviewData review : reviews) {
-            if (review.getReviewContent() == null || review.getReviewContent().isBlank()) continue;
-
-            String cached = "en".equals(lang) ? review.getReviewContentEn() : review.getReviewContentJa();
-            if (cached != null && !cached.isBlank() && !AiJsonUtil.containsHangul(cached)) {
-                review.setReviewContent(cached);
-            } else {
-                toTranslate.put(review.getReviewId(), review.getReviewContent());
-            }
-        }
-        if (toTranslate.isEmpty()) return;
-
-        try {
-            Map<String, String> translated = tourListService.translateFreeTexts(toTranslate, lang);
-            if (translated.isEmpty()) return;
-
-            Map<String, UserReviewData> byId = new HashMap<>();
-            for (UserReviewData review : reviews) byId.put(review.getReviewId(), review);
-
-            for (Map.Entry<String, String> entry : translated.entrySet()) {
-                UserReviewData review = byId.get(entry.getKey());
-                String content = entry.getValue();
-                if (review == null || content == null || content.isBlank()) continue;
-
-                moimListMapper.updateReviewTranslation(
-                        entry.getKey(),
-                        "en".equals(lang) ? content : null,
-                        "ja".equals(lang) ? content : null
-                );
-                review.setReviewContent(content);
-            }
-        } catch (Exception e) {
-            log.warn("마이페이지 리뷰 번역에 실패해 한국어로 표시합니다. lang={}", lang, e);
-        }
+        // 외국어로 쓴 후기는 한국어 화면에서도 번역한다(원문과 같은 언어면 원문 그대로).
+        ContentTranslationHelper.apply(reviews, lang, new ContentTranslationHelper.Field<>(
+                        UserReviewData::getReviewId, UserReviewData::getReviewContent,
+                        UserReviewData::getReviewContentKo, UserReviewData::getReviewContentEn, UserReviewData::getReviewContentJa,
+                        UserReviewData::setReviewContent),
+                tourListService::translateFreeTexts,
+                (id, text) -> moimListMapper.updateReviewTranslationLang(id, lang.toUpperCase(), null, text));
     }
 
     //공개 사용자 프로필 조회
@@ -746,7 +718,7 @@ public class UserServiceImpl implements UserService {
             }
 
             List<MyMoimData> moims = moimListMapper.myMoim(targetUserId);
-            if ("en".equals(lang) || "ja".equals(lang)) {
+            if (ContentLangUtil.isSupported(lang)) {
                 List<String> moimIds = moims.stream().map(MyMoimData::getMoimId).toList();
                 translateWithBudget(() -> {
                     Map<String, String> titles = moimListService.translateMoimTitles(moimIds, lang);

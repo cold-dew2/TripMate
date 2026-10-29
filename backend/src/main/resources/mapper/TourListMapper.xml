@@ -374,8 +374,10 @@
             , a.REVIEW_CONTENT
             , a.REVIEW_TITLE_EN
             , a.REVIEW_TITLE_JA
+            , a.REVIEW_TITLE_KO
             , a.REVIEW_CONTENT_EN
             , a.REVIEW_CONTENT_JA
+            , a.REVIEW_CONTENT_KO
             , a.REVIEW_SCORE
             , a.IMG_URLS
             , a.CREATE_DT
@@ -461,6 +463,16 @@
     <!-- ========================= -->
     <!-- 관광지 후기 번역 캐시 저장 -->
     <!-- ========================= -->
+    <!-- 후기 번역 캐시 저장(언어 하나: KO/EN/JA, 서비스에서 검증한 값만 넘긴다) -->
+    <update id="updateReviewTranslationLang">
+        UPDATE TB_TRMA_MOIM_REVIEW
+        <set>
+            <if test="title != null">REVIEW_TITLE_${lang} = #{title},</if>
+            <if test="content != null">REVIEW_CONTENT_${lang} = #{content},</if>
+        </set>
+        WHERE REVIEW_ID = #{reviewId}
+    </update>
+
     <update id="updateReviewTranslation">
 
         UPDATE TB_TRMA_MOIM_REVIEW

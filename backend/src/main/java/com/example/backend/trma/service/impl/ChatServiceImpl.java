@@ -2,7 +2,7 @@ package com.example.backend.trma.service.impl;
 
 import com.example.backend.trma.dto.dataList.ChatMessageData;
 import com.example.backend.trma.dto.dataList.ChatRoomData;
-import com.example.backend.trma.dto.dataList.ChatTranslationDelta;
+import com.example.backend.trma.dto.dataList.ChatMessageTranslationData;
 import com.example.backend.trma.dto.dataList.ChatUnreadDeltaData;
 import com.example.backend.trma.dto.dataList.GeminiData;
 import com.example.backend.trma.dto.dataList.MoimJoinStatusData;
@@ -16,12 +16,14 @@ import com.example.backend.trma.dto.response.GeminiResponse;
 import com.example.backend.trma.dto.response.SendChatMessageResponse;
 import com.example.backend.trma.dto.response.LeaveChatRoomResponse;
 import com.example.backend.trma.dto.response.MarkChatReadResponse;
+import com.example.backend.trma.dto.response.TranslateChatMessageResponse;
 import com.example.backend.trma.dto.response.UnreadCountResponse;
 import com.example.backend.trma.mapper.ChatMapper;
 import com.example.backend.trma.mapper.MoimListMapper;
 import com.example.backend.trma.mapper.NotificationMapper;
 import com.example.backend.trma.service.ChatService;
 import com.example.backend.trma.service.NotificationPushService;
+import com.example.backend.trma.service.TourListService;
 import com.example.backend.trma.util.AiJsonUtil;
 import tools.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -32,12 +34,15 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
 import com.example.backend.trma.util.AiErrorUtil;
+import com.example.backend.trma.util.ContentLangUtil;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 
 @Service
 @RequiredArgsConstructor
@@ -50,6 +55,7 @@ public class ChatServiceImpl implements ChatService {
     private final NotificationPushService notificationPushService;
     private final SimpMessagingTemplate broker;
     private final RestClient restClient;
+    private final TourListService tourListService;
 
     @Value("${gemini.api.url}")
     private String geminiUrl;
@@ -125,11 +131,8 @@ public class ChatServiceImpl implements ChatService {
             // 전체 메시지를 다시 보내는 대신 바뀐 안읽음 수만 가볍게 실어 보낸다.
             markReadAndBroadcastDelta(roomId, userId);
 
+            // 번역은 미리 하지 않는다(사용자가 메시지별로 요청할 때 translateMessage에서 번역·저장).
             List<ChatMessageData> messages = chatMapper.chatMessages(roomId);
-            // 전송 시점의 비동기 번역이 실패했거나 아직 끝나기 전에 AI가 끊긴 경우를 위한
-            // 안전망. 방 전체 이력을 다 훑으면 느려질 수 있으니 가장 최근 메시지 몇 개만
-            // 대상으로, 조회 시점에 한 번 더 시도해서 캐시를 채워넣는다.
-            backfillRecentChatTranslations(messages);
             int memberCount = chatMapper.roomMemberIds(roomId).size();
             String myState = chatMapper.chatMemberState(roomId, userId);
 
@@ -215,9 +218,6 @@ public class ChatServiceImpl implements ChatService {
 
             ChatMessageData saved = chatMapper.messageDetail(newMessage.getMessageId());
             broker.convertAndSend("/topic/chat/" + roomId, saved);
-            // 영어/일본어 번역은 전송 응답을 늦추지 않도록 백그라운드에서 처리하고,
-            // 끝나면 번역된 문구만 별도 채널로 다시 방송해서 화면에 채워 넣게 한다.
-            translateAndBroadcastChatMessage(saved);
             // 알림 등록/실시간 푸시는 부가 기능이라 여기서 실패해도 메시지 전송 자체는
             // 이미 완료된 것으로 처리해야 하므로, 별도로 감싸서 전송 성공 여부에 영향을 주지 않게 한다.
             try {
@@ -609,70 +609,77 @@ public class ChatServiceImpl implements ChatService {
         throw lastError;
     }
 
-    private GeminiData.ChatTranslationItem callGeminiForChatTranslation(String content) {
-        String prompt = "다음 채팅 메시지를 영어와 일본어로 자연스럽게 번역해주세요.\n"
-                + "반드시 JSON 형식으로만 응답하세요. 다른 설명은 절대 포함하지 마세요.\n"
-                + "[응답 형식]\n"
-                + "{\"chatTranslation\":{\"contentEn\":\"번역된 영어\",\"contentJa\":\"번역된 일본어\"}}\n"
-                + "[메시지]\n" + content;
+    // 같은 메시지·언어 번역이 동시에 여러 번 요청돼도 AI는 한 번만 부르고 결과를 나눠 쓴다.
+    private final Map<String, CompletableFuture<String>> inFlightTranslations = new ConcurrentHashMap<>();
+    private static final long CHAT_TRANSLATE_WAIT_SECONDS = 40;
 
-        GeminiRequest geminiRequest = new GeminiRequest(List.of(new GeminiRequest.Content(List.of(new GeminiRequest.Part(prompt)))));
-        GeminiResponse response = callGemini(geminiRequest);
-
-        String aiResult = "";
-        if (response != null && response.candidates() != null && !response.candidates().isEmpty()) {
-            aiResult = response.candidates().get(0).content().parts().get(0).text();
-        }
-        if (aiResult == null || aiResult.isBlank()) return null;
-
-        ObjectMapper objectMapper = new ObjectMapper();
+    // 메시지 한 건을 요청한 언어로 번역한다(요청 시 번역). 저장된 번역이 검증을 통과하면 그대로 쓰고,
+    // 없을 때만 번역해 언어별 컬럼에 저장한다. AI가 실패해도 오류가 아니라 FAILED 상태와 원문을 돌려준다.
+    @Override
+    public TranslateChatMessageResponse translateMessage(String roomId, long messageId, String lang, String userId) {
+        String path = "/chat/rooms/" + roomId + "/messages/" + messageId + "/translate";
         try {
-            GeminiData result = objectMapper.readValue(AiJsonUtil.extractJson(aiResult), GeminiData.class);
-            return result == null ? null : result.getChatTranslation();
+            if (!ContentLangUtil.isSupported(lang)) {
+                return new TranslateChatMessageResponse(false, 400, "UNSUPPORTED_LANG", "지원하지 않는 언어입니다.", path, null);
+            }
+            if (!canReadRoom(roomId, userId)) {
+                return new TranslateChatMessageResponse(false, 403, "NOT_MEMBER", "이 채팅방의 멤버만 번역할 수 있습니다.", path, null);
+            }
+            ChatMessageData message = chatMapper.messageDetail(messageId);
+            if (message == null || !roomId.equals(message.getRoomId())) {
+                return new TranslateChatMessageResponse(false, 404, "NOT_FOUND", "메시지를 찾을 수 없습니다.", path, null);
+            }
+
+            String source = message.getContent();
+            String id = message.getMessageId();
+            if (!ContentLangUtil.needsTranslation(source, lang)) {
+                return translated(path, new ChatMessageTranslationData(id, lang, source, "SOURCE"));
+            }
+            String cached = ContentLangUtil.displayFromCache(source, lang,
+                    message.getContentKo(), message.getContentEn(), message.getContentJa());
+            if (cached != null) {
+                return translated(path, new ChatMessageTranslationData(id, lang, cached, "CACHED"));
+            }
+
+            String result = translateOnce(messageId, source, lang);
+            return result == null
+                    ? translated(path, new ChatMessageTranslationData(id, lang, source, "FAILED"))
+                    : translated(path, new ChatMessageTranslationData(id, lang, result, "TRANSLATED"));
         } catch (Exception e) {
-            log.warn("채팅 메시지 번역 응답 파싱에 실패했습니다.", e);
-            return null;
+            log.error("처리 중 오류가 발생했습니다.", e);
+            return new TranslateChatMessageResponse(false, 500, "FAIL", "번역 중 오류가 발생했습니다.", path, null);
         }
     }
 
-    // 전송 응답/실시간 방송을 늦추지 않도록 별도 스레드에서 번역하고, 끝나면 가벼운
-    // 패치({messageId, contentEn, contentJa})만 별도 채널로 방송해서 화면에 채워 넣는다.
-    private void translateAndBroadcastChatMessage(ChatMessageData saved) {
-        CompletableFuture.runAsync(() -> {
-            try {
-                GeminiData.ChatTranslationItem item = callGeminiForChatTranslation(saved.getContent());
-                if (item == null) return;
-
-                chatMapper.updateMessageTranslation(Long.parseLong(saved.getMessageId()), item.getContentEn(), item.getContentJa());
-                broker.convertAndSend(
-                        "/topic/chat/" + saved.getRoomId() + "/translated",
-                        new ChatTranslationDelta(saved.getMessageId(), item.getContentEn(), item.getContentJa())
-                );
-            } catch (Exception e) {
-                log.warn("채팅 메시지 번역에 실패했습니다. messageId={}", saved.getMessageId(), e);
-            }
-        });
+    private TranslateChatMessageResponse translated(String path, ChatMessageTranslationData data) {
+        return new TranslateChatMessageResponse(true, 200, "SUCCESS", "메시지 번역을 조회했습니다.", path, data);
     }
 
-    // 조회 시점 안전망. AI가 끊겨 있었을 가능성을 고려해 최근 메시지 몇 개로만 범위를
-    // 좁혀서 재시도한다(방 전체 이력을 매번 다시 번역하면 조회가 느려진다).
-    private static final int CHAT_BACKFILL_LIMIT = 10;
-
-    private void backfillRecentChatTranslations(List<ChatMessageData> messages) {
-        if (messages == null || messages.isEmpty()) return;
-
-        // 채팅방을 여는 요청 자체를 느리게 만들면 안 되므로, 번역 재시도는 전송 시점과
-        // 동일하게 백그라운드에서 처리하고(translateAndBroadcastChatMessage) 끝나면
-        // /translated 채널로 결과만 알린다. 조회 응답에는 지금 캐시된 값(원문 포함)만
-        // 그대로 실어 보낸다.
-        int checked = 0;
-        for (int i = messages.size() - 1; i >= 0 && checked < CHAT_BACKFILL_LIMIT; i--) {
-            ChatMessageData message = messages.get(i);
-            boolean missing = (message.getContentEn() == null || message.getContentEn().isBlank())
-                    || (message.getContentJa() == null || message.getContentJa().isBlank());
-            if (!missing) continue;
-            checked++;
-            translateAndBroadcastChatMessage(message);
+    // 실패하면 null. 번역 검증은 translateFreeTexts가 한다(원문 그대로/다른 언어 응답은 버려짐).
+    private String translateOnce(long messageId, String source, String lang) {
+        String key = messageId + "#" + lang;
+        CompletableFuture<String> created = new CompletableFuture<>();
+        CompletableFuture<String> running = inFlightTranslations.putIfAbsent(key, created);
+        if (running == null) {
+            running = created;
+            CompletableFuture.runAsync(() -> {
+                try {
+                    String text = tourListService.translateFreeTexts(Map.of("content", source), lang).get("content");
+                    if (text != null) chatMapper.updateMessageTranslationLang(messageId, lang.toUpperCase(), text);
+                    created.complete(text);
+                } catch (Exception e) {
+                    log.warn("채팅 메시지 번역에 실패했습니다. messageId={}, lang={}", messageId, lang, e);
+                    created.complete(null);
+                } finally {
+                    inFlightTranslations.remove(key, created);
+                }
+            });
+        }
+        try {
+            return running.get(CHAT_TRANSLATE_WAIT_SECONDS, TimeUnit.SECONDS);
+        } catch (Exception e) {
+            log.warn("채팅 메시지 번역 대기 시간이 지났습니다. messageId={}, lang={}", messageId, lang);
+            return null;
         }
     }
 }

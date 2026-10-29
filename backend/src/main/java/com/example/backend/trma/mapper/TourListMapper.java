@@ -60,4 +60,10 @@ public interface TourListMapper {
     TourAiDetailData selectTourAiInfo(@Param("tourId") String tourId, @Param("langCd") String langCd);
     //관광지 AI 이용정보 캐시 저장(있으면 갱신)
     int upsertTourAiInfo(@Param("tourId") String tourId, @Param("langCd") String langCd, @Param("data") TourAiDetailData data);
+
+    //후기 번역 캐시 저장(언어 하나: KO/EN/JA, 서비스에서 검증한 값만 넘긴다)
+    int updateReviewTranslationLang(@Param("reviewId") String reviewId,
+                                    @Param("lang") String lang,
+                                    @Param("title") String title,
+                                    @Param("content") String content);
 }

@@ -13,7 +13,9 @@ public class MoimTitleTranslationData {
     private String moimTitle;
     private String moimTitleEn;
     private String moimTitleJa;
+    private String moimTitleKo;
     private String moimDscr;
     private String moimDscrEn;
     private String moimDscrJa;
+    private String moimDscrKo;
 }

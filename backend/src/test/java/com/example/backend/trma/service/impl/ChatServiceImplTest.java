@@ -10,6 +10,7 @@ import com.example.backend.trma.mapper.ChatMapper;
 import com.example.backend.trma.mapper.MoimListMapper;
 import com.example.backend.trma.mapper.NotificationMapper;
 import com.example.backend.trma.service.NotificationPushService;
+import com.example.backend.trma.service.TourListService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -22,6 +23,10 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.web.client.RestClient;
 
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.*;
@@ -38,6 +43,7 @@ class ChatServiceImplTest {
     @Mock NotificationPushService notificationPushService;
     @Mock SimpMessagingTemplate broker;
     @Mock RestClient restClient;
+    @Mock TourListService tourListService;
     ChatServiceImpl service;
 
     static final String ROOM = "moim-M0000000001";
@@ -45,7 +51,7 @@ class ChatServiceImplTest {
 
     @BeforeEach
     void setUp() {
-        service = new ChatServiceImpl(chatMapper, moimListMapper, notificationMapper, notificationPushService, broker, restClient);
+        service = new ChatServiceImpl(chatMapper, moimListMapper, notificationMapper, notificationPushService, broker, restClient, tourListService);
         when(chatMapper.moimTitle("M0000000001")).thenReturn("세종 나들이");
         // 기본값: ME는 승인된 모임 멤버
         when(moimListMapper.moimJoinStatus("M0000000001", ME)).thenReturn(joinStatus("Y"));
@@ -221,5 +227,96 @@ class ChatServiceImplTest {
 
         assertThat(service.chatRooms(ME, "ko").getData()).extracting(ChatRoomData::getRoomId).containsExactly(ROOM);
         assertThat(service.unreadTotal(ME).getData()).isEqualTo(3);
+    }
+
+    // ── 요청 시 번역 ──
+
+    static ChatMessageData chat(String content) {
+        ChatMessageData m = new ChatMessageData();
+        m.setMessageId("7");
+        m.setRoomId(ROOM);
+        m.setContent(content);
+        return m;
+    }
+
+    @Test
+    @DisplayName("[번역] 메시지 전송·조회는 AI 번역을 부르지 않는다(모든 메시지를 미리 번역하지 않음)")
+    void sendAndViewDoNotTranslate() {
+        ChatMessageData saved = chat("Hello");
+        when(chatMapper.messageDetail(anyLong())).thenReturn(saved);
+        when(chatMapper.chatMessages(ROOM)).thenReturn(List.of(saved));
+
+        assertThat(service.sendMessage(ROOM, message("Hello"), ME).isSuccess()).isTrue();
+        assertThat(service.chatMessages(ROOM, ME).isSuccess()).isTrue();
+        verifyNoInteractions(tourListService);
+        verify(chatMapper, never()).updateMessageTranslationLang(anyLong(), any(), any());
+    }
+
+    @Test
+    @DisplayName("[번역] 원문이 이미 그 언어면 SOURCE, 저장된 번역이 있으면 CACHED로 AI 없이 돌려준다")
+    void translate_sourceAndCached() {
+        ChatMessageData m = chat("Hello everyone");
+        m.setContentKo("모두 안녕하세요");
+        when(chatMapper.messageDetail(7L)).thenReturn(m);
+
+        assertThat(service.translateMessage(ROOM, 7L, "en", ME).getData().getState()).isEqualTo("SOURCE");
+        var cached = service.translateMessage(ROOM, 7L, "ko", ME).getData();
+        assertThat(cached.getState()).isEqualTo("CACHED");
+        assertThat(cached.getContent()).isEqualTo("모두 안녕하세요");
+        verifyNoInteractions(tourListService);
+    }
+
+    @Test
+    @DisplayName("[번역] 저장된 번역이 없으면 번역해 언어별 컬럼에 저장하고, AI 실패 시 FAILED와 원문을 돌려준다")
+    void translate_translatesAndFails() {
+        when(chatMapper.messageDetail(7L)).thenReturn(chat("Hello everyone"));
+        when(tourListService.translateFreeTexts(Map.of("content", "Hello everyone"), "ja")).thenReturn(Map.of("content", "皆さんこんにちは"));
+        when(tourListService.translateFreeTexts(Map.of("content", "Hello everyone"), "ko")).thenReturn(Map.of());
+
+        var ja = service.translateMessage(ROOM, 7L, "ja", ME).getData();
+        assertThat(ja.getState()).isEqualTo("TRANSLATED");
+        assertThat(ja.getContent()).isEqualTo("皆さんこんにちは");
+        verify(chatMapper).updateMessageTranslationLang(7L, "JA", "皆さんこんにちは");
+
+        var ko = service.translateMessage(ROOM, 7L, "ko", ME);
+        assertThat(ko.isSuccess()).isTrue();
+        assertThat(ko.getData().getState()).isEqualTo("FAILED");
+        assertThat(ko.getData().getContent()).isEqualTo("Hello everyone");
+        verify(chatMapper, never()).updateMessageTranslationLang(eq(7L), eq("KO"), any());
+    }
+
+    @Test
+    @DisplayName("[번역] 멤버가 아니거나, 다른 방의 메시지이거나, 지원하지 않는 언어면 번역하지 않는다")
+    void translate_guards() {
+        ChatMessageData other = chat("Hello");
+        other.setRoomId("moim-M0000000002");
+        when(chatMapper.messageDetail(8L)).thenReturn(other);
+        when(chatMapper.messageDetail(7L)).thenReturn(chat("Hello"));
+
+        assertThat(service.translateMessage(ROOM, 7L, "ko", "stranger@t.com").getStatus()).isEqualTo(403);
+        assertThat(service.translateMessage(ROOM, 8L, "ko", ME).getStatus()).isEqualTo(404);
+        assertThat(service.translateMessage(ROOM, 7L, "zh", ME).getStatus()).isEqualTo(400);
+        verifyNoInteractions(tourListService);
+    }
+
+    @Test
+    @DisplayName("[번역] 같은 메시지·언어를 동시에 요청해도 AI는 한 번만 부르고 결과를 함께 쓴다")
+    void translate_dedupesConcurrentRequests() throws Exception {
+        when(chatMapper.messageDetail(7L)).thenReturn(chat("Hello everyone"));
+        CountDownLatch release = new CountDownLatch(1);
+        when(tourListService.translateFreeTexts(any(), eq("ko"))).thenAnswer(inv -> {
+            release.await(5, TimeUnit.SECONDS);
+            return Map.of("content", "모두 안녕하세요");
+        });
+
+        CompletableFuture<String> first = CompletableFuture.supplyAsync(() -> service.translateMessage(ROOM, 7L, "ko", ME).getData().getContent());
+        CompletableFuture<String> second = CompletableFuture.supplyAsync(() -> service.translateMessage(ROOM, 7L, "ko", ME).getData().getContent());
+        verify(tourListService, timeout(2000)).translateFreeTexts(any(), eq("ko"));
+        Thread.sleep(200);
+        release.countDown();
+
+        assertThat(first.get(5, TimeUnit.SECONDS)).isEqualTo("모두 안녕하세요");
+        assertThat(second.get(5, TimeUnit.SECONDS)).isEqualTo("모두 안녕하세요");
+        verify(tourListService, times(1)).translateFreeTexts(any(), eq("ko"));
     }
 }

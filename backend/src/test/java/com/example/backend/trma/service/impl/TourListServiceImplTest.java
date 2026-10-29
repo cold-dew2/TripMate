@@ -512,4 +512,55 @@ class TourListServiceImplTest {
 
         assertThat(service.tourSearch(request).getStatus()).isEqualTo(500);
     }
+
+    // ───────────────────────── 사용자 콘텐츠 자유 텍스트 번역(ko/en/ja) ─────────────────────────
+
+    @Nested
+    @DisplayName("사용자 콘텐츠 번역(translateFreeTexts)")
+    class FreeTexts {
+        static Map<String, Object> reply(String key, String text) {
+            return Map.of("reviewTranslations", List.of(Map.of("reviewId", key, "reviewContent", text)));
+        }
+
+        @Test
+        @DisplayName("외국어로 쓴 글을 한국어로 번역하고, 이미 한국어인 글은 AI 없이 그대로 돌려준다")
+        void koreanTarget() {
+            geminiReturns(reply("a", "전망이 정말 좋아요"));
+
+            Map<String, String> result = service.translateFreeTexts(Map.of("a", "The view is great", "b", "좋았어요"), "ko");
+
+            assertThat(result).containsEntry("a", "전망이 정말 좋아요").containsEntry("b", "좋았어요");
+            gemini.verify();
+        }
+
+        @Test
+        @DisplayName("모두 대상 언어로 쓰였으면 Gemini를 부르지 않는다")
+        void sameLanguageSkipsAi() {
+            assertThat(service.translateFreeTexts(Map.of("a", "Hello there"), "en")).containsEntry("a", "Hello there");
+            gemini.verify();
+        }
+
+        @Test
+        @DisplayName("원문을 그대로 돌려주거나 다른 언어로 답한 번역은 버린다")
+        void rejectsInvalidResult() {
+            geminiReturns(reply("a", "The view is great"));
+            assertThat(service.translateFreeTexts(Map.of("a", "The view is great"), "ko")).isEmpty();
+        }
+
+        @Test
+        @DisplayName("Gemini가 실패해도 예외 없이 같은 언어 항목만 돌려준다")
+        void geminiFailure() {
+            gemini.expect(ExpectedCount.manyTimes(), requestTo(GEMINI_URL))
+                    .andRespond(org.springframework.test.web.client.response.MockRestResponseCreators.withServerError());
+            assertThat(service.translateFreeTexts(Map.of("a", "Nice view", "b", "좋아요"), "ko"))
+                    .containsExactly(Map.entry("b", "좋아요"));
+        }
+
+        @Test
+        @DisplayName("지원하지 않는 언어는 번역하지 않는다")
+        void unsupported() {
+            assertThat(service.translateFreeTexts(Map.of("a", "Nice view"), "zh")).isEmpty();
+            gemini.verify();
+        }
+    }
 }

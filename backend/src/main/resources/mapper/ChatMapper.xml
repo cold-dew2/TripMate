@@ -189,6 +189,7 @@
             ,a.CONTENT
             ,a.CONTENT_EN
             ,a.CONTENT_JA
+            ,a.CONTENT_KO
             ,a.CREATE_DT AS CREATED_AT
             ,(
                 SELECT COUNT(1)
@@ -242,6 +243,7 @@
             ,a.CONTENT
             ,a.CONTENT_EN
             ,a.CONTENT_JA
+            ,a.CONTENT_KO
             ,a.CREATE_DT AS CREATED_AT
             ,(
                 SELECT COUNT(1)
@@ -260,13 +262,11 @@
     <!-- ========================= -->
     <!-- 채팅 메시지 번역 캐시 저장 -->
     <!-- ========================= -->
-    <update id="updateMessageTranslation">
+    <!-- lang은 서비스에서 KO/EN/JA로 검증한 값만 들어온다(컬럼명 치환) -->
+    <update id="updateMessageTranslationLang">
 
         UPDATE TB_TRMA_CHAT_MESSAGE
-        <set>
-            <if test="contentEn != null">CONTENT_EN = #{contentEn},</if>
-            <if test="contentJa != null">CONTENT_JA = #{contentJa},</if>
-        </set>
+        SET CONTENT_${lang} = #{content}
         WHERE MESSAGE_ID = #{messageId}
 
     </update>

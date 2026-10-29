@@ -154,6 +154,8 @@
             ,a.AREA_NM_JA
             ,a.DESCRIPTION_EN
             ,a.DESCRIPTION_JA
+            ,a.AREA_NM_KO
+            ,a.DESCRIPTION_KO
             ,a.PROFILE_IMG_URL
             ,COALESCE(f.RATING, 0) AS RATING
             ,COALESCE(b.MOIM_CNT, 0) AS MOIM_CNT
@@ -235,6 +237,7 @@
             ,b.REVIEW_CONTENT
             ,b.REVIEW_CONTENT_EN
             ,b.REVIEW_CONTENT_JA
+            ,b.REVIEW_CONTENT_KO
             ,b.REVIEW_SCORE
             ,c.USER_NM
             ,c.PROFILE_IMG_URL
@@ -274,11 +277,13 @@
                 ,AREA_NM = #{request.areaNm}
                 ,AREA_NM_EN = NULL
                 ,AREA_NM_JA = NULL
+                ,AREA_NM_KO = NULL
             </if>
             <if test="request.description != null">
                 ,DESCRIPTION = #{request.description}
                 ,DESCRIPTION_EN = NULL
                 ,DESCRIPTION_JA = NULL
+                ,DESCRIPTION_KO = NULL
             </if>
             <if test="request.profileImageUrl != null">
                 ,PROFILE_IMG_URL = #{request.profileImageUrl}
@@ -290,14 +295,13 @@
     <!-- ========================= -->
     <!-- 프로필(지역/소개글) 번역 캐시 저장 -->
     <!-- ========================= -->
-    <update id="updateProfileTranslation">
+    <!-- lang은 서비스에서 KO/EN/JA로 검증한 값만 들어온다(컬럼명 치환) -->
+    <update id="updateProfileTranslationLang">
 
         UPDATE TB_TRMA_USER_INFO
         <set>
-            <if test="areaNmEn != null">AREA_NM_EN = #{areaNmEn},</if>
-            <if test="areaNmJa != null">AREA_NM_JA = #{areaNmJa},</if>
-            <if test="descriptionEn != null">DESCRIPTION_EN = #{descriptionEn},</if>
-            <if test="descriptionJa != null">DESCRIPTION_JA = #{descriptionJa},</if>
+            <if test="areaNm != null">AREA_NM_${lang} = #{areaNm},</if>
+            <if test="description != null">DESCRIPTION_${lang} = #{description},</if>
         </set>
         WHERE USER_ID = #{userId}
 
@@ -390,9 +394,11 @@
             ,AREA_NM = NULL
             ,AREA_NM_EN = NULL
             ,AREA_NM_JA = NULL
+            ,AREA_NM_KO = NULL
             ,DESCRIPTION = NULL
             ,DESCRIPTION_EN = NULL
             ,DESCRIPTION_JA = NULL
+            ,DESCRIPTION_KO = NULL
             ,STATE_CD = 'D'
             ,UPDATE_USER = #{userId}
             ,UPDATE_DT = CURRENT_TIMESTAMP

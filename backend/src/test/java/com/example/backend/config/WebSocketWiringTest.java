@@ -4,6 +4,7 @@ import com.example.backend.trma.mapper.ChatMapper;
 import com.example.backend.trma.mapper.MoimListMapper;
 import com.example.backend.trma.mapper.NotificationMapper;
 import com.example.backend.trma.service.NotificationPushService;
+import com.example.backend.trma.service.TourListService;
 import com.example.backend.trma.service.impl.ChatServiceImpl;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -26,6 +27,7 @@ class WebSocketWiringTest {
     @MockitoBean NotificationMapper notificationMapper;
     @MockitoBean NotificationPushService notificationPushService;
     @MockitoBean RestClient restClient;
+    @MockitoBean TourListService tourListService;
 
     @Autowired AbstractSubscribableChannel clientInboundChannel;
 

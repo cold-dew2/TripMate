@@ -9,7 +9,9 @@ import com.example.backend.trma.service.TourIntroService;
 import com.example.backend.trma.service.TourListService;
 import com.example.backend.trma.service.TourTranslationService;
 import com.example.backend.trma.util.AiErrorUtil;
+import com.example.backend.trma.util.ContentLangUtil;
 import com.example.backend.trma.util.AiJsonUtil;
+import com.example.backend.trma.util.ContentTranslationHelper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -409,6 +411,12 @@ public class TourListServicelmpl implements TourListService {
             String imgUrls = request.getImageUrls() == null ? null : String.join(",", request.getImageUrls());
             String reviewId = "RVT" + UUID.randomUUID().toString().replace("-", "").substring(0, 12).toUpperCase();
             tourListMapper.insertTourReview(reviewId, request, imgUrls, userId);
+            // 후기는 등록 후 바뀌지 않으므로 원문 외 언어로 한 번 번역해 저장해 둔다(커밋 후 백그라운드, 실패해도 등록은 성공).
+            Map<String, String> reviewFields = new LinkedHashMap<>();
+            reviewFields.put("title", request.getReviewTitle() == null ? "" : request.getReviewTitle());
+            reviewFields.put("content", request.getReviewContent() == null ? "" : request.getReviewContent());
+            ContentTranslationHelper.runAfterCommit(() -> ContentTranslationHelper.pretranslate(reviewFields, this::translateFreeTexts,
+                    (lang, t) -> tourListMapper.updateReviewTranslationLang(reviewId, lang.toUpperCase(), t.get("title"), t.get("content"))));
 
             return new CreateTourReviewResponse(
                     true,
@@ -746,16 +754,19 @@ public class TourListServicelmpl implements TourListService {
     //GeminiData 타입을 늘리지 않는다.
     @Override
     public Map<String, String> translateFreeTexts(Map<String, String> textsByKey, String lang) {
-        if (!"en".equals(lang) && !"ja".equals(lang)) return Map.of();
+        // 사용자가 쓴 콘텐츠는 영어/일본어로도 등록되므로 한국어(ko)도 대상 언어로 지원한다.
+        if (!ContentLangUtil.isSupported(lang)) return Map.of();
         if (textsByKey == null || textsByKey.isEmpty()) return Map.of();
 
+        // 이미 대상 언어로 쓰인 텍스트는 AI를 부르지 않고 원문을 그대로 돌려준다(예: 영어로 쓴 모임을 영어 화면에서 볼 때).
+        Map<String, String> sameLang = new HashMap<>();
         Map<String, String> nonBlank = new LinkedHashMap<>();
         for (Map.Entry<String, String> entry : textsByKey.entrySet()) {
-            if (entry.getValue() != null && !entry.getValue().isBlank()) {
-                nonBlank.put(entry.getKey(), entry.getValue());
-            }
+            if (entry.getValue() == null || entry.getValue().isBlank()) continue;
+            if (ContentLangUtil.needsTranslation(entry.getValue(), lang)) nonBlank.put(entry.getKey(), entry.getValue());
+            else sameLang.put(entry.getKey(), entry.getValue());
         }
-        if (nonBlank.isEmpty()) return Map.of();
+        if (nonBlank.isEmpty()) return sameLang;
 
         try {
             StringBuilder listPrompt = new StringBuilder();
@@ -763,7 +774,7 @@ public class TourListServicelmpl implements TourListService {
                 listPrompt.append("[reviewId %s]\n내용: %s\n\n".formatted(entry.getKey(), entry.getValue()));
             }
 
-            String langLabel = "en".equals(lang) ? "영어" : "일본어";
+            String langLabel = "en".equals(lang) ? "영어" : "ja".equals(lang) ? "일본어" : "한국어";
             String prompt = "다음 텍스트들을 " + langLabel + "로 자연스럽게 번역해주세요.\n"
                     + "반드시 JSON 형식으로만 응답하고, 요청받은 reviewId를 그대로 포함해서 응답하세요.\n"
                     + "[응답 형식]\n"
@@ -771,18 +782,21 @@ public class TourListServicelmpl implements TourListService {
                     + "[텍스트 목록]\n" + listPrompt;
 
             GeminiData result = callGeminiForTranslation(prompt);
-            if (result == null || result.getReviewTranslations() == null) return Map.of();
+            if (result == null || result.getReviewTranslations() == null) return sameLang;
 
-            Map<String, String> translated = new HashMap<>();
+            Map<String, String> translated = new HashMap<>(sameLang);
             for (GeminiData.ReviewTranslationItem item : result.getReviewTranslations()) {
-                if (item.getReviewId() != null && item.getReviewContent() != null && !item.getReviewContent().isBlank()) {
-                    translated.put(item.getReviewId(), item.getReviewContent());
+                String key = item.getReviewId();
+                // 요청하지 않은 key나, 대상 언어로 번역되지 않은 결과(원문 그대로/다른 언어)는 버린다.
+                if (key == null || !nonBlank.containsKey(key)) continue;
+                if (ContentLangUtil.isValidTranslation(nonBlank.get(key), item.getReviewContent(), lang)) {
+                    translated.put(key, item.getReviewContent());
                 }
             }
             return translated;
         } catch (Exception e) {
             log.warn("텍스트 번역에 실패했습니다. lang={}", lang, e);
-            return Map.of();
+            return sameLang;
         }
     }
 
@@ -1532,73 +1546,18 @@ public class TourListServicelmpl implements TourListService {
     // TB_TRMA_MOIM_REVIEW에 캐시해두고 이후에는 캐시된 값을 재사용한다. 이렇게 하면
     // AI가 끊겨도 이미 한 번 번역된 후기는 계속 정상적으로 보인다.
     private void applyReviewTranslations(List<TourDetailReviewData> reviews, String lang) {
-        if (!"en".equals(lang) && !"ja".equals(lang)) return;
-        if (reviews == null || reviews.isEmpty()) return;
-
-        List<TourDetailReviewData> uncached = new ArrayList<>();
-        for (TourDetailReviewData review : reviews) {
-            String cachedTitle = "en".equals(lang) ? review.getReviewTitleEn() : review.getReviewTitleJa();
-            String cachedContent = "en".equals(lang) ? review.getReviewContentEn() : review.getReviewContentJa();
-            if (cachedContent != null && !cachedContent.isBlank()) {
-                if (cachedTitle != null && !cachedTitle.isBlank()) review.setReviewTitle(cachedTitle);
-                review.setReviewContent(cachedContent);
-            } else {
-                uncached.add(review);
-            }
-        }
-        if (uncached.isEmpty()) return;
-
-        try {
-            StringBuilder listPrompt = new StringBuilder();
-            for (TourDetailReviewData review : uncached) {
-                listPrompt.append("[reviewId %s]\n제목: %s\n내용: %s\n\n".formatted(
-                        review.getReviewId(),
-                        review.getReviewTitle() == null ? "" : review.getReviewTitle(),
-                        review.getReviewContent() == null ? "" : review.getReviewContent()
-                ));
-            }
-
-            String langLabel = "en".equals(lang) ? "영어" : "일본어";
-            String prompt = "다음은 여행 후기 목록입니다. 각 후기의 제목과 내용을 " + langLabel + "로 자연스럽게 번역해주세요.\n"
-                    + "반드시 JSON 형식으로만 응답하고, 요청받은 reviewId를 그대로 포함해서 응답하세요.\n"
-                    + "[응답 형식]\n"
-                    + "{\"reviewTranslations\":[{\"reviewId\":\"R0001\",\"reviewTitle\":\"번역된 제목\",\"reviewContent\":\"번역된 내용\"}]}\n"
-                    + "[후기 목록]\n" + listPrompt;
-
-            GeminiData result = callGeminiForTranslation(prompt);
-            if (result == null || result.getReviewTranslations() == null) return;
-
-            Map<String, GeminiData.ReviewTranslationItem> translated = new HashMap<>();
-            for (GeminiData.ReviewTranslationItem item : result.getReviewTranslations()) {
-                if (item.getReviewId() != null) translated.put(item.getReviewId(), item);
-            }
-
-            for (TourDetailReviewData review : uncached) {
-                GeminiData.ReviewTranslationItem item = translated.get(review.getReviewId());
-                if (item == null) continue;
-
-                String title = item.getReviewTitle();
-                String content = item.getReviewContent();
-                if (content == null || content.isBlank()) continue;
-
-                // 캐시 저장이 실패해도 이번 응답엔 번역을 보여주고, 다음 후기 처리도 계속한다.
-                try {
-                    tourListMapper.updateReviewTranslation(
-                            review.getReviewId(),
-                            "en".equals(lang) && title != null && !title.isBlank() ? title : null,
-                            "ja".equals(lang) && title != null && !title.isBlank() ? title : null,
-                            "en".equals(lang) ? content : null,
-                            "ja".equals(lang) ? content : null
-                    );
-                } catch (Exception e) {
-                    log.warn("후기 번역 캐시 저장에 실패했습니다(이번 응답에는 번역값 사용). reviewId={}, lang={}",
-                            review.getReviewId(), lang, e);
-                }
-                if (title != null && !title.isBlank()) review.setReviewTitle(title);
-                review.setReviewContent(content);
-            }
-        } catch (Exception e) {
-            log.warn("후기 번역에 실패해 한국어로 표시합니다. lang={}", lang, e);
-        }
+        // 제목과 내용을 각각 같은 규칙(원문 언어면 원문, 검증된 캐시, 없으면 번역 후 저장)으로 처리한다.
+        ContentTranslationHelper.apply(reviews, lang, new ContentTranslationHelper.Field<>(
+                        TourDetailReviewData::getReviewId, TourDetailReviewData::getReviewTitle,
+                        TourDetailReviewData::getReviewTitleKo, TourDetailReviewData::getReviewTitleEn, TourDetailReviewData::getReviewTitleJa,
+                        TourDetailReviewData::setReviewTitle),
+                this::translateFreeTexts,
+                (id, text) -> tourListMapper.updateReviewTranslationLang(id, lang.toUpperCase(), text, null));
+        ContentTranslationHelper.apply(reviews, lang, new ContentTranslationHelper.Field<>(
+                        TourDetailReviewData::getReviewId, TourDetailReviewData::getReviewContent,
+                        TourDetailReviewData::getReviewContentKo, TourDetailReviewData::getReviewContentEn, TourDetailReviewData::getReviewContentJa,
+                        TourDetailReviewData::setReviewContent),
+                this::translateFreeTexts,
+                (id, text) -> tourListMapper.updateReviewTranslationLang(id, lang.toUpperCase(), null, text));
     }
 }

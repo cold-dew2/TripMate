@@ -16,6 +16,8 @@ public class UserDetailData {
     private String areaNmJa;
     private String descriptionEn;
     private String descriptionJa;
+    private String areaNmKo;
+    private String descriptionKo;
     private String profileImgUrl;
     private double rating;
     private int moimCnt;
