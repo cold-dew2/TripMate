@@ -105,11 +105,11 @@ REST
 → 채팅방 목록
 → 기존 메시지 조회
 → 최신 데이터 재조회
+→ 메시지 번역(번역 버튼을 누를 때 한 건씩)
 
 WebSocket / STOMP
 → 새 메시지
 → 읽음 상태
-→ 번역 결과
 ```
 
 WebSocket이 끊겼을 때는 자동 재연결만 기다리지 않고 REST API로 최신 메시지를 다시 조회하여 연결이 끊긴 동안 발생한 데이터를 보완했습니다.
@@ -124,7 +124,9 @@ WebSocket이 끊겼을 때는 자동 재연결만 기다리지 않고 REST API�
 locales/
 ├── ko/
 │   └── translation.json
-└── en/
+├── en/
+│   └── translation.json
+└── ja/
     └── translation.json
 ```
 
@@ -500,6 +502,37 @@ useQuery({
 
 ---
 
+## 9-1. 채팅 번역을 필요한 메시지만 요청하도록 바꾼 문제
+
+### 문제
+
+예전에는 Backend가 메시지를 전송할 때마다 영어·일본어로 번역해 `/topic/chat/{roomId}/translated` 채널로 방송했습니다. 아무도 보지 않는 번역에도 AI를 호출했고, 한국어 화면에서는 번역 버튼이 아예 없어 영어/일본어 메시지를 번역할 수 없었습니다.
+
+### 해결
+
+번역 방송 구독을 없애고, 번역 버튼을 누른 메시지만 요청하도록 바꿨습니다(`ChatRoom.tsx`).
+
+```text
+번역 버튼 클릭
+ ↓
+저장된 번역(contentKo / contentEn / contentJa)이 있으면 바로 전환
+ ↓ 없으면
+POST /chat/rooms/{roomId}/messages/{messageId}/translate?lang=
+ ↓
+SOURCE / CACHED / TRANSLATED → 번역 표시
+FAILED → 원문으로 되돌리고 "번역하지 못했어요" 안내
+```
+
+- 번역 버튼은 메시지의 원문 언어(`srcLangCd`)가 화면 언어와 다를 때만 보입니다(한국어 화면 포함).
+- 받은 번역은 메시지 상태에 반영해 다시 누를 때 요청하지 않습니다.
+- 메시지 전송은 번역과 분리되어 있어 번역이 실패해도 전송에는 영향이 없습니다.
+
+### 선택 이유
+
+모든 메시지를 미리 번역하면 비용이 크고 대부분 쓰이지 않습니다. 사용자가 원하는 메시지만 번역하고, 결과는 Backend가 메시지·언어별로 저장하므로 같은 메시지를 다른 사용자가 번역할 때도 AI를 다시 부르지 않습니다.
+
+---
+
 ## 10. API 데이터 구조가 예상과 다를 때 화면이 깨지는 문제
 
 ### 문제
@@ -578,6 +611,7 @@ shared/components/
 | 목록 필터 | URL Search Params | 새로고침 및 공유 |
 | 소모임 생성 Form | React Hook Form | 복잡한 Form 상태 |
 | 실시간 채팅 | WebSocket + React State | 실시간 데이터 |
+| 채팅 번역 | REST(요청 시) + React State | 메시지별 번역 표시 여부 |
 | 다국어 | i18next | UI Translation |
 
 이 기준을 적용하여 하나의 상태 관리 방법으로 모든 데이터를 처리하지 않도록 했습니다.
@@ -592,7 +626,9 @@ UI 문자열은 Translation Resource로 분리했습니다.
 src/locales/
 ├── ko/
 │   └── translation.json
-└── en/
+├── en/
+│   └── translation.json
+└── ja/
     └── translation.json
 ```
 
@@ -615,6 +651,11 @@ Query Key의 언어 변경
 ```
 
 으로 처리했습니다.
+
+동적 콘텐츠의 번역은 Backend가 담당합니다. Frontend는 화면 언어(`lang`)만 보내고, AI API 키는 Frontend에 두지 않습니다.
+
+- 소모임·후기·프로필은 Backend가 원문 언어를 판별해 화면 언어로 바꾼 값을 내려줍니다. 영어/일본어로 쓴 글도 한국어 화면에서 번역되어 보이고, 번역이 없거나 실패하면 원문이 그대로 보입니다.
+- 채팅은 메시지마다 원문 언어(`srcLangCd`)가 함께 내려오고, 원문 언어가 화면 언어와 다른 메시지에만 번역 버튼을 보여줍니다.
 
 ---
 
@@ -700,7 +741,7 @@ Chat / Notification
 
 ## 5. AI 응답 UX 개선
 
-현재 AI 처리 중 상태와 번역 결과 재반영 구조를 사용하고 있습니다.
+현재 AI 처리 중 상태 표시와, 채팅 번역의 요청 시 번역·실패 안내 구조를 사용하고 있습니다.
 
 향후에는:
 
