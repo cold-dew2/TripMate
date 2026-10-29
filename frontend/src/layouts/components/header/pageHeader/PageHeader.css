@@ -18,10 +18,14 @@
   font-size: var(--fs-lg);
   font-weight: var(--fw-bold);
 }
+/* 아이콘은 20px 그대로 보이되, 누를 수 있는 영역은 40px로 넓힌다(모바일 터치 대상 최소 크기).
+   음수 여백으로 아이콘 위치는 기존과 같게 유지한다. */
 .page-title .btn-back {
-  width: 20px;
-  height: 20px;
-  background: url('/icons/icon_arrow_black.svg');
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  margin: -10px -6px -10px -10px;
+  background: url('/icons/icon_arrow_black.svg') no-repeat center / 20px 20px;
 }
 .page-title .link {
   color: var(--purple-600);

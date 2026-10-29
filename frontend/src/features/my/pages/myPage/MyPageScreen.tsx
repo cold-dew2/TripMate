@@ -278,6 +278,7 @@ const MyPageScreen = () => {
       >
         {t("my.logout")}
       </Link>
+      <Link to="/my/withdraw" className="mypage-withdraw">{t("withdraw.title")}</Link>
     </main>
   );
 };

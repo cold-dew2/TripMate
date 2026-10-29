@@ -1,6 +1,5 @@
-import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { apiClient } from '@/shared/api/client';
 import useUser from '@/shared/hooks/useUser';
@@ -8,6 +7,7 @@ import { getApiLang } from '@/shared/utils/lang';
 import FilterTabs from '@/shared/components/filterTabs/FilterTabs';
 import PageState from '@/shared/components/pageState/PageState';
 import useTranslationCatchup from '@/shared/hooks/useTranslationCatchup';
+import useUrlState from '@/shared/hooks/useUrlState';
 import './ChatListPage.css';
 
 interface Room {
@@ -22,20 +22,9 @@ type RoomFilter = 'all' | 'unread';
 
 export default function ChatListPage() {
   const { t } = useTranslation();
-  const [searchParams, setSearchParams] = useSearchParams();
-  const filterFromUrl = searchParams.get('filter');
-  const [filter, setFilter] = useState<RoomFilter>(filterFromUrl === 'unread' ? 'unread' : 'all');
+  const [filter, setFilter] = useUrlState('filter', 'all') as [RoomFilter, (v: RoomFilter) => void];
   const { data: user, isLoading: userLoading } = useUser();
   const isLoggedIn = !!user;
-
-  const changeFilter = (id: RoomFilter) => {
-    setFilter(id);
-    setSearchParams((prev) => {
-      const next = new URLSearchParams(prev);
-      next.set('filter', id);
-      return next;
-    });
-  };
 
   const rooms = useQuery({
     queryKey: ['chatRooms', getApiLang()],
@@ -76,7 +65,7 @@ export default function ChatListPage() {
           { id: 'unread', label: t('chat.filterUnread') },
         ]}
         activeId={filter}
-        onChange={(id) => changeFilter(id as RoomFilter)}
+        onChange={(id) => setFilter(id as RoomFilter)}
       />
 
       {rooms.isLoading ? (

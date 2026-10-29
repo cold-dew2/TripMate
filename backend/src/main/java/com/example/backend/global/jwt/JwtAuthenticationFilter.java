@@ -26,6 +26,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final JwtUtil jwtUtil;
 
     private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
+    private final WithdrawnUserRegistry withdrawnUserRegistry;
 
 
     @Override
@@ -78,6 +79,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
 
             String userId = jwtUtil.getUserId(token);
+
+            // 탈퇴 전에 발급된 토큰은 만료 전이라도 로그인 안 된 요청으로 취급한다.
+            if (withdrawnUserRegistry.isWithdrawn(userId)) {
+                filterChain.doFilter(request, response);
+                return;
+            }
 
 
             UsernamePasswordAuthenticationToken authentication =

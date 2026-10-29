@@ -90,6 +90,11 @@ export const contentRoutes: (RouteObject & { handle?: RouteHandle })[] = [
     handle: { title: "account.edit", showBack: true },
   },
   {
+    path: "/my/withdraw",
+    lazy: () => import("@/features/my/pages/withdraw/WithdrawPage").then((m) => ({ Component: m.default })),
+    handle: { title: "withdraw.title", showBack: true },
+  },
+  {
     path: "/my/reviews",
     lazy: () => import("@/features/my/pages/myReviews/MyReviewsPage").then((m) => ({ Component: m.default })),
     handle: { title: "my.recentlyReviews", showBack: true },

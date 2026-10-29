@@ -1,0 +1,46 @@
+-- 관광지 다국어 번역 저장소.
+-- TB_TRMA_TOUR_LIST의 *_EN/*_JA 컬럼은 "최종 표시값" 캐시로 유지하고(조회 쿼리 변경 없음),
+-- 이 테이블에 번역 방식별 원본을 보관한다. 최종값은 우선순위
+-- MANUAL > TOURAPI > LEGACY > AI 중 원문 해시가 현재 원문과 일치하는 첫 번째 값으로 정한다.
+CREATE TABLE IF NOT EXISTS TB_TRMA_TOUR_TRANS (
+    TOUR_ID      VARCHAR(200)   NOT NULL COMMENT '관광지ID (TB_TRMA_TOUR_LIST.TOUR_ID)',
+    FIELD_NM     VARCHAR(30)   NOT NULL COMMENT '번역 대상 필드: TOUR_NM, TOUR_CONTENT, ROAD_ADDR, DETAIL_ADDR',
+    LANG_CD      VARCHAR(5)    NOT NULL COMMENT '대상 언어: en, ja',
+    TRANS_TYPE   VARCHAR(10)   NOT NULL COMMENT 'MANUAL(수동 검수), TOURAPI(공식 다국어 데이터), LEGACY(출처 미확인 기존값), AI(Gemini)',
+    SRC_LANG_CD  VARCHAR(5)    NOT NULL DEFAULT 'ko' COMMENT '원본 언어',
+    SRC_HASH     CHAR(64)      NOT NULL COMMENT '번역 당시 원문의 SHA-256 (원문 변경 감지용)',
+    SRC_TEXT     MEDIUMTEXT    NULL     COMMENT '번역 당시 원문',
+    TRANS_TEXT   MEDIUMTEXT    NOT NULL COMMENT '번역문',
+    STATUS_CD    VARCHAR(10)   NOT NULL DEFAULT 'DONE' COMMENT 'DONE(정상)',
+    CREATE_DT    DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UPDATE_DT    DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (TOUR_ID, FIELD_NM, LANG_CD, TRANS_TYPE)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='관광지 다국어 번역(방식별)';
+
+-- 국문 관광지와 TourAPI 영문/일문 서비스 콘텐츠의 대응 관계.
+-- 다국어 서비스는 국문과 콘텐츠ID 체계가 달라 좌표 + 괄호 속 국문명으로 매칭한다.
+CREATE TABLE IF NOT EXISTS TB_TRMA_TOUR_LANG_MAP (
+    TOUR_ID         VARCHAR(200)  NOT NULL,
+    LANG_CD         VARCHAR(5)   NOT NULL,
+    LANG_CONTENT_ID VARCHAR(50)  NOT NULL COMMENT '다국어 서비스 콘텐츠ID',
+    MATCH_TYPE      VARCHAR(20)  NOT NULL COMMENT 'COORD_NAME(좌표+국문명 일치)',
+    CREATE_DT       DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (TOUR_ID, LANG_CD)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='국문-다국어 TourAPI 콘텐츠 매핑';
+
+-- TourAPI 소개정보(detailIntro2)/공통정보(detailCommon2) 캐시. 원본 응답을 그대로 보관하고
+-- 화면에 필요한 항목만 컬럼으로 뽑는다. API가 주지 않는 값은 만들지 않는다(NULL).
+CREATE TABLE IF NOT EXISTS TB_TRMA_TOUR_INTRO (
+    TOUR_ID          VARCHAR(200)  NOT NULL,
+    LANG_CD          VARCHAR(5)   NOT NULL COMMENT 'ko(KorService2), en(EngService2), ja(JpnService2)',
+    CONTENT_ID       VARCHAR(50)  NOT NULL COMMENT '조회에 사용한 서비스별 콘텐츠ID',
+    CONTENT_TYPE_ID  VARCHAR(10)  NULL,
+    USE_TIME         TEXT NULL, REST_DATE TEXT NULL, USE_FEE TEXT NULL,
+    PARKING          TEXT NULL, PARKING_FEE TEXT NULL, INFO_CENTER TEXT NULL,
+    HOMEPAGE         TEXT NULL, TEL TEXT NULL,
+    INTRO_RAW        MEDIUMTEXT NULL COMMENT 'detailIntro2 item 원본 JSON',
+    COMMON_RAW       MEDIUMTEXT NULL COMMENT 'detailCommon2 item 원본 JSON',
+    FETCH_STATUS     VARCHAR(10)  NOT NULL COMMENT 'OK, EMPTY(제공 정보 없음), FAIL',
+    FETCH_DT         DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (TOUR_ID, LANG_CD)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='TourAPI 소개/공통 정보 캐시';

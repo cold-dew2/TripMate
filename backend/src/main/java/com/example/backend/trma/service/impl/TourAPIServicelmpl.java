@@ -716,7 +716,10 @@ public class TourAPIServicelmpl implements TourAPIService {
         String apiKey = ServiceKey;
         String path = DetailCommonPath_JP;
 
-        List<TourAPIPKData> Pks = tourAPIMapper.tourAPIPK();
+        // 일본어 서비스(JpnService2)는 국문과 콘텐츠ID 체계가 별도로 큐레이션돼 있어
+        // 국문 스테이징 기준 tourAPIPK()를 그대로 넘기면 대부분 빈 결과만 돌아온다.
+        // 일본어 전용 지역기반목록(AREA_BASE_JP_API) 기준으로 조회한다.
+        List<TourAPIPKData> Pks = tourAPIMapper.tourAPIPK_jp();
 
         for (TourAPIPKData Pk : Pks) {
             String contentId = Pk.getContentid();
@@ -802,7 +805,9 @@ public class TourAPIServicelmpl implements TourAPIService {
         String apiKey = ServiceKey;
         String path = DetailCommonPath_EN;
 
-        List<TourAPIPKData> Pks = tourAPIMapper.tourAPIPK();
+        // 영어 서비스(EngService2)도 마찬가지로 국문과 별도의 콘텐츠ID 체계를 쓴다.
+        // 영어 전용 지역기반목록(AREA_BASE_EN_API) 기준으로 조회한다.
+        List<TourAPIPKData> Pks = tourAPIMapper.tourAPIPK_en();
 
         for (TourAPIPKData Pk : Pks) {
             String contentId = Pk.getContentid();

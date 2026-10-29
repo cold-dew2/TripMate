@@ -23,6 +23,9 @@ public interface UserService {
     //로그인
     LoginResponse login(LoginRequest request);
 
+    //회원 탈퇴
+    WithdrawResponse withdraw(String userId, WithdrawRequest request);
+
     //마이페이지
     UserDetailResponse userDetail(UserDetailRequest request);
 

@@ -11,15 +11,18 @@ import com.example.backend.trma.service.UserService;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Value;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.Duration;
+import java.util.List;
 
 // 3. 클래스 어노테이션
 @RestController
+@Slf4j
 @RequestMapping("/login")
 //   @RequiredArgsConstructor
 
@@ -91,6 +94,25 @@ public class UserController {
             response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
         }
 
+        return result;
+    }
+
+    //회원 탈퇴(비밀번호 재확인). 성공하면 로그인 쿠키도 지운다.
+    @PostMapping("/withdraw")
+    public WithdrawResponse withdraw(@RequestBody WithdrawRequest request, Authentication authentication,
+                                     HttpServletResponse response) {
+        if (authentication == null || !authentication.isAuthenticated()
+                || "anonymousUser".equals(authentication.getName())) {
+            return new WithdrawResponse(false, 500, "NEED_LOGIN", "로그인이 필요합니다.", "/login/withdraw", List.of());
+        }
+        WithdrawResponse result;
+        try {
+            result = userService.withdraw(authentication.getName(), request);
+        } catch (Exception e) {
+            log.error("회원 탈퇴 처리 중 오류가 발생했습니다. userId={}", authentication.getName(), e);
+            return new WithdrawResponse(false, 500, "FAIL", "회원 탈퇴 중 오류가 발생했습니다.", "/login/withdraw", List.of());
+        }
+        if (result.isSuccess()) logout(response);
         return result;
     }
 

@@ -347,3 +347,12 @@
   text-align: center;
   background: none;
 }
+
+.mypage-withdraw {
+  display: block;
+  padding-bottom: var(--space-3xl);
+  color: var(--gray-400);
+  font-size: var(--fs-xs);
+  text-align: center;
+  text-decoration: underline;
+}

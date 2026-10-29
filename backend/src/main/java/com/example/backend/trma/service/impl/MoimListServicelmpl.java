@@ -618,6 +618,21 @@ public class MoimListServicelmpl implements MoimListService {
                 );
             }
 
+            // 예전에는 정원을 승인 단계에서만 확인해서, 이미 꽉 찬 모임에도 신청이 계속
+            // 쌓였다(모임장은 승인도 못 하는 신청을 계속 받게 됨). 신청 단계에서도 막는다.
+            // 정원 값이 없거나 0 이하인 예전 데이터는 제한 없음으로 본다(모두 "꽉 참"으로 막히지 않게).
+            Integer maxMember = moimListMapper.moimMaxMemberForUpdate(moimId);
+            if (maxMember != null && maxMember > 0 && moimListMapper.approvedMemberCount(moimId) >= maxMember) {
+                return new ApplyMoimResponse(
+                        false,
+                        409,
+                        "MOIM_FULL",
+                        "모임 정원이 가득 찼습니다.",
+                        "/moimList/" + moimId + "/apply",
+                        ""
+                );
+            }
+
             moimListMapper.insertMoimMember(moimId, userId, "M", "N");
             notificationMapper.insertApplyNotification(moimId, userId);
 
@@ -926,6 +941,22 @@ public class MoimListServicelmpl implements MoimListService {
                 );
             }
 
+            // 모임에 참여하지 않은 사람도 모임ID만 알면 후기를 남길 수 있었다. 모임장 또는
+            // 승인된(Y) 멤버만 후기를 쓸 수 있게 한다.
+            MoimJoinStatusData joinStatus = moimListMapper.moimJoinStatus(moimId, userId);
+            boolean isParticipant = userId.equals(moimListMapper.moimHostUserId(moimId))
+                    || (joinStatus != null && "Y".equals(joinStatus.getStateCd()));
+            if (!isParticipant) {
+                return new CreateMoimReviewResponse(
+                        false,
+                        403,
+                        "NOT_MEMBER",
+                        "모임에 참여한 멤버만 후기를 남길 수 있습니다.",
+                        "/moimList/" + moimId + "/review",
+                        ""
+                );
+            }
+
             String imgUrls = request.getImageUrls() == null ? null : String.join(",", request.getImageUrls());
             String reviewId = "RVO" + UUID.randomUUID().toString().replace("-", "").substring(0, 12).toUpperCase();
             moimListMapper.insertMoimReview(reviewId, moimId, request, imgUrls, userId);
@@ -1097,6 +1128,8 @@ public class MoimListServicelmpl implements MoimListService {
         // 한 번 실패했다고 바로 포기하면 제목/후기 등 번역이 자주 안 되고 한국어 원문만
         // 보이는 문제가 있었다. 과부하성 오류에 한해 짧게 두 번 더 재시도한다.
         RestClientException lastError = null;
+        // 사용량 한도 초과로 쉬는 중이면 호출하지 않고 바로 실패 처리한다.
+        AiErrorUtil.throwIfQuotaBlocked();
         for (int attempt = 1; attempt <= 4; attempt++) {
             try {
                 GeminiResponse response = restClient.post()
@@ -1110,7 +1143,15 @@ public class MoimListServicelmpl implements MoimListService {
                 return response;
             } catch (RestClientException e) {
                 lastError = e;
-                if (attempt == 4 || !AiErrorUtil.isAiOverloaded(e)) throw e;
+                // 사용량 한도 초과(일일 한도, 긴 retryDelay)는 짧은 재시도로 풀리지 않으므로
+                // 바로 포기하고, Gemini가 알려준 시간 동안 호출을 쉰다.
+                long cooldownMillis = AiErrorUtil.quotaCooldownMillis(e);
+                if (cooldownMillis > 0) {
+                    AiErrorUtil.markQuotaBlocked(cooldownMillis);
+                    log.warn("Gemini 사용량 한도를 초과해 {}초 동안 호출을 건너뜁니다.", cooldownMillis / 1000);
+                    throw e;
+                }
+                if (attempt == 4 || !AiErrorUtil.isRetryable(e)) throw e;
                 log.warn("Gemini 호출이 일시적으로 실패해 재시도합니다({}/3).", attempt, e);
                 try {
                     Thread.sleep(500L * attempt);

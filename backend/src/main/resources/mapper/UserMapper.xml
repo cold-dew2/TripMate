@@ -116,6 +116,7 @@
         FROM TB_TRMA_USER_INFO a
         WHERE
         a.USER_ID = #{userId}
+        AND IFNULL(a.STATE_CD, '') &lt;&gt; 'D'
 
     </select>
 
@@ -339,6 +340,78 @@
         WHERE a.USER_ID = #{userId}
         ORDER BY a.SORT_ORDER
 
+    </select>
+
+    <!-- ========================= -->
+    <!-- 회원 탈퇴 -->
+    <!-- ========================= -->
+    <select id="withdrawBlockingMoims" resultType="string">
+        SELECT m.MOIM_TITLE
+        FROM TB_TRMA_MOIM_LIST m
+        WHERE m.CREATE_USER = #{userId}
+            AND m.USE_YN = 'Y'
+            AND m.MOIM_END_DT &gt;= CURDATE()
+            AND EXISTS (SELECT 1 FROM TB_TRMA_MOIM_MEMBER mm
+                        WHERE mm.MOIM_ID = m.MOIM_ID AND mm.USER_ID &lt;&gt; #{userId} AND mm.STATE_CD = 'Y')
+        ORDER BY m.MOIM_START_DT
+    </select>
+
+    <select id="ownedOpenMoimIds" resultType="string">
+        SELECT m.MOIM_ID
+        FROM TB_TRMA_MOIM_LIST m
+        WHERE m.CREATE_USER = #{userId}
+            AND m.USE_YN = 'Y'
+            AND m.MOIM_END_DT &gt;= CURDATE()
+    </select>
+
+    <delete id="deleteOpenMoimMemberships">
+        DELETE mm FROM TB_TRMA_MOIM_MEMBER mm
+        JOIN TB_TRMA_MOIM_LIST m ON m.MOIM_ID = mm.MOIM_ID
+        WHERE mm.USER_ID = #{userId}
+            AND m.MOIM_END_DT &gt;= CURDATE()
+    </delete>
+
+    <delete id="deleteAllChatMemberships">
+        DELETE FROM TB_TRMA_CHAT_MEMBER WHERE USER_ID = #{userId}
+    </delete>
+
+    <delete id="deleteNotifications">
+        DELETE FROM TB_TRMA_NOTIFICATION WHERE USER_ID = #{userId}
+    </delete>
+
+    <update id="anonymizeWithdrawnUser">
+        UPDATE TB_TRMA_USER_INFO
+        SET USER_NM = '탈퇴한 회원'
+            ,USER_PW = #{userPw}
+            ,PHONE_NUM = ''
+            ,GENDER_CD = ''
+            ,BIRTH_DT = '1900-01-01'
+            ,PROFILE_IMG_URL = NULL
+            ,AREA_NM = NULL
+            ,AREA_NM_EN = NULL
+            ,AREA_NM_JA = NULL
+            ,DESCRIPTION = NULL
+            ,DESCRIPTION_EN = NULL
+            ,DESCRIPTION_JA = NULL
+            ,STATE_CD = 'D'
+            ,UPDATE_USER = #{userId}
+            ,UPDATE_DT = CURRENT_TIMESTAMP
+        WHERE USER_ID = #{userId}
+            AND IFNULL(STATE_CD, '') &lt;&gt; 'D'
+    </update>
+
+    <select id="withdrawnUserIds" resultType="string">
+        SELECT USER_ID FROM TB_TRMA_USER_INFO WHERE STATE_CD = 'D'
+    </select>
+
+    <select id="e2eTestAccounts" resultType="map">
+        SELECT u.USER_ID AS userId, u.USER_NM AS userNm, u.STATE_CD AS stateCd,
+               DATE_FORMAT(u.CREATE_DT, '%Y-%m-%d %H:%i:%s') AS createDt,
+               (SELECT COUNT(1) FROM TB_TRMA_MOIM_LIST m WHERE m.CREATE_USER = u.USER_ID AND m.USE_YN = 'Y') AS ownedMoimCnt,
+               (SELECT COUNT(1) FROM TB_TRMA_MOIM_MEMBER mm WHERE mm.USER_ID = u.USER_ID) AS memberRowCnt
+        FROM TB_TRMA_USER_INFO u
+        WHERE u.USER_ID LIKE 'e2e+%@tripmate.test'
+        ORDER BY u.CREATE_DT
     </select>
 
 </mapper>

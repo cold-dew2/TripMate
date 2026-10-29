@@ -148,6 +148,8 @@
   font-weight: var(--fw-bold);
 }
 .auth-back {
+  min-width: 40px;
+  min-height: 40px;
   font-size: 24px;
   color: var(--gray-900);
   background: none;

@@ -57,4 +57,20 @@ export interface PlaceAIDetail {
   parkingAvailable: string;
   parkingFeeInfo: string;
   websiteUrl: string;
+  // TourAPI 기반 이용정보 (API가 주지 않은 항목은 null)
+  parkingInfo?: string | null;
+  infoCenter?: string | null;
+  tel?: string | null;
+  source?: 'TOURAPI' | 'TOURAPI_TRANSLATED' | 'TOURAPI_KO' | 'NONE';
+  researchPending?: boolean;
+  // 항목별 출처/번역 상태 (값이 있는 항목만)
+  fields?: Record<string, PlaceInfoFieldMeta>;
+}
+
+export interface PlaceInfoFieldMeta {
+  origin: 'TOURAPI' | 'AI_RESEARCH';
+  translation?: 'NONE' | 'OFFICIAL' | 'MANUAL' | 'TOURAPI' | 'LEGACY' | 'AI' | 'KO_FALLBACK';
+  sourceUrl?: string | null;
+  sourceTitle?: string | null;
+  checkedAt?: string | null;
 }

@@ -9,13 +9,14 @@ import MoimCard from "@/shared/components/moimCard/MoimCard";
 import usePlaceList from "@/features/place/hooks/usePlaceList";
 import useMoimList from "@/features/moim/hooks/useMoimList";
 import { translateCategoryList } from "@/shared/utils/category";
+import useUrlState from "@/shared/hooks/useUrlState";
 import "./SearchResultPage.css";
 
 const SearchResultPage = () => {
   const { t } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
   const keyword = searchParams.get("q") ?? "";
-  const [tab, setTab] = useState<string>(searchParams.get("tab") === "moim" ? "moim" : "place");
+  const [tab, setTab] = useUrlState("tab", "place");
   const [query, setQuery] = useState(keyword);
 
   const tabs = [
@@ -56,10 +57,7 @@ const SearchResultPage = () => {
         <FilterTabs
           options={tabs}
           activeId={tab}
-          onChange={(id) => {
-            setTab(id as string);
-            setSearchParams({ q: keyword, tab: id as string });
-          }}
+          onChange={(id) => setTab(id as string)}
         />
       </section>
 

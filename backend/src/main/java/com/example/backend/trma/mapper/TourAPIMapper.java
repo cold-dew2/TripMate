@@ -21,6 +21,10 @@ public interface TourAPIMapper {
 
     ///한국관광공사 ContentId PK 조회
     List<TourAPIPKData> tourAPIPK();
+    ///한국관광공사 ContentId PK 조회(일본어 전용 콘텐츠ID 기준)
+    List<TourAPIPKData> tourAPIPK_jp();
+    ///한국관광공사 ContentId PK 조회(영어 전용 콘텐츠ID 기준)
+    List<TourAPIPKData> tourAPIPK_en();
 
     ///한국관광공사_관광정보 동기화 목록 조회
     void detailCommon2(TourCmmData data);

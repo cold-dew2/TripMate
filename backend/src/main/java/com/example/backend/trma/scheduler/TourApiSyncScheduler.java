@@ -2,6 +2,7 @@ package com.example.backend.trma.scheduler;
 
 import com.example.backend.trma.dto.response.TourAPIResponse;
 import com.example.backend.trma.service.TourAPIService;
+import com.example.backend.trma.service.TourApiLangMatchService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -19,6 +20,7 @@ import org.springframework.stereotype.Component;
 public class TourApiSyncScheduler {
 
     private final TourAPIService tourAPIService;
+    private final TourApiLangMatchService langMatchService;
 
     @Scheduled(cron = "0 0 3 * * *")
     public void syncTourData() {
@@ -28,6 +30,13 @@ public class TourApiSyncScheduler {
         runStep("detailCommon_batch", tourAPIService::detailCommon_batch);
         runStep("searchFestival_batch", tourAPIService::searchFestival_batch);
         runStep("tourMaster_batch", tourAPIService::tourMaster_batch);
+        // 원문 동기화 뒤 공식 다국어 데이터를 다시 연결하고, 최종 표시값을 재계산해
+        // 원문이 바뀐 관광지의 오래된 번역(해시 불일치)을 걸러낸다.
+        try {
+            langMatchService.matchAll();
+        } catch (Exception e) {
+            log.error("langMatch 배치 실행 중 예외가 발생했습니다.", e);
+        }
 
         log.info("한국관광공사 관광지 데이터 배치 동기화를 종료합니다.");
     }

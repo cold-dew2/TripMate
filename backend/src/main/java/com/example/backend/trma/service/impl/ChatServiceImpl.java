@@ -5,6 +5,7 @@ import com.example.backend.trma.dto.dataList.ChatRoomData;
 import com.example.backend.trma.dto.dataList.ChatTranslationDelta;
 import com.example.backend.trma.dto.dataList.ChatUnreadDeltaData;
 import com.example.backend.trma.dto.dataList.GeminiData;
+import com.example.backend.trma.dto.dataList.MoimJoinStatusData;
 import com.example.backend.trma.dto.dataList.MoimTitleTranslationData;
 import com.example.backend.trma.dto.dataList.NewChatMessage;
 import com.example.backend.trma.dto.request.GeminiRequest;
@@ -61,7 +62,7 @@ public class ChatServiceImpl implements ChatService {
     public ChatRoomsResponse chatRooms(String userId, String lang) {
 
         try {
-            List<ChatRoomData> rooms = chatMapper.chatRooms(userId);
+            List<ChatRoomData> rooms = accessibleRooms(userId);
             // 다른 목록 화면과 동일하게, 캐시(소모임 제목 캐시 재사용 포함)로 못 채우고
             // Gemini를 불러야 하는 방이 있어도 최대 0.5초만 기다린다.
             try {
@@ -100,6 +101,20 @@ public class ChatServiceImpl implements ChatService {
     public ChatMessagesResponse chatMessages(String roomId, String userId) {
 
         try {
+            if (!canReadRoom(roomId, userId)) {
+                return new ChatMessagesResponse(
+                        false,
+                        403,
+                        "NOT_MEMBER",
+                        "이 채팅방의 멤버만 대화를 볼 수 있습니다.",
+                        "/chat/rooms/" + roomId + "/messages",
+                        "",
+                        null,
+                        0,
+                        null
+                );
+            }
+
             String resolvedTitle = resolveRoomTitle(roomId, null);
             chatMapper.insertRoomIfNotExists(roomId, resolvedTitle, userId);
             chatMapper.fixRoomTitleIfStale(roomId, resolvedTitle);
@@ -150,6 +165,18 @@ public class ChatServiceImpl implements ChatService {
     public SendChatMessageResponse sendMessage(String roomId, SendChatMessageRequest request, String userId) {
 
         try {
+            if (!isActiveMember(roomId, userId)) {
+                return new SendChatMessageResponse(
+                        false,
+                        403,
+                        "NOT_MEMBER",
+                        "이 채팅방의 멤버만 메시지를 보낼 수 있습니다.",
+                        "/chat/rooms/" + roomId + "/messages",
+                        "",
+                        null
+                );
+            }
+
             String title = resolveRoomTitle(roomId, request.getTitle());
             chatMapper.insertRoomIfNotExists(roomId, title, userId);
             chatMapper.insertMemberIfNotExists(roomId, userId);
@@ -232,7 +259,9 @@ public class ChatServiceImpl implements ChatService {
     public UnreadCountResponse unreadTotal(String userId) {
 
         try {
-            int total = chatMapper.unreadTotal(userId);
+            // 목록과 같은 기준(열 수 있는 방)으로 합산해야, 열 수 없는 방의 안읽음이
+            // 배지에 영원히 남지 않는다.
+            int total = accessibleRooms(userId).stream().mapToInt(ChatRoomData::getUnreadCount).sum();
 
             return new UnreadCountResponse(
                     true,
@@ -305,6 +334,17 @@ public class ChatServiceImpl implements ChatService {
     public MarkChatReadResponse markRead(String roomId, String userId) {
 
         try {
+            if (!canReadRoom(roomId, userId)) {
+                return new MarkChatReadResponse(
+                        false,
+                        403,
+                        "NOT_MEMBER",
+                        "이 채팅방의 멤버가 아닙니다.",
+                        "/chat/rooms/" + roomId + "/read",
+                        null
+                );
+            }
+
             List<ChatUnreadDeltaData> delta = markReadAndBroadcastDelta(roomId, userId);
 
             return new MarkChatReadResponse(
@@ -343,6 +383,39 @@ public class ChatServiceImpl implements ChatService {
         // 실시간으로 줄어드는 걸 보도록, 새 메시지 토픽과는 별개의 채널로 보낸다.
         broker.convertAndSend("/topic/chat/" + roomId + "/read", delta);
         return delta;
+    }
+
+    // 예전에는 조회/전송 시 호출한 사람을 무조건 채팅방 멤버로 자동 등록해서, 로그인한
+    // 사용자라면 누구나 URL의 "moim-{모임ID}"만 알면 남의 소모임 대화를 읽고 쓸 수 있었다.
+    // 소모임 채팅방은 모임장과 승인된(Y) 멤버만 참여할 수 있게 한다.
+    private boolean isActiveMember(String roomId, String userId) {
+        if (roomId == null || userId == null || userId.isBlank()) return false;
+
+        String moimId = extractMoimId(roomId);
+        if (moimId == null) {
+            // 소모임이 아닌 방(현재 프론트에는 없음)은 이미 멤버로 들어가 있는 사람만 허용한다.
+            return chatMapper.roomMemberIds(roomId).contains(userId);
+        }
+        if (userId.equals(moimListMapper.moimHostUserId(moimId))) return true;
+        MoimJoinStatusData status = moimListMapper.moimJoinStatus(moimId, userId);
+        return status != null && "Y".equals(status.getStateCd());
+    }
+
+    // 예전에는 조회만 해도 채팅방 멤버로 자동 등록됐기 때문에, 모임 멤버가 아닌데도
+    // 채팅방 멤버 행이 남아 있는 경우가 있다(예: 승인 전에 방에 들어갔던 신청자). 그런 방은
+    // 열어도 403이므로 목록/안읽음 수에서 뺀다. DB 행은 지우지 않아서, 나중에 승인되면 그대로 다시 보인다.
+    private List<ChatRoomData> accessibleRooms(String userId) {
+        return chatMapper.chatRooms(userId).stream()
+                .filter(room -> canReadRoom(room.getRoomId(), userId))
+                .collect(java.util.stream.Collectors.toCollection(ArrayList::new));
+    }
+
+    // 추방된 멤버(K)는 모임 멤버에선 빠지지만, 기존 화면처럼 대화 기록과 "추방됨" 안내는
+    // 볼 수 있게 두고 전송만 막는다(sendMessage는 isActiveMember로 확인).
+    @Override
+    public boolean canReadRoom(String roomId, String userId) {
+        if (isActiveMember(roomId, userId)) return true;
+        return userId != null && "K".equals(chatMapper.chatMemberState(roomId, userId));
     }
 
     private String extractMoimId(String roomId) {
@@ -497,6 +570,8 @@ public class ChatServiceImpl implements ChatService {
         // 한 번 실패했다고 바로 포기하면 메시지/방 제목 번역이 자주 안 되고 한국어 원문만
         // 보이는 문제가 있었다. 과부하성 오류에 한해 짧게 두 번 더 재시도한다.
         RestClientException lastError = null;
+        // 사용량 한도 초과로 쉬는 중이면 호출하지 않고 바로 실패 처리한다.
+        AiErrorUtil.throwIfQuotaBlocked();
         for (int attempt = 1; attempt <= 4; attempt++) {
             try {
                 GeminiResponse response = restClient.post()
@@ -513,7 +588,15 @@ public class ChatServiceImpl implements ChatService {
                 return response;
             } catch (RestClientException e) {
                 lastError = e;
-                if (attempt == 4 || !AiErrorUtil.isAiOverloaded(e)) throw e;
+                // 사용량 한도 초과(일일 한도, 긴 retryDelay)는 짧은 재시도로 풀리지 않으므로
+                // 바로 포기하고, Gemini가 알려준 시간 동안 호출을 쉰다.
+                long cooldownMillis = AiErrorUtil.quotaCooldownMillis(e);
+                if (cooldownMillis > 0) {
+                    AiErrorUtil.markQuotaBlocked(cooldownMillis);
+                    log.warn("Gemini 사용량 한도를 초과해 {}초 동안 호출을 건너뜁니다.", cooldownMillis / 1000);
+                    throw e;
+                }
+                if (attempt == 4 || !AiErrorUtil.isRetryable(e)) throw e;
                 log.warn("Gemini 호출이 일시적으로 실패해 재시도합니다({}/3).", attempt, e);
                 try {
                     Thread.sleep(500L * attempt);

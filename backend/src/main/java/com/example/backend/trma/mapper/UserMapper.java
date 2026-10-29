@@ -14,6 +14,7 @@ import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
+import java.util.Map;
 
 @Mapper
 public interface UserMapper {
@@ -63,5 +64,31 @@ public interface UserMapper {
 
     //사용 언어 목록 조회
     List<LanguageCardData> userLanguages(String userId);
+
+    // ===== 회원 탈퇴 =====
+
+    //탈퇴를 막는 모임 제목: 내가 만들었고, 아직 끝나지 않았고, 나 말고 승인된 멤버가 있는 모임
+    List<String> withdrawBlockingMoims(String userId);
+
+    //탈퇴 시 정리할 내가 만든 진행 중 모임(다른 승인 멤버 없음)
+    List<String> ownedOpenMoimIds(String userId);
+
+    //진행 중인 남의 모임에서 내 참여/신청 기록 삭제(끝난 모임 기록은 후기 등을 위해 남긴다)
+    int deleteOpenMoimMemberships(String userId);
+
+    //모든 채팅방에서 나가기
+    int deleteAllChatMemberships(String userId);
+
+    //내 알림 삭제
+    int deleteNotifications(String userId);
+
+    //개인정보 비우고 탈퇴(D) 상태로 변경. 후기·메시지는 남기되 이름은 '탈퇴한 회원'으로 보인다
+    int anonymizeWithdrawnUser(@Param("userId") String userId, @Param("userPw") String unusablePw);
+
+    //탈퇴 회원 아이디 목록(토큰 차단용)
+    List<String> withdrawnUserIds();
+
+    //E2E 테스트용 계정 목록(아이디가 e2e+...@tripmate.test). 테스트 데이터 정리용, 로컬에서만 호출된다.
+    List<Map<String, Object>> e2eTestAccounts();
 
 }

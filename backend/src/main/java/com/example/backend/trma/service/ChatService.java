@@ -26,4 +26,7 @@ public interface ChatService {
 
     //채팅방 읽음 처리만 가볍게(전체 메시지 재조회 없이 안읽음 수 델타만 반환/방송)
     MarkChatReadResponse markRead(String roomId, String userId);
+
+    //채팅방 대화 내용을 볼 수 있는지(REST 조회와 실시간 구독 권한 확인에 공통으로 사용)
+    boolean canReadRoom(String roomId, String userId);
 }

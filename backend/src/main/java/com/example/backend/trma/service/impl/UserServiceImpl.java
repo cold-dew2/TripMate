@@ -1,6 +1,7 @@
 package com.example.backend.trma.service.impl;
 
 import com.example.backend.global.jwt.JwtUtil;
+import com.example.backend.global.jwt.WithdrawnUserRegistry;
 import com.example.backend.trma.dto.dataList.LanguageCardData;
 import com.example.backend.trma.dto.dataList.MyMoimData;
 import com.example.backend.trma.dto.dataList.MyProfileData;
@@ -21,6 +22,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -28,6 +32,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -43,6 +48,7 @@ public class UserServiceImpl implements UserService {
     private final TourListService tourListService;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
+    private final WithdrawnUserRegistry withdrawnUserRegistry;
 
     @Value("${jwt.expiration}")
     private long expiration;
@@ -286,6 +292,60 @@ public class UserServiceImpl implements UserService {
                     null
             );
         }
+    }
+
+    //회원 탈퇴
+    // - 비밀번호를 다시 확인한다.
+    // - 내가 만든 진행 중 모임에 다른 승인 멤버가 있으면 막는다(남은 멤버의 모임이 갑자기 사라지지 않게).
+    // - 나 혼자인 진행 중 모임은 삭제, 진행 중인 남의 모임 참여/신청과 채팅방 참여·알림·사용 언어는 지운다.
+    // - 끝난 모임 기록·후기·채팅 메시지는 남기고, 계정은 개인정보를 비운 뒤 '탈퇴한 회원'(D)으로 바꾼다.
+    // 하나라도 실패하면 전부 되돌린다(예외로 롤백, 응답은 컨트롤러에서 500으로 바꾼다).
+    @Override
+    @Transactional
+    public WithdrawResponse withdraw(String userId, WithdrawRequest request) {
+        String path = "/login/withdraw";
+        LoginRequest check = new LoginRequest();
+        check.setUserId(userId);
+        String savedPw = userMapper.login(check);
+        if (savedPw == null || request == null || request.getUserPw() == null
+                || !passwordEncoder.matches(request.getUserPw(), savedPw)) {
+            return new WithdrawResponse(false, 401, "WRONG_PASSWORD", "비밀번호가 올바르지 않습니다.", path, List.of());
+        }
+
+        List<String> blocking = userMapper.withdrawBlockingMoims(userId);
+        if (!blocking.isEmpty()) {
+            return new WithdrawResponse(false, 409, "OWNS_ACTIVE_MOIM",
+                    "다른 멤버가 있는 진행 중인 모임을 먼저 정리해주세요.", path, blocking);
+        }
+
+        for (String moimId : userMapper.ownedOpenMoimIds(userId)) {
+            DeleteMoimResponse deleted = moimListService.deleteMoim(moimId, userId);
+            if (!deleted.isSuccess()) throw new IllegalStateException("탈퇴 중 모임 정리 실패: " + moimId);
+        }
+        userMapper.deleteOpenMoimMemberships(userId);
+        userMapper.deleteAllChatMemberships(userId);
+        userMapper.deleteNotifications(userId);
+        userMapper.deleteUserLanguages(userId);
+
+        // 아무도 알 수 없는 비밀번호로 바꿔 둔다(로그인 쿼리에서도 D는 따로 막는다).
+        String unusablePw = passwordEncoder.encode(UUID.randomUUID() + ":" + System.nanoTime());
+        if (userMapper.anonymizeWithdrawnUser(userId, unusablePw) == 0) {
+            throw new IllegalStateException("탈퇴 처리 대상 회원이 없음: " + userId);
+        }
+
+        // 이미 발급된 토큰은 커밋이 끝난 뒤부터 막는다(롤백되면 그대로 둔다).
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(
+                    new TransactionSynchronization() {
+                        @Override
+                        public void afterCommit() {
+                            withdrawnUserRegistry.add(userId);
+                        }
+                    });
+        } else {
+            withdrawnUserRegistry.add(userId);
+        }
+        return new WithdrawResponse(true, 200, "SUCCESS", "회원 탈퇴가 완료되었습니다.", path, List.of());
     }
 
     //로그인

@@ -11,12 +11,14 @@ import com.example.backend.trma.mapper.TourListMapper;
 import com.example.backend.trma.mapper.TrmaHomeMapper;
 import com.example.backend.trma.service.MoimListService;
 import com.example.backend.trma.service.TourListService;
+import com.example.backend.trma.service.TourTranslationService;
 import com.example.backend.trma.service.TrmaHomeService;
 import com.example.backend.trma.util.AiJsonUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -33,6 +35,7 @@ public class TrmaHomeServicelmpl implements TrmaHomeService {
     private final TourListMapper tourListMapper;
     private final TourListService tourListService;
     private final MoimListService moimListService;
+    private final TourTranslationService translationService;
 
     //사용자 정보 조회
     public UserInfoResponse userInfo(String request) {
@@ -197,22 +200,21 @@ public class TrmaHomeServicelmpl implements TrmaHomeService {
         if (addrsInput.isEmpty()) return;
 
         Map<String, String> addrs = tourListService.translateFreeTexts(addrsInput, lang);
+        List<TourTranslationService.Entry> entries = new ArrayList<>();
         for (BestTourListData tour : tours) {
             String addr = addrs.get(tour.getTourId());
-            if (addr == null || addr.isBlank()) continue;
+            String source = addrsInput.get(tour.getTourId());
+            // Gemini가 원문(한글)을 그대로 돌려준 경우는 번역 실패로 보고 저장하지 않는다.
+            if (!TourTranslationService.isValid(TourTranslationService.ROAD_ADDR, source, addr)) continue;
 
-            tourListMapper.updateTourTranslation(
-                    tour.getTourId(),
-                    null,
-                    null,
-                    null,
-                    null,
-                    "en".equals(lang) ? addr : null,
-                    "ja".equals(lang) ? addr : null,
-                    null,
-                    null
-            );
+            entries.add(new TourTranslationService.Entry(tour.getTourId(), TourTranslationService.ROAD_ADDR, source, addr));
             tour.setRoadAddr(addr);
+        }
+        // 캐시 저장이 실패해도 이번 응답엔 번역된 주소를 보여준다(saveAiAll이 실패를 로그로만 남김).
+        try {
+            translationService.saveAiAll(lang, entries);
+        } catch (Exception e) {
+            log.warn("인기 관광지 주소 번역 캐시 저장에 실패했습니다. lang={}", lang, e);
         }
     }
 

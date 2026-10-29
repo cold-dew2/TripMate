@@ -63,7 +63,7 @@
   font-weight: var(--fw-ebold);
 }
 .date-picker .rdp-day_button {
-  color: var(--gray-800);
+  color: var(--gray-900);
   font-size: var(--fs-sm);
 }
 .date-picker .rdp-selected .rdp-day_button {

@@ -1,0 +1,207 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.example.backend.trma.mapper.TourTranslationMapper">
+
+    <!-- 원문 해시는 앞뒤 공백을 제거한 원문의 SHA-256으로 통일한다(번역 저장/최종값 계산 모두 동일). -->
+    <insert id="upsertTranslation">
+        INSERT INTO TB_TRMA_TOUR_TRANS
+            (TOUR_ID, FIELD_NM, LANG_CD, TRANS_TYPE, SRC_LANG_CD, SRC_HASH, SRC_TEXT, TRANS_TEXT, STATUS_CD)
+        VALUES
+            (#{tourId}, #{fieldNm}, #{langCd}, #{transType}, 'ko', SHA2(TRIM(#{srcText}), 256), TRIM(#{srcText}), #{transText}, 'DONE')
+        ON DUPLICATE KEY UPDATE
+            SRC_HASH   = VALUES(SRC_HASH),
+            SRC_TEXT   = VALUES(SRC_TEXT),
+            TRANS_TEXT = VALUES(TRANS_TEXT),
+            STATUS_CD  = 'DONE'
+    </insert>
+
+    <!-- 필드/언어별로 "원문 해시가 현재 원문과 같은 번역" 중 MANUAL > TOURAPI > LEGACY > AI 순으로
+         첫 값을 최종 표시값 컬럼에 반영한다. 유효한 번역이 없으면 NULL(=원문 표시, AI 번역 대상). -->
+    <sql id="bestTrans">
+        (SELECT t.TRANS_TEXT FROM TB_TRMA_TOUR_TRANS t
+          WHERE t.TOUR_ID = b.TOUR_ID AND t.FIELD_NM = '${field}' AND t.LANG_CD = '${lang}'
+            AND t.STATUS_CD = 'DONE' AND t.SRC_HASH = SHA2(TRIM(b.${field}), 256)
+          ORDER BY FIELD(t.TRANS_TYPE, 'MANUAL', 'TOURAPI', 'LEGACY', 'AI') LIMIT 1)
+    </sql>
+    <update id="resolveTourColumns">
+        UPDATE TB_TRMA_TOUR_LIST b
+        SET b.TOUR_NM_EN      = <include refid="bestTrans"><property name="field" value="TOUR_NM"/><property name="lang" value="en"/></include>,
+            b.TOUR_NM_JA      = <include refid="bestTrans"><property name="field" value="TOUR_NM"/><property name="lang" value="ja"/></include>,
+            b.TOUR_CONTENT_EN = <include refid="bestTrans"><property name="field" value="TOUR_CONTENT"/><property name="lang" value="en"/></include>,
+            b.TOUR_CONTENT_JA = <include refid="bestTrans"><property name="field" value="TOUR_CONTENT"/><property name="lang" value="ja"/></include>,
+            b.ROAD_ADDR_EN    = <include refid="bestTrans"><property name="field" value="ROAD_ADDR"/><property name="lang" value="en"/></include>,
+            b.ROAD_ADDR_JA    = <include refid="bestTrans"><property name="field" value="ROAD_ADDR"/><property name="lang" value="ja"/></include>,
+            b.DETAIL_ADDR_EN  = <include refid="bestTrans"><property name="field" value="DETAIL_ADDR"/><property name="lang" value="en"/></include>,
+            b.DETAIL_ADDR_JA  = <include refid="bestTrans"><property name="field" value="DETAIL_ADDR"/><property name="lang" value="ja"/></include>,
+            b.UPDATE_DT = b.UPDATE_DT
+        <if test="tourIds != null and tourIds.size() > 0">
+        WHERE b.TOUR_ID IN
+            <foreach collection="tourIds" item="id" open="(" separator="," close=")">#{id}</foreach>
+        </if>
+    </update>
+
+    <select id="bestTranslations" resultType="map">
+        SELECT x.FIELD_NM AS fieldNm, x.TRANS_TEXT AS transText, x.SRC_HASH AS srcHash, x.TRANS_TYPE AS transType
+        FROM (
+            SELECT t.*, ROW_NUMBER() OVER (PARTITION BY t.FIELD_NM
+                                           ORDER BY FIELD(t.TRANS_TYPE, 'MANUAL', 'TOURAPI', 'LEGACY', 'AI')) AS rn
+            FROM TB_TRMA_TOUR_TRANS t
+            WHERE t.TOUR_ID = #{tourId} AND t.LANG_CD = #{langCd} AND t.STATUS_CD = 'DONE'
+              AND t.FIELD_NM LIKE CONCAT(#{fieldPrefix}, '%')
+        ) x
+        WHERE x.rn = 1
+    </select>
+
+    <select id="langContentId" resultType="string">
+        SELECT LANG_CONTENT_ID FROM TB_TRMA_TOUR_LANG_MAP WHERE TOUR_ID = #{tourId} AND LANG_CD = #{langCd}
+    </select>
+
+    <select id="contentTypeId" resultType="string">
+        <choose>
+            <when test="langCd == 'en'">SELECT CONTENTTYPEID FROM TB_TRMA_AREA_BASE_EN_API WHERE CONTENTID = #{contentId} LIMIT 1</when>
+            <when test="langCd == 'ja'">SELECT CONTENTTYPEID FROM TB_TRMA_AREA_BASE_JP_API WHERE CONTENTID = #{contentId} LIMIT 1</when>
+            <otherwise>SELECT CONTENTTYPEID FROM TB_TRMA_AREA_BASE_API WHERE CONTENTID = #{contentId} LIMIT 1</otherwise>
+        </choose>
+    </select>
+
+    <select id="selectIntro" resultType="com.example.backend.trma.dto.dataList.TourIntroData">
+        SELECT TOUR_ID, LANG_CD, CONTENT_ID, CONTENT_TYPE_ID, USE_TIME, REST_DATE, USE_FEE, PARKING, PARKING_FEE,
+               INFO_CENTER, HOMEPAGE, TEL, FETCH_STATUS, FETCH_DT
+        FROM TB_TRMA_TOUR_INTRO
+        WHERE TOUR_ID = #{tourId} AND LANG_CD = #{langCd}
+    </select>
+
+    <insert id="upsertIntro">
+        INSERT INTO TB_TRMA_TOUR_INTRO
+            (TOUR_ID, LANG_CD, CONTENT_ID, CONTENT_TYPE_ID, USE_TIME, REST_DATE, USE_FEE, PARKING, PARKING_FEE,
+             INFO_CENTER, HOMEPAGE, TEL, INTRO_RAW, COMMON_RAW, FETCH_STATUS, FETCH_DT)
+        VALUES
+            (#{tourId}, #{langCd}, #{contentId}, #{contentTypeId}, #{useTime}, #{restDate}, #{useFee}, #{parking}, #{parkingFee},
+             #{infoCenter}, #{homepage}, #{tel}, #{introRaw}, #{commonRaw}, #{fetchStatus}, CURRENT_TIMESTAMP)
+        ON DUPLICATE KEY UPDATE
+            CONTENT_ID = VALUES(CONTENT_ID), CONTENT_TYPE_ID = VALUES(CONTENT_TYPE_ID),
+            USE_TIME = VALUES(USE_TIME), REST_DATE = VALUES(REST_DATE), USE_FEE = VALUES(USE_FEE),
+            PARKING = VALUES(PARKING), PARKING_FEE = VALUES(PARKING_FEE), INFO_CENTER = VALUES(INFO_CENTER),
+            HOMEPAGE = VALUES(HOMEPAGE), TEL = VALUES(TEL), INTRO_RAW = VALUES(INTRO_RAW), COMMON_RAW = VALUES(COMMON_RAW),
+            FETCH_STATUS = VALUES(FETCH_STATUS), FETCH_DT = CURRENT_TIMESTAMP
+    </insert>
+
+    <select id="koreanToursForMatch" resultType="map">
+        SELECT TOUR_ID AS tourId, TOUR_NM AS tourNm, ROAD_ADDR AS roadAddr, DETAIL_ADDR AS detailAddr,
+               MAP_X AS mapX, MAP_Y AS mapY
+        FROM TB_TRMA_TOUR_LIST
+        WHERE USE_YN = 'Y' AND MAP_X IS NOT NULL AND MAP_Y IS NOT NULL AND NULLIF(TOUR_NM, '') IS NOT NULL
+    </select>
+
+    <select id="langContentsForMatch" resultType="map">
+        SELECT CONTENTID AS contentId, TITLE AS title, ADDR1 AS addr1, ADDR2 AS addr2, MAP_X AS mapX, MAP_Y AS mapY
+        <choose>
+            <when test="langCd == 'en'">FROM TB_TRMA_AREA_BASE_EN_API</when>
+            <otherwise>FROM TB_TRMA_AREA_BASE_JP_API</otherwise>
+        </choose>
+        WHERE NULLIF(MAP_X, '') IS NOT NULL AND NULLIF(MAP_Y, '') IS NOT NULL AND NULLIF(TITLE, '') IS NOT NULL
+    </select>
+
+    <insert id="upsertLangMap">
+        INSERT INTO TB_TRMA_TOUR_LANG_MAP (TOUR_ID, LANG_CD, LANG_CONTENT_ID, MATCH_TYPE)
+        VALUES (#{tourId}, #{langCd}, #{langContentId}, #{matchType})
+        ON DUPLICATE KEY UPDATE LANG_CONTENT_ID = VALUES(LANG_CONTENT_ID), MATCH_TYPE = VALUES(MATCH_TYPE)
+    </insert>
+
+    <select id="langOverview" resultType="string">
+        <choose>
+            <when test="langCd == 'en'">SELECT OVERVIEW FROM TB_TRMA_TOUR_CMM_EN_API WHERE CONTENT_ID = #{langContentId} LIMIT 1</when>
+            <otherwise>SELECT OVERVIEW FROM TB_TRMA_TOUR_CMM_JP_API WHERE CONTENT_ID = #{langContentId} LIMIT 1</otherwise>
+        </choose>
+    </select>
+    <select id="tourContent" resultType="string">
+        SELECT TOUR_CONTENT FROM TB_TRMA_TOUR_LIST WHERE TOUR_ID = #{tourId}
+    </select>
+
+    <select id="selectInfoAi" resultType="com.example.backend.trma.dto.dataList.TourInfoAiData">
+        SELECT TOUR_ID, FIELD_NM, STATUS_CD, INFO_TEXT, SOURCE_URL, SOURCE_TITLE, CHECKED_DT
+        FROM TB_TRMA_TOUR_INFO_AI
+        WHERE TOUR_ID = #{tourId}
+    </select>
+
+    <!-- 같은 (관광지, 항목)은 한 행만. 재조사 결과로 갱신한다. -->
+    <insert id="upsertInfoAi">
+        INSERT INTO TB_TRMA_TOUR_INFO_AI (TOUR_ID, FIELD_NM, STATUS_CD, INFO_TEXT, SRC_LANG_CD, SOURCE_URL, SOURCE_TITLE, CHECKED_DT)
+        VALUES (#{tourId}, #{fieldNm}, #{statusCd}, #{infoText}, 'ko', #{sourceUrl}, #{sourceTitle}, CURRENT_TIMESTAMP)
+        ON DUPLICATE KEY UPDATE
+            STATUS_CD = VALUES(STATUS_CD), INFO_TEXT = VALUES(INFO_TEXT), SOURCE_URL = VALUES(SOURCE_URL),
+            SOURCE_TITLE = VALUES(SOURCE_TITLE), CHECKED_DT = CURRENT_TIMESTAMP
+    </insert>
+
+    <select id="tourBasic" resultType="map">
+        SELECT TOUR_ID AS tourId, TOUR_NM AS tourNm, ROAD_ADDR AS roadAddr FROM TB_TRMA_TOUR_LIST WHERE TOUR_ID = #{tourId}
+    </select>
+
+    <select id="missingTranslations" resultType="map">
+        SELECT b.TOUR_ID AS tourId, b.${field} AS source
+        FROM TB_TRMA_TOUR_LIST b
+        WHERE b.USE_YN = 'Y' AND b.${column} IS NULL AND b.${field} REGEXP '[가-힣]'
+          AND b.TOUR_ID &gt; #{afterTourId}
+        ORDER BY b.TOUR_ID
+        LIMIT #{limit}
+    </select>
+
+    <!-- 번역 현황: 원문 해시가 일치하는 유효 번역 중 최우선 방식을 관광지별로 구해 집계한다(사용 중 관광지 기준). -->
+    <select id="translationStatus" resultType="map">
+        SELECT COUNT(*) AS total,
+               SUM(best = 'MANUAL') AS manual, SUM(best = 'TOURAPI') AS tourapi,
+               SUM(best = 'LEGACY') AS legacy, SUM(best = 'AI') AS ai,
+               SUM(best IS NULL AND NOT hangul) AS noHangul,
+               SUM(best IS NULL AND hangul AND hasAny) AS stale,
+               SUM(best IS NULL AND hangul AND NOT hasAny) AS missing,
+               SUM((best IS NULL) &lt;&gt; (col IS NULL)) AS columnMismatch
+        FROM (
+            SELECT b.${column} AS col, b.${field} REGEXP '[가-힣]' AS hangul,
+                   (SELECT t.TRANS_TYPE FROM TB_TRMA_TOUR_TRANS t
+                     WHERE t.TOUR_ID = b.TOUR_ID AND t.FIELD_NM = #{field} AND t.LANG_CD = #{lang}
+                       AND t.STATUS_CD = 'DONE' AND t.SRC_HASH = SHA2(TRIM(b.${field}), 256)
+                     ORDER BY FIELD(t.TRANS_TYPE, 'MANUAL', 'TOURAPI', 'LEGACY', 'AI') LIMIT 1) AS best,
+                   EXISTS (SELECT 1 FROM TB_TRMA_TOUR_TRANS t
+                            WHERE t.TOUR_ID = b.TOUR_ID AND t.FIELD_NM = #{field} AND t.LANG_CD = #{lang}) AS hasAny
+            FROM TB_TRMA_TOUR_LIST b
+            WHERE b.USE_YN = 'Y' AND NULLIF(TRIM(b.${field}), '') IS NOT NULL
+        ) x
+    </select>
+
+    <select id="duplicateTranslationRows" resultType="int">
+        SELECT COUNT(*) FROM (
+            SELECT TOUR_ID, FIELD_NM, LANG_CD, TRANS_TYPE FROM TB_TRMA_TOUR_TRANS
+            GROUP BY TOUR_ID, FIELD_NM, LANG_CD, TRANS_TYPE HAVING COUNT(*) &gt; 1
+        ) d
+    </select>
+
+    <select id="manualOverridden" resultType="int">
+        SELECT COUNT(*) FROM TB_TRMA_TOUR_TRANS t JOIN TB_TRMA_TOUR_LIST b ON b.TOUR_ID = t.TOUR_ID
+        WHERE t.TRANS_TYPE = 'MANUAL' AND t.FIELD_NM = #{field} AND t.LANG_CD = #{lang}
+          AND t.SRC_HASH = SHA2(TRIM(b.${field}), 256)
+          AND NOT (b.${column} &lt;=&gt; t.TRANS_TEXT)
+    </select>
+
+    <select id="translationTypeCounts" resultType="map">
+        SELECT TRANS_TYPE AS transType, LANG_CD AS langCd, COUNT(*) AS cnt
+        FROM TB_TRMA_TOUR_TRANS GROUP BY TRANS_TYPE, LANG_CD ORDER BY TRANS_TYPE, LANG_CD
+    </select>
+
+    <select id="currentState" resultType="map">
+        SELECT TRIM(b.${field}) AS source, b.${column} AS value FROM TB_TRMA_TOUR_LIST b WHERE b.TOUR_ID = #{tourId}
+    </select>
+
+    <!-- bestTrans와 같은 우선순위로 최종 표시값이 어느 방식의 번역인지 확인한다(AI 행 교체 전 검사용). -->
+    <select id="bestTranslation" resultType="map">
+        SELECT t.TRANS_TYPE AS transType, t.TRANS_TEXT AS transText
+          FROM TB_TRMA_TOUR_TRANS t
+          JOIN TB_TRMA_TOUR_LIST b ON b.TOUR_ID = t.TOUR_ID
+         WHERE t.TOUR_ID = #{tourId} AND t.FIELD_NM = #{field} AND t.LANG_CD = #{lang}
+           AND t.STATUS_CD = 'DONE' AND t.SRC_HASH = SHA2(TRIM(b.${field}), 256)
+         ORDER BY FIELD(t.TRANS_TYPE, 'MANUAL', 'TOURAPI', 'LEGACY', 'AI') LIMIT 1
+    </select>
+</mapper>

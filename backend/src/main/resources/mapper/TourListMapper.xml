@@ -100,6 +100,12 @@
                 b.TOUR_NM LIKE CONCAT('%', #{keyword}, '%')
                 OR b.TOUR_CONTENT LIKE CONCAT('%', #{keyword}, '%')
                 OR b.ROAD_ADDR LIKE CONCAT('%', #{keyword}, '%')
+                <!-- 영어/일본어 화면 사용자가 그 언어로 입력한 이름·주소(예: Gyeongbokgung, 景福宮)도
+                     찾도록 번역 표시값 컬럼도 함께 본다(예전엔 한국어로만 검색돼 0건이었다). -->
+                OR b.TOUR_NM_EN LIKE CONCAT('%', #{keyword}, '%')
+                OR b.TOUR_NM_JA LIKE CONCAT('%', #{keyword}, '%')
+                OR b.ROAD_ADDR_EN LIKE CONCAT('%', #{keyword}, '%')
+                OR b.ROAD_ADDR_JA LIKE CONCAT('%', #{keyword}, '%')
                 )
             </if>
             <!-- 카테고리는 관광지 1건당 1개뿐이라(다대다 아님) GROUP_CONCAT 조인 없이
@@ -130,10 +136,16 @@
                  한 번 분류해 DB에 저장해둔 104건 - 경복궁/해운대 같은 이름만 들어도 아는
                  곳)를 가장 먼저, 2) 사용자가 직접 등록한 관광지(UGC, TOUR_ID가 "UGC"로
                  시작, 65건)는 공공데이터 기반 정식 관광지보다 뒤에, 3) 그 안에서는 리뷰
-                 신뢰도를 반영한 평점 순으로 정렬한다. -->
+                 신뢰도를 반영한 평점 순으로 정렬한다. 대부분(리뷰 2건 미만)은 RANK_SCORE가
+                 똑같이 0이라 앞의 세 기준까지 다 동률인 행이 수천 건이다. 동률일 때 MariaDB는
+                 페이지마다(=쿼리를 다시 실행할 때마다) 순서를 다르게 반환할 수 있어서,
+                 무한스크롤에서 같은 관광지가 여러 페이지에 중복으로 나오거나 아예 빠지는
+                 문제가 있었다. TOUR_ID를 마지막 타이브레이커로 추가해 동률이어도 항상
+                 같은 순서가 나오게 한다. -->
             ORDER BY (CASE WHEN b.POPULAR_YN = 'Y' THEN 0 ELSE 1 END) ASC,
                      (CASE WHEN b.TOUR_ID LIKE 'UGC%' THEN 1 ELSE 0 END) ASC,
-                     RANK_SCORE DESC
+                     RANK_SCORE DESC,
+                     b.TOUR_ID ASC
             LIMIT 10 OFFSET #{offset}
         ) ids
             JOIN TB_TRMA_TOUR_LIST b ON b.TOUR_ID = ids.TOUR_ID
@@ -154,7 +166,8 @@
             <if test="lang == 'ja'">LEFT JOIN TB_TRMA_TOUR_JP_LIST jp ON b.TOUR_ID = jp.TOUR_ID</if>
         ORDER BY (CASE WHEN b.POPULAR_YN = 'Y' THEN 0 ELSE 1 END) ASC,
                  (CASE WHEN b.TOUR_ID LIKE 'UGC%' THEN 1 ELSE 0 END) ASC,
-                 ids.RANK_SCORE DESC
+                 ids.RANK_SCORE DESC,
+                 b.TOUR_ID ASC
 
     </select>
 
@@ -423,18 +436,23 @@
     <!-- ========================= -->
     <!-- 관광지명/개요 번역 캐시 저장 -->
     <!-- ========================= -->
+    <!-- 이 컬럼들은 수동 번역이 우선이고, Gemini 번역은 수동 번역이 없을 때만 채우는
+         폴백이다. 조회 시점엔 비어 있었어도 그사이 수동 번역이 들어왔을 수 있으므로
+         (백그라운드 번역은 응답 후에도 계속 돈다) 값이 비어 있을 때만 채우고 기존 값은
+         절대 덮어쓰지 않는다. 주소는 예외로, 한글이 섞인 값(공식 데이터가 비어 한국어
+         원문이 들어간 경우)은 번역이 안 된 것으로 보고 교체를 허용한다. -->
     <update id="updateTourTranslation">
 
         UPDATE TB_TRMA_TOUR_LIST
         <set>
-            <if test="tourNmEn != null">TOUR_NM_EN = #{tourNmEn},</if>
-            <if test="tourNmJa != null">TOUR_NM_JA = #{tourNmJa},</if>
-            <if test="overviewEn != null">TOUR_CONTENT_EN = #{overviewEn},</if>
-            <if test="overviewJa != null">TOUR_CONTENT_JA = #{overviewJa},</if>
-            <if test="roadAddrEn != null">ROAD_ADDR_EN = #{roadAddrEn},</if>
-            <if test="roadAddrJa != null">ROAD_ADDR_JA = #{roadAddrJa},</if>
-            <if test="detailAddrEn != null">DETAIL_ADDR_EN = #{detailAddrEn},</if>
-            <if test="detailAddrJa != null">DETAIL_ADDR_JA = #{detailAddrJa},</if>
+            <if test="tourNmEn != null">TOUR_NM_EN = IF(NULLIF(TOUR_NM_EN, '') IS NULL, #{tourNmEn}, TOUR_NM_EN),</if>
+            <if test="tourNmJa != null">TOUR_NM_JA = IF(NULLIF(TOUR_NM_JA, '') IS NULL, #{tourNmJa}, TOUR_NM_JA),</if>
+            <if test="overviewEn != null">TOUR_CONTENT_EN = IF(NULLIF(TOUR_CONTENT_EN, '') IS NULL, #{overviewEn}, TOUR_CONTENT_EN),</if>
+            <if test="overviewJa != null">TOUR_CONTENT_JA = IF(NULLIF(TOUR_CONTENT_JA, '') IS NULL, #{overviewJa}, TOUR_CONTENT_JA),</if>
+            <if test="roadAddrEn != null">ROAD_ADDR_EN = IF(NULLIF(ROAD_ADDR_EN, '') IS NULL OR ROAD_ADDR_EN REGEXP '[가-힣]', #{roadAddrEn}, ROAD_ADDR_EN),</if>
+            <if test="roadAddrJa != null">ROAD_ADDR_JA = IF(NULLIF(ROAD_ADDR_JA, '') IS NULL OR ROAD_ADDR_JA REGEXP '[가-힣]', #{roadAddrJa}, ROAD_ADDR_JA),</if>
+            <if test="detailAddrEn != null">DETAIL_ADDR_EN = IF(NULLIF(DETAIL_ADDR_EN, '') IS NULL OR DETAIL_ADDR_EN REGEXP '[가-힣]', #{detailAddrEn}, DETAIL_ADDR_EN),</if>
+            <if test="detailAddrJa != null">DETAIL_ADDR_JA = IF(NULLIF(DETAIL_ADDR_JA, '') IS NULL OR DETAIL_ADDR_JA REGEXP '[가-힣]', #{detailAddrJa}, DETAIL_ADDR_JA),</if>
         </set>
         WHERE TOUR_ID = #{tourId}
 

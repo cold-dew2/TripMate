@@ -40,6 +40,10 @@ export const usePlaceAIDetail = (tourId: string) => {
     },
 
     enabled: !!tourId,
+    // TourAPI에 없는 항목을 서버가 백그라운드에서 AI로 조사 중이면(researchPending) 잠시 뒤 다시 조회해
+    // 출처가 확인된 값을 채운다. 무한 폴링을 막기 위해 최대 6번(약 24초)까지만.
+    refetchInterval: (query) =>
+      query.state.data?.researchPending && query.state.dataUpdateCount < 7 ? 4000 : false,
   });
 };
 

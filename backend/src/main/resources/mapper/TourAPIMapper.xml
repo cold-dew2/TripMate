@@ -295,6 +295,49 @@
     </select>
 
     <!-- ========================= -->
+    <!-- 한국관광공사 ContentId PK 조회(일본어) -->
+    <!-- ========================= -->
+    <!-- 예전에는 이 조회도 tourAPIPK(국문 스테이징 기준)를 그대로 재사용해서, 일본어
+         전용 콘텐츠ID(AREA_BASE_JP_API)가 아니라 국문 콘텐츠ID를 JpnService2에 넘기고
+         있었다. 일본어/영어 서비스는 국문과 콘텐츠ID 체계 자체가 별도로 큐레이션돼 있어
+         (실제로 국문 콘텐츠ID를 그대로 JpnService2/EngService2에 넘기면 대부분 결과가
+         비어서 온다), 국문 스테이징이 다 채워지고 나면 이 조회가 계속 빈 목록만 반환해
+         TB_TRMA_TOUR_CMM_JP_API가 항상 0건으로 남아있었다. 일본어 전용 지역기반목록
+         테이블 기준으로 따로 조회하도록 분리한다. -->
+    <select id="tourAPIPK_jp"
+            resultType="com.example.backend.trma.dto.dataList.TourAPIPKData">
+
+        SELECT
+            a.CONTENTID
+        FROM TB_TRMA_AREA_BASE_JP_API a
+        LEFT JOIN TB_TRMA_TOUR_CMM_JP_API b ON a.CONTENTID = b.CONTENT_ID
+        WHERE
+            b.CONTENT_ID IS NULL
+            AND a.CONTENTID != ''
+            AND a.CONTENTTYPEID NOT IN ('32')
+        GROUP BY a.CONTENTID;
+
+    </select>
+
+    <!-- ========================= -->
+    <!-- 한국관광공사 ContentId PK 조회(영어) -->
+    <!-- ========================= -->
+    <select id="tourAPIPK_en"
+            resultType="com.example.backend.trma.dto.dataList.TourAPIPKData">
+
+        SELECT
+            a.CONTENTID
+        FROM TB_TRMA_AREA_BASE_EN_API a
+        LEFT JOIN TB_TRMA_TOUR_CMM_EN_API b ON a.CONTENTID = b.CONTENT_ID
+        WHERE
+            b.CONTENT_ID IS NULL
+            AND a.CONTENTID != ''
+            AND a.CONTENTTYPEID NOT IN ('32')
+        GROUP BY a.CONTENTID;
+
+    </select>
+
+    <!-- ========================= -->
     <!-- 관광공통정보 입력 -->
     <!-- ========================= -->
     <insert id="detailCommon2"
@@ -509,7 +552,7 @@
     <!-- ========================= -->
     <!-- 관광공통정보 입력 -->
     <!-- ========================= -->
-    <insert id="detailCommon2_EN"
+    <insert id="detailCommon2_en"
             parameterType="com.example.backend.trma.dto.dataList.TourCmmData">
 
         INSERT INTO TB_TRMA_TOUR_CMM_EN_API (

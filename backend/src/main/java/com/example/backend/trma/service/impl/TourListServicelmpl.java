@@ -5,7 +5,9 @@ import com.example.backend.trma.dto.request.*;
 import com.example.backend.trma.dto.response.*;
 import com.example.backend.trma.mapper.MoimListMapper;
 import com.example.backend.trma.mapper.TourListMapper;
+import com.example.backend.trma.service.TourIntroService;
 import com.example.backend.trma.service.TourListService;
+import com.example.backend.trma.service.TourTranslationService;
 import com.example.backend.trma.util.AiErrorUtil;
 import com.example.backend.trma.util.AiJsonUtil;
 import lombok.RequiredArgsConstructor;
@@ -34,6 +36,8 @@ public class TourListServicelmpl implements TourListService {
 
     private final TourListMapper tourListMapper;
     private final MoimListMapper moimListMapper;
+    private final TourTranslationService translationService;
+    private final TourIntroService tourIntroService;
     private final RestClient restClient;
 
     //사용자 정보 조회
@@ -53,17 +57,11 @@ public class TourListServicelmpl implements TourListService {
             // 계속 돌아 캐시에 저장되므로 다음 조회부터는 즉시 나온다. SQL 자체도 ~0.1초가
             // 걸리므로, 조회 목표(0.5초)를 지키려면 번역 대기를 그보다 짧게 잡아야 한다
             // (0.5초를 그대로 쓰면 콜드캐시일 때 SQL+대기 합이 0.5초를 넘길 수 있었다).
-            CompletableFuture<Void> nameTranslation = CompletableFuture.runAsync(
-                    () -> applySearchTranslations(tourSearch, request.getLang()));
-            CompletableFuture<Void> addrTranslation = CompletableFuture.runAsync(
-                    () -> applySearchAddressTranslations(tourSearch, request.getLang()));
-            try {
-                CompletableFuture.allOf(nameTranslation, addrTranslation).get(350, TimeUnit.MILLISECONDS);
-            } catch (TimeoutException e) {
-                log.warn("관광지 목록 번역이 0.35초 안에 끝나지 않아 한국어로 먼저 응답합니다. lang={}", request.getLang());
-            } catch (Exception e) {
-                log.warn("관광지 목록 번역 대기 중 오류가 발생했습니다. lang={}", request.getLang(), e);
-            }
+            // 저장된 번역(수동 번역/캐시)은 바로 적용하고, 비어 있는 것만 백그라운드에서 채운다.
+            // 예전에는 비어 있으면 Gemini를 최대 0.35초 기다렸다가 결국 한국어로 응답해서,
+            // 번역이 없는 페이지마다 목록 로딩이 눈에 띄게 늦었다.
+            applySearchTranslations(tourSearch, request.getLang(), false);
+            applySearchAddressTranslations(tourSearch, request.getLang(), false);
             return new TourSearchResponse(
                     true,
                     200,
@@ -326,170 +324,19 @@ public class TourListServicelmpl implements TourListService {
         }
     }
 
-    //관광지 상세조회(AI)
+    //관광지 이용정보(운영시간/휴무일/요금/주차/문의/홈페이지)
+    // 예전엔 Gemini에게 이용정보를 물어 지어낸 값(엉뚱한 홈페이지, 무료/유료 오표시)이 나왔다.
+    // 이제 한국관광공사 TourAPI(detailIntro2/detailCommon2) 값만 쓰고, 영어/일본어는 공식 다국어 값 →
+    // 저장된 번역 → 새 AI 번역 → 국문 원문 순으로 채운다(TourIntroService). 경로/응답 모양은 그대로다.
     public TourAiDetailResponse tourAiDetail(TourAiDetailRequest request) {
-
         String langCd = (request.getLang() == null || request.getLang().isBlank()) ? "ko" : request.getLang();
-
-        // 예전에는 이 화면에 들어올 때마다 매번 Gemini를 새로 호출하고, 캐시는 AI 호출이
-        // "실패했을 때"만 대신 보여주는 폴백으로 썼다. 그래서 관광지 상세를 열 때마다
-        // 이용정보 탭이 몇 초씩 로딩되고, 마침 Gemini가 과부하(503)일 때 캐시도 아직
-        // 없으면 그대로 "AI 기능을 사용할 수 없다"는 에러만 보였다. 운영시간/휴무일 같은
-        // 정보는 자주 바뀌지 않으므로, 캐시가 있으면 그대로 즉시 반환하고 없을 때만
-        // Gemini를 호출한다.
-        // 캐시 조회 자체가 실패해도(예: 데이터 이상) 전체 요청이 500으로 죽지 않고
-        // 아래 Gemini 경로로 자연스럽게 넘어가게 감싼다.
         try {
-            TourAiDetailData cachedFirst = tourListMapper.selectTourAiInfo(request.getTourId(), langCd);
-            if (cachedFirst != null) {
-                return new TourAiDetailResponse(
-                        true,
-                        200,
-                        "SUCCESS",
-                        "관광지 상세조회(AI)를 정상적으로 조회했습니다.",
-                        "/tourList/tourAiDetail",
-                        "",
-                        cachedFirst
-                );
-            }
+            TourAiDetailData data = tourIntroService.usageInfo(request.getTourId(), langCd, this::translateFreeTexts);
+            return new TourAiDetailResponse(true, 200, "SUCCESS",
+                    "관광지 이용정보를 정상적으로 조회했습니다.", "/tourList/tourAiDetail", "", data);
         } catch (Exception e) {
-            log.warn("관광지 AI 이용정보 캐시 조회에 실패했습니다. tourId={}", request.getTourId(), e);
-        }
-
-        try {
-            StringBuilder tourListPrompt = new StringBuilder();
-            TourDetailData tourDetail = tourListMapper.tourDetail(request.getTourId(), request.getLang());
-
-            String prompt = "당신은 대한민국 여행 전문 AI입니다.\n";
-
-
-            tourListPrompt.append("""
-                            [대상 관광지]
-                            관광지ID : %s
-                            관광지명 : %s
-                            도로명주소 : %s
-                            카테고리 : %s
-                            """.formatted(
-                    tourDetail.getTourId(),
-                    tourDetail.getTourNm(),
-                    tourDetail.getRoadAddr(),
-                    tourDetail.getCateNm()
-            ));
-
-            String aiDetailLangLabel = "ja".equals(request.getLang()) ? "일본어"
-                    : "en".equals(request.getLang()) ? "영어"
-                    : "한국어";
-
-            prompt = prompt + "[요청 사항]\n" +
-                    "1. 해당 관광지의 운영시간, 휴무일, 입장료, 공식/관련 홈페이지 URL, 주차 정보(가능 여부 및 요금)를 정확하게 작성해줘.\n" +
-                    "2. 정보가 불확실하거나 수집할 수 없는 항목은 null로 표시해줘.\n" +
-                    "3. 부연 설명이나 인삿말은 모두 제외하고, 오직 순수한 JSON 데이터만 반환해줘.\n" +
-                    "4. JSON의 키 이름은 아래 형식 그대로 영어로 유지하되, operatingHours/closedDays/admissionFeeDetails/parkingFeeInfo/lastUpdatedNote 값은 반드시 " + aiDetailLangLabel + "로 작성해줘. (websiteUrl은 번역하지 말고 그대로)\n" +
-                    "\n" +
-                    "[JSON 반환 형식]\n" +
-                    "{\n" +
-                    "  \"place_name\": \"관광지 이름\",\n" +
-                    "  \"address\": \"주소\",\n" +
-                    "  \"operatingHours\": \"운영시간 정보 (예: 09:00 - 18:00, 입장마감 17:00)\",\n" +
-                    "  \"closedDays\": \"휴무일 정보 (예: 매주 월요일, 명절 당일)\",\n" +
-                    "  \"admissionFeeIsFree\": \"false\",\n" +
-                    "  \"admissionFeeDetails\": \"입장료 상세 (예: 성인 3,000원, 청소년 1,500원 등)\",\n" +
-                    "  \"websiteUrl\": \"공식 홈페이지 URL (없을 경우 관련 정보 URL)\",\n" +
-                    "  \"parkingAvailable\": \"true\",\n" +
-                    "  \"parkingFeeInfo\": \"주차 요금 및 정보 (예: 소형 2,000원/시간, 무료 등)\",\n" +
-                    "  \"lastUpdatedNote\": \"특이사항이나 참고사항 (예: 야간개장 시즌 운영 등)\"\n" +
-                    "}";
-
-            GeminiRequest geminiRequest = new GeminiRequest(List.of(new GeminiRequest.Content(List.of(new GeminiRequest.Part(prompt)))));
-
-            GeminiResponse response = callGemini(geminiRequest);
-
-            String aiResult = "";
-
-            if (response != null
-                    && response.candidates() != null
-                    && !response.candidates().isEmpty()) {
-
-                aiResult = response.candidates()
-                        .get(0)
-                        .content()
-                        .parts()
-                        .get(0)
-                        .text();
-            }
-
-            System.out.println(aiResult);
-
-            ObjectMapper objectMapper = new ObjectMapper();
-            GeminiData.Recommendation3 recommend =
-                    objectMapper.readValue(AiJsonUtil.extractJson(aiResult), GeminiData.Recommendation3.class);
-
-            TourAiDetailData tourAiDetail = new TourAiDetailData();
-
-            tourAiDetail.setOperatingHours(recommend.getOperatingHours());
-            tourAiDetail.setClosedDays(recommend.getClosedDays());
-            tourAiDetail.setAdmissionFeeIsFree(recommend.getAdmissionFeeIsFree());
-            tourAiDetail.setAdmissionFeeDetails(recommend.getAdmissionFeeDetails());
-            tourAiDetail.setWebsiteUrl(recommend.getWebsiteUrl());
-            tourAiDetail.setParkingAvailable(recommend.getParkingAvailable());
-            tourAiDetail.setParkingFeeInfo(recommend.getParkingFeeInfo());
-            tourAiDetail.setLastUpdatedNote(recommend.getLastUpdatedNote());
-
-            // AI 응답이 정상일 때마다 캐시를 최신 상태로 갱신해둔다. 이렇게 해야 다음에
-            // AI가 끊겼을 때 지금 이 결과를 대신 보여줄 수 있다.
-            try {
-                tourListMapper.upsertTourAiInfo(request.getTourId(), langCd, tourAiDetail);
-            } catch (Exception cacheEx) {
-                log.warn("관광지 AI 이용정보 캐시 저장에 실패했습니다. tourId={}", request.getTourId(), cacheEx);
-            }
-
-            return new TourAiDetailResponse(
-                    true,
-                    200,
-                    "SUCCESS",
-                    "관광지 상세조회(AI)를 정상적으로 조회했습니다.",
-                    "/tourList/tourAiDetail",
-                    "",
-                    tourAiDetail
-            );
-        } catch (Exception e) {
-            log.error("처리 중 오류가 발생했습니다.", e);
-
-            // AI 호출/응답 파싱이 실패해도, 이전에 저장해둔 이용정보가 있으면 그걸로 대신 보여준다.
-            TourAiDetailData cached = tourListMapper.selectTourAiInfo(request.getTourId(), langCd);
-            if (cached != null) {
-                return new TourAiDetailResponse(
-                        true,
-                        200,
-                        "SUCCESS",
-                        "AI 응답에 실패해 이전에 저장된 이용정보를 보여드려요.",
-                        "/tourList/tourAiDetail",
-                        "",
-                        cached
-                );
-            }
-
-            if (AiErrorUtil.isAiOverloaded(e)) {
-                return new TourAiDetailResponse(
-                        false,
-                        503,
-                        AiErrorUtil.CODE,
-                        AiErrorUtil.MESSAGE,
-                        "/tourList/tourAiDetail",
-                        "",
-                        null
-                );
-            }
-
-            return new TourAiDetailResponse(
-                    false,
-                    500,
-                    "FAIL",
-                    e.getMessage(),
-                    "/tourList/tourAiDetail",
-                    "",
-                    null
-            );
+            log.error("관광지 이용정보 조회 중 오류가 발생했습니다. tourId={}", request.getTourId(), e);
+            return new TourAiDetailResponse(false, 500, "FAIL", e.getMessage(), "/tourList/tourAiDetail", "", null);
         }
     }
 
@@ -750,9 +597,9 @@ public class TourListServicelmpl implements TourListService {
                 List<TourSearchData> tourInfos = tourListMapper.tourByIds(recommendedTourIds, request.getLang());
                 if ("en".equals(request.getLang()) || "ja".equals(request.getLang())) {
                     CompletableFuture<Void> nameT = CompletableFuture.runAsync(
-                            () -> applySearchTranslations(tourInfos, request.getLang()));
+                            () -> applySearchTranslations(tourInfos, request.getLang(), true));
                     CompletableFuture<Void> addrT = CompletableFuture.runAsync(
-                            () -> applySearchAddressTranslations(tourInfos, request.getLang()));
+                            () -> applySearchAddressTranslations(tourInfos, request.getLang(), true));
                     try {
                         // 목록/상세 조회는 0.5초 예산이지만, aiSchedule은 이미 Gemini
                         // 일정 생성으로 수 초~수십 초를 기다린 뒤라 마지막에 번역만
@@ -885,7 +732,7 @@ public class TourListServicelmpl implements TourListService {
         if (distinctIds.isEmpty()) return Map.of();
 
         List<TourSearchData> tours = tourListMapper.tourByIds(distinctIds, lang);
-        applySearchTranslations(tours, lang);
+        applySearchTranslations(tours, lang, true);
 
         Map<String, String> result = new HashMap<>();
         for (TourSearchData tour : tours) {
@@ -1346,6 +1193,8 @@ public class TourListServicelmpl implements TourListService {
         // 한 번 실패했다고 바로 포기하면 이름/주소 등 번역이 자주 안 되고 한국어 원문만
         // 보이는 문제가 있었다. 과부하성 오류에 한해 짧게 두 번 더 재시도한다.
         RestClientException lastError = null;
+        // 사용량 한도 초과로 쉬는 중이면 호출하지 않고 바로 실패 처리한다.
+        AiErrorUtil.throwIfQuotaBlocked();
         for (int attempt = 1; attempt <= 4; attempt++) {
             try {
                 GeminiResponse response = restClient.post()
@@ -1359,7 +1208,15 @@ public class TourListServicelmpl implements TourListService {
                 return response;
             } catch (RestClientException e) {
                 lastError = e;
-                if (attempt == 4 || !AiErrorUtil.isAiOverloaded(e)) throw e;
+                // 사용량 한도 초과(일일 한도, 긴 retryDelay)는 짧은 재시도로 풀리지 않으므로
+                // 바로 포기하고, Gemini가 알려준 시간 동안 호출을 쉰다.
+                long cooldownMillis = AiErrorUtil.quotaCooldownMillis(e);
+                if (cooldownMillis > 0) {
+                    AiErrorUtil.markQuotaBlocked(cooldownMillis);
+                    log.warn("Gemini 사용량 한도를 초과해 {}초 동안 호출을 건너뜁니다.", cooldownMillis / 1000);
+                    throw e;
+                }
+                if (attempt == 4 || !AiErrorUtil.isRetryable(e)) throw e;
                 log.warn("Gemini 호출이 일시적으로 실패해 재시도합니다({}/3).", attempt, e);
                 try {
                     Thread.sleep(500L * attempt);
@@ -1387,7 +1244,28 @@ public class TourListServicelmpl implements TourListService {
         return objectMapper.readValue(AiJsonUtil.extractJson(aiResult), GeminiData.class);
     }
 
-    private void applySearchTranslations(List<TourSearchData> tours, String lang) {
+    // Gemini 번역 결과를 TB_TRMA_TOUR_LIST에 캐시한다(수동 번역이 이미 있으면 SQL에서
+    // 덮어쓰지 않음). DB 저장이 실패해도 번역 자체는 성공했으니 이번 응답에는 번역값을
+    // 그대로 보여주는 게 맞다. 그래서 저장 오류는 여기서 로그만 남기고 삼킨다.
+    // AI 번역 저장. 원문과 함께 번역 저장소(TB_TRMA_TOUR_TRANS)에 AI 방식으로 저장하고,
+    // 수동/공식 번역이 있으면 그쪽이 계속 우선한다. 저장 실패는 로그만 남긴다(이번 응답엔 번역값 사용).
+    private void saveAiTranslations(String lang, List<TourTranslationService.Entry> entries) {
+        try {
+            translationService.saveAiAll(lang, entries);
+        } catch (Exception e) {
+            log.warn("관광지 번역 캐시 저장에 실패했습니다(이번 응답에는 번역값 사용). lang={}", lang, e);
+        }
+    }
+
+    private static String blankToNull(String text) {
+        return text == null || text.isBlank() ? null : text;
+    }
+
+    // waitForAi=false면 저장된 번역(수동/캐시)만 즉시 적용하고, 비어 있는 것만 백그라운드에서
+    // Gemini로 채워 캐시에 저장한다(응답은 기다리지 않음). 목록 화면은 이렇게 해야 번역이
+    // 없는 페이지도 Gemini를 기다리느라(최대 0.35초) 느려지지 않는다. 다음 조회나 프론트의
+    // 재조회(useTranslationCatchup)부터 저장된 번역이 바로 나온다.
+    private void applySearchTranslations(List<TourSearchData> tours, String lang, boolean waitForAi) {
         if (!"en".equals(lang) && !"ja".equals(lang)) return;
         if (tours == null || tours.isEmpty()) return;
 
@@ -1406,6 +1284,26 @@ public class TourListServicelmpl implements TourListService {
         }
         if (uncached.isEmpty()) return;
 
+        if (!waitForAi) {
+            // 응답 객체를 백그라운드에서 건드리지 않도록 ID/이름만 복사해서 넘긴다.
+            List<TourSearchData> targets = uncached.stream().map(tour -> {
+                TourSearchData copy = new TourSearchData();
+                copy.setTourId(tour.getTourId());
+                copy.setTourNm(tour.getTourNm());
+                return copy;
+            }).toList();
+            CompletableFuture.runAsync(() -> translateNamesWithGemini(targets, lang));
+            return;
+        }
+        translateNamesWithGemini(uncached, lang);
+    }
+
+    private void translateNamesWithGemini(List<TourSearchData> candidates, String lang) {
+        // 다른 요청이 같은 관광지 이름을 이미 번역 중이면 중복으로 AI를 부르지 않는다.
+        List<TourSearchData> uncached = candidates.stream()
+                .filter(tour -> translationService.tryClaim(tour.getTourId(), TourTranslationService.TOUR_NM, lang))
+                .toList();
+        if (uncached.isEmpty()) return;
         try {
             StringBuilder listPrompt = new StringBuilder();
             for (TourSearchData tour : uncached) {
@@ -1429,32 +1327,26 @@ public class TourListServicelmpl implements TourListService {
                 }
             }
 
+            List<TourTranslationService.Entry> entries = new ArrayList<>();
             for (TourSearchData tour : uncached) {
                 String translatedNm = translatedNames.get(tour.getTourId());
-                if (translatedNm == null || translatedNm.isBlank()) continue;
+                if (!TourTranslationService.isValid(TourTranslationService.TOUR_NM, tour.getTourNm(), translatedNm)) continue;
 
-                tourListMapper.updateTourTranslation(
-                        tour.getTourId(),
-                        "en".equals(lang) ? translatedNm : null,
-                        "ja".equals(lang) ? translatedNm : null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null
-                );
+                entries.add(new TourTranslationService.Entry(tour.getTourId(), TourTranslationService.TOUR_NM, tour.getTourNm(), translatedNm));
                 tour.setTourNm(translatedNm);
             }
+            saveAiTranslations(lang, entries);
         } catch (Exception e) {
             log.warn("관광지명 번역에 실패해 한국어로 표시합니다. lang={}", lang, e);
+        } finally {
+            uncached.forEach(tour -> translationService.release(tour.getTourId(), TourTranslationService.TOUR_NM, lang));
         }
     }
 
     // 목록 화면(tourSearch)은 이름만 캐시해서 번역하고 주소는 다루지 않아 목록에서
     // 주소가 계속 한국어로 남는 문제가 있었다. 인기 관광지는 여러 사용자의 검색/페이지에
     // 반복해서 등장하므로 이름과 마찬가지로 ROAD_ADDR_EN/JA에 캐시해 재사용한다.
-    private void applySearchAddressTranslations(List<TourSearchData> tours, String lang) {
+    private void applySearchAddressTranslations(List<TourSearchData> tours, String lang, boolean waitForAi) {
         if (!"en".equals(lang) && !"ja".equals(lang)) return;
         if (tours == null || tours.isEmpty()) return;
 
@@ -1475,23 +1367,40 @@ public class TourListServicelmpl implements TourListService {
         }
         if (addrsInput.isEmpty()) return;
 
-        Map<String, String> addrs = translateFreeTexts(addrsInput, lang);
+        if (!waitForAi) {
+            // 이름과 같은 이유로 기다리지 않고 백그라운드에서 캐시만 채운다.
+            CompletableFuture.runAsync(() -> translateAddresses(addrsInput, lang));
+            return;
+        }
+
+        Map<String, String> addrs = translateAddresses(addrsInput, lang);
         for (TourSearchData tour : tours) {
             String addr = addrs.get(tour.getTourId());
-            if (addr == null || addr.isBlank()) continue;
+            if (addr != null) tour.setRoadAddr(addr);
+        }
+    }
 
-            tourListMapper.updateTourTranslation(
-                    tour.getTourId(),
-                    null,
-                    null,
-                    null,
-                    null,
-                    "en".equals(lang) ? addr : null,
-                    "ja".equals(lang) ? addr : null,
-                    null,
-                    null
-            );
-            tour.setRoadAddr(addr);
+    // 도로명주소 AI 번역 + 저장. 정상 번역만 돌려준다. 이미 다른 요청이 번역 중인 주소는 건너뛴다.
+    private Map<String, String> translateAddresses(Map<String, String> addrsInput, String lang) {
+        Map<String, String> input = new LinkedHashMap<>();
+        addrsInput.forEach((tourId, addr) -> {
+            if (translationService.tryClaim(tourId, TourTranslationService.ROAD_ADDR, lang)) input.put(tourId, addr);
+        });
+        if (input.isEmpty()) return Map.of();
+        try {
+            Map<String, String> addrs = translateFreeTexts(input, lang);
+            Map<String, String> valid = new HashMap<>();
+            List<TourTranslationService.Entry> entries = new ArrayList<>();
+            addrs.forEach((tourId, addr) -> {
+                String source = input.get(tourId);
+                if (source == null || !TourTranslationService.isValid(TourTranslationService.ROAD_ADDR, source, addr)) return;
+                valid.put(tourId, addr);
+                entries.add(new TourTranslationService.Entry(tourId, TourTranslationService.ROAD_ADDR, source, addr));
+            });
+            saveAiTranslations(lang, entries);
+            return valid;
+        } finally {
+            translationService.releaseAll(input.keySet(), TourTranslationService.ROAD_ADDR, lang);
         }
     }
 
@@ -1520,45 +1429,60 @@ public class TourListServicelmpl implements TourListService {
         // 경우(번역이 실패했거나 아직 시도 안 된 경우)만 "다 캐시되지 않음"으로 본다.
         boolean overviewNeedsTranslation = tour.getOverview() != null && !tour.getOverview().isBlank()
                 && (cachedOverview == null || cachedOverview.isBlank());
-        boolean fullyCached = cachedNm != null && !cachedNm.isBlank()
-                && cachedRoadAddr != null && !cachedRoadAddr.isBlank()
-                && !overviewNeedsTranslation;
-        if (fullyCached) {
-            tour.setTourNm(cachedNm);
-            if (cachedOverview != null && !cachedOverview.isBlank()) tour.setOverview(cachedOverview);
-            tour.setRoadAddr(cachedRoadAddr);
-            if (cachedDetailAddr != null && !cachedDetailAddr.isBlank()) tour.setDetailAddr(cachedDetailAddr);
+        // 여행코스(코스형) 관광지는 애초에 원본 도로명주소 자체가 빈 문자열인 경우가
+        // 많다. 이런 관광지는 번역된 주소가 영원히 생길 수 없는데, 아래 캐시 완료
+        // 판정이 무조건 cachedRoadAddr를 요구하면 이름/설명 번역이 이미 다 끝났어도
+        // 매번 "캐시 미완료"로 오판해 Gemini 실시간 호출로 빠지고, 그 호출은 0.5초
+        // 타임아웃을 넘겨 매번 한국어로만 응답하게 된다(캐시가 있어도 절대 안 뜸).
+        // 원본 주소가 애초에 없으면 번역할 게 없으므로 캐시 완료 판정에서 제외한다.
+        boolean roadAddrNeedsTranslation = tour.getRoadAddr() != null && !tour.getRoadAddr().isBlank()
+                && (cachedRoadAddr == null || cachedRoadAddr.isBlank());
+        // 상세주소도 도로명주소와 같은 기준으로 본다. 예전엔 이 판정이 빠져 있어서
+        // 이름/도로명주소/설명만 캐시돼 있으면 상세주소는 영원히 한국어로 남았다.
+        boolean detailAddrNeedsTranslation = tour.getDetailAddr() != null && !tour.getDetailAddr().isBlank()
+                && (cachedDetailAddr == null || cachedDetailAddr.isBlank());
+
+        // Gemini 프롬프트에는 한국어 원문을 넣어야 하므로, 캐시값을 적용하기 전에 원문을 보관한다.
+        String originalNm = tour.getTourNm();
+        String originalOverview = tour.getOverview();
+        String originalRoadAddr = tour.getRoadAddr();
+        String originalDetailAddr = tour.getDetailAddr();
+
+        // 캐시(수동 번역 또는 이전 Gemini 번역)가 있는 필드는 무조건 그 값을 먼저 적용한다.
+        // 아래에서 Gemini를 부르더라도 비어 있던 필드만 채우고, 이미 있는 값은 건드리지 않는다.
+        if (cachedNm != null && !cachedNm.isBlank()) tour.setTourNm(cachedNm);
+        if (cachedOverview != null && !cachedOverview.isBlank()) tour.setOverview(cachedOverview);
+        if (cachedRoadAddr != null && !cachedRoadAddr.isBlank()) tour.setRoadAddr(cachedRoadAddr);
+        if (cachedDetailAddr != null && !cachedDetailAddr.isBlank()) tour.setDetailAddr(cachedDetailAddr);
+
+        boolean nameNeedsTranslation = cachedNm == null || cachedNm.isBlank();
+        if (!nameNeedsTranslation && !roadAddrNeedsTranslation && !detailAddrNeedsTranslation
+                && !overviewNeedsTranslation) {
             return;
         }
 
         // 이름/주소는 이미 캐시돼 있는데 설명만 없는 경우(목록 화면에서 이름만 먼저
         // 캐시해둔 관광지를 상세로 열 때 흔하다)가 많다. 이때 이름/주소까지 통째로
-        // 다시 Gemini에 물어보면 느리고 토큰도 낭비이므로, 캐시된 값은 그대로 쓰고
-        // 설명만 별도로(작은 프롬프트로) 번역한다.
-        boolean nameAndAddrCached = cachedNm != null && !cachedNm.isBlank()
-                && cachedRoadAddr != null && !cachedRoadAddr.isBlank();
-        if (nameAndAddrCached) {
-            tour.setTourNm(cachedNm);
-            tour.setRoadAddr(cachedRoadAddr);
-            if (cachedDetailAddr != null && !cachedDetailAddr.isBlank()) tour.setDetailAddr(cachedDetailAddr);
-
-            Map<String, String> overviewInput = new LinkedHashMap<>();
-            overviewInput.put(tour.getTourId(), tour.getOverview());
-            Map<String, String> translatedOverview = translateFreeTexts(overviewInput, lang);
-            String overview = translatedOverview.get(tour.getTourId());
-            if (overview != null && !overview.isBlank()) {
-                tourListMapper.updateTourTranslation(
-                        tour.getTourId(),
-                        null, null,
-                        "en".equals(lang) ? overview : null,
-                        "ja".equals(lang) ? overview : null,
-                        null, null, null, null
-                );
-                tour.setOverview(overview);
+        // 다시 Gemini에 물어보면 느리고 토큰도 낭비이므로, 설명만 별도로(작은 프롬프트로) 번역한다.
+        if (!nameNeedsTranslation && !roadAddrNeedsTranslation && !detailAddrNeedsTranslation) {
+            if (!translationService.tryClaim(tour.getTourId(), TourTranslationService.TOUR_CONTENT, lang)) return;
+            try {
+                Map<String, String> overviewInput = new LinkedHashMap<>();
+                overviewInput.put(tour.getTourId(), originalOverview);
+                String overview = translateFreeTexts(overviewInput, lang).get(tour.getTourId());
+                if (TourTranslationService.isValid(TourTranslationService.TOUR_CONTENT, originalOverview, overview)) {
+                    saveAiTranslations(lang, List.of(new TourTranslationService.Entry(
+                            tour.getTourId(), TourTranslationService.TOUR_CONTENT, originalOverview, overview)));
+                    tour.setOverview(overview);
+                }
+            } finally {
+                translationService.release(tour.getTourId(), TourTranslationService.TOUR_CONTENT, lang);
             }
             return;
         }
 
+        // 같은 관광지 상세를 동시에 여러 명이 열어도 AI 번역은 한 번만 돈다(나머지는 원문/캐시로 응답).
+        if (!translationService.tryClaim(tour.getTourId(), "DETAIL", lang)) return;
         try {
             String langLabel = "en".equals(lang) ? "영어" : "일본어";
             String prompt = "다음 한국 관광지의 이름, 설명, 주소를 " + langLabel + "로 자연스럽게 번역해주세요.\n"
@@ -1568,37 +1492,38 @@ public class TourListServicelmpl implements TourListService {
                     + "[응답 형식]\n"
                     + "{\"translations\":[{\"tourId\":\"" + tour.getTourId() + "\",\"tourNm\":\"번역된 이름\",\"overview\":\"번역된 설명\",\"roadAddr\":\"번역된 도로명주소\",\"detailAddr\":\"번역된 상세주소\"}]}\n"
                     + "[관광지 정보]\n"
-                    + "이름: " + tour.getTourNm() + "\n"
-                    + "설명: " + (tour.getOverview() == null ? "" : tour.getOverview()) + "\n"
-                    + "도로명주소: " + tour.getRoadAddr() + "\n"
-                    + "상세주소: " + (tour.getDetailAddr() == null ? "" : tour.getDetailAddr());
+                    + "이름: " + originalNm + "\n"
+                    + "설명: " + (originalOverview == null ? "" : originalOverview) + "\n"
+                    + "도로명주소: " + (originalRoadAddr == null ? "" : originalRoadAddr) + "\n"
+                    + "상세주소: " + (originalDetailAddr == null ? "" : originalDetailAddr);
 
             GeminiData result = callGeminiForTranslation(prompt);
             if (result == null || result.getTranslations() == null || result.getTranslations().isEmpty()) return;
 
             GeminiData.TranslationItem item = result.getTranslations().get(0);
-            String tourNm = item.getTourNm();
-            String overview = item.getOverview();
-            String roadAddr = item.getRoadAddr();
-            String detailAddr = item.getDetailAddr();
+            if (item == null) return;
+            // 캐시가 비어 있던 필드만, 그리고 번역이 제대로 된 값만(이름/주소에 한글이 남으면
+            // 원문을 되돌려준 것) 채운다. 나머지는 캐시값 또는 한국어 원문을 그대로 둔다.
+            String tourNm = nameNeedsTranslation && AiJsonUtil.isTranslated(item.getTourNm()) ? item.getTourNm() : null;
+            String overview = overviewNeedsTranslation ? blankToNull(item.getOverview()) : null;
+            String roadAddr = roadAddrNeedsTranslation && AiJsonUtil.isTranslated(item.getRoadAddr()) ? item.getRoadAddr() : null;
+            String detailAddr = detailAddrNeedsTranslation && AiJsonUtil.isTranslated(item.getDetailAddr()) ? item.getDetailAddr() : null;
+            if (tourNm == null && overview == null && roadAddr == null && detailAddr == null) return;
 
-            tourListMapper.updateTourTranslation(
-                    tour.getTourId(),
-                    "en".equals(lang) ? tourNm : null,
-                    "ja".equals(lang) ? tourNm : null,
-                    "en".equals(lang) ? overview : null,
-                    "ja".equals(lang) ? overview : null,
-                    "en".equals(lang) ? roadAddr : null,
-                    "ja".equals(lang) ? roadAddr : null,
-                    "en".equals(lang) ? detailAddr : null,
-                    "ja".equals(lang) ? detailAddr : null
-            );
-            if (tourNm != null && !tourNm.isBlank()) tour.setTourNm(tourNm);
-            if (overview != null && !overview.isBlank()) tour.setOverview(overview);
-            if (roadAddr != null && !roadAddr.isBlank()) tour.setRoadAddr(roadAddr);
-            if (detailAddr != null && !detailAddr.isBlank()) tour.setDetailAddr(detailAddr);
+            List<TourTranslationService.Entry> entries = new ArrayList<>();
+            if (tourNm != null) entries.add(new TourTranslationService.Entry(tour.getTourId(), TourTranslationService.TOUR_NM, originalNm, tourNm));
+            if (overview != null) entries.add(new TourTranslationService.Entry(tour.getTourId(), TourTranslationService.TOUR_CONTENT, originalOverview, overview));
+            if (roadAddr != null) entries.add(new TourTranslationService.Entry(tour.getTourId(), TourTranslationService.ROAD_ADDR, originalRoadAddr, roadAddr));
+            if (detailAddr != null) entries.add(new TourTranslationService.Entry(tour.getTourId(), TourTranslationService.DETAIL_ADDR, originalDetailAddr, detailAddr));
+            saveAiTranslations(lang, entries);
+            if (tourNm != null) tour.setTourNm(tourNm);
+            if (overview != null) tour.setOverview(overview);
+            if (roadAddr != null) tour.setRoadAddr(roadAddr);
+            if (detailAddr != null) tour.setDetailAddr(detailAddr);
         } catch (Exception e) {
             log.warn("관광지 상세 번역에 실패해 한국어로 표시합니다. tourId={}, lang={}", tour.getTourId(), lang, e);
+        } finally {
+            translationService.release(tour.getTourId(), "DETAIL", lang);
         }
     }
 
@@ -1656,13 +1581,19 @@ public class TourListServicelmpl implements TourListService {
                 String content = item.getReviewContent();
                 if (content == null || content.isBlank()) continue;
 
-                tourListMapper.updateReviewTranslation(
-                        review.getReviewId(),
-                        "en".equals(lang) && title != null && !title.isBlank() ? title : null,
-                        "ja".equals(lang) && title != null && !title.isBlank() ? title : null,
-                        "en".equals(lang) ? content : null,
-                        "ja".equals(lang) ? content : null
-                );
+                // 캐시 저장이 실패해도 이번 응답엔 번역을 보여주고, 다음 후기 처리도 계속한다.
+                try {
+                    tourListMapper.updateReviewTranslation(
+                            review.getReviewId(),
+                            "en".equals(lang) && title != null && !title.isBlank() ? title : null,
+                            "ja".equals(lang) && title != null && !title.isBlank() ? title : null,
+                            "en".equals(lang) ? content : null,
+                            "ja".equals(lang) ? content : null
+                    );
+                } catch (Exception e) {
+                    log.warn("후기 번역 캐시 저장에 실패했습니다(이번 응답에는 번역값 사용). reviewId={}, lang={}",
+                            review.getReviewId(), lang, e);
+                }
                 if (title != null && !title.isBlank()) review.setReviewTitle(title);
                 review.setReviewContent(content);
             }

@@ -32,7 +32,7 @@
 }
 .sejong-course-route {
   margin-bottom: var(--space-sm);
-  color: var(--gray-800);
+  color: var(--gray-900);
   font-size: var(--fs-sm);
   font-weight: var(--fw-bold);
   line-height: 1.6;

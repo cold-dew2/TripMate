@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import usePublicProfile from '../hooks/usePublicProfile';
@@ -6,6 +5,7 @@ import { resolveImageUrl } from '@/shared/utils/url';
 import FilterTabs from '@/shared/components/filterTabs/FilterTabs';
 import PageState from '@/shared/components/pageState/PageState';
 import { formatDateWithDow } from '@/shared/utils/date';
+import useUrlState from '@/shared/hooks/useUrlState';
 import './UserProfilePage.css';
 
 type ProfileTab = 'info' | 'moims' | 'reviews';
@@ -14,7 +14,7 @@ const UserProfilePage = () => {
   const { t } = useTranslation();
   const { userId } = useParams<{ userId: string }>();
   const { data: result, isLoading, isError, refetch } = usePublicProfile(userId!);
-  const [tab, setTab] = useState<ProfileTab>('info');
+  const [tab, setTab] = useUrlState('tab', 'info') as [ProfileTab, (v: ProfileTab) => void];
 
   if (isLoading) return <PageState status="loading" />;
   if (isError || !result) return <PageState status="error" onRetry={() => refetch()} />;

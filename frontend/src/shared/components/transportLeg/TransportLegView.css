@@ -16,18 +16,18 @@
   padding: 2px 8px;
   border-radius: var(--radius-xl);
   font-weight: var(--fw-bold);
-  font-size: var(--fs-xxs);
+  font-size: var(--fs-2xs);
 }
 .transport-congestion-smooth {
   background: var(--green-100);
-  color: var(--green-700);
+  color: var(--green-700, #1e7e46);
 }
 .transport-congestion-moderate {
   background: var(--yellow-100);
-  color: var(--yellow-700);
+  color: var(--yellow-600);
 }
 .transport-congestion-heavy {
-  background: var(--red-100);
+  background: var(--red-300);
   color: var(--red-700);
   animation: transport-pulse 1.4s ease-in-out infinite;
 }
@@ -36,7 +36,7 @@
   padding: var(--space-sm) var(--space-md);
   border: 1.5px solid var(--red-400);
   border-radius: var(--radius-md);
-  background: var(--red-50);
+  background: var(--red-300);
 }
 .transport-alert-title {
   color: var(--red-700);

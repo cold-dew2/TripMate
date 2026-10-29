@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
 import FilterTabs from '@/shared/components/filterTabs/FilterTabs';
@@ -19,6 +19,7 @@ import { apiClient } from '@/shared/api/client';
 import { addDays, formatMonthDay } from '@/shared/utils/date';
 import { resolveImageUrl } from '@/shared/utils/url';
 import { getApiLang } from '@/shared/utils/lang';
+import useUrlState from '@/shared/hooks/useUrlState';
 import type { Place } from '@/types/place';
 import './MoimManageDetail.css';
 
@@ -41,20 +42,8 @@ const MoimManageDetail = () => {
   const queryClient = useQueryClient();
   const { moimId } = useParams<{ moimId: string }>();
   const [isDeleting, setIsDeleting] = useState(false);
-  const [searchParams, setSearchParams] = useSearchParams();
-  const tabFromUrl = searchParams.get('tab') as ManageTab | null;
-  const [tab, setTab] = useState<ManageTab>(
-    tabFromUrl && MANAGE_TABS.includes(tabFromUrl) ? tabFromUrl : 'applicants'
-  );
-
-  const changeTab = (id: ManageTab) => {
-    setTab(id);
-    setSearchParams((prev) => {
-      const next = new URLSearchParams(prev);
-      next.set('tab', id);
-      return next;
-    });
-  };
+  const [tabRaw, setTab] = useUrlState('tab', 'applicants');
+  const tab = (MANAGE_TABS.includes(tabRaw as ManageTab) ? tabRaw : 'applicants') as ManageTab;
   const [selected, setSelected] = useState<Set<string>>(new Set());
   // 업로드 기록은 있는데 실제 파일이 없어져 깨진 이미지 아이콘으로 뜨는 경우를 대비한 안전장치.
   const [brokenAvatars, setBrokenAvatars] = useState<Set<string>>(new Set());
@@ -304,7 +293,7 @@ const MoimManageDetail = () => {
           { id: 'schedule', label: t('moim.scheduleEdit') },
         ]}
         activeId={tab}
-        onChange={(id) => changeTab(id as ManageTab)}
+        onChange={(id) => setTab(id as ManageTab)}
       />
 
       {tab === 'applicants' && (

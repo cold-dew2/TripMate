@@ -12,6 +12,8 @@ interface ApiFailure {
   status: number;
   message: string;
   code?: string;
+  // 실패 응답 본문(실패 사유와 함께 추가 정보를 내려주는 API용, 예: 탈퇴를 막는 모임 목록)
+  body?: unknown;
 }
 
 type ApiResult<T> = ApiSuccess<T> | ApiFailure;
@@ -67,6 +69,7 @@ const req = async <T>(
         status: typeof data.status === "number" ? data.status : res.status,
         message: data.message ?? `요청 실패: ${endpoint}`,
         code: data.code,
+        body: data,
       };
     }
 

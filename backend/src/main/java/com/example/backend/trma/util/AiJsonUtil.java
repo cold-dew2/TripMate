@@ -38,4 +38,11 @@ public final class AiJsonUtil {
         }
         return false;
     }
+
+    // Gemini가 번역을 빼먹고 한국어 원문을 그대로 돌려주는 경우가 있다. 그 값을 캐시에
+    // 저장하면 "번역 완료"로 굳어버려 다시는 번역을 시도하지 않으므로, 이름/주소처럼
+    // 한글이 남으면 안 되는 필드는 저장·표시 전에 이 검사를 통과해야 한다.
+    public static boolean isTranslated(String text) {
+        return text != null && !text.isBlank() && !containsHangul(text);
+    }
 }

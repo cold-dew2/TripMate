@@ -32,6 +32,8 @@ const HomePage = () => {
 
   return (
     <>
+      {/* 홈 헤더는 로고뿐이라 페이지 제목(h1)이 없어 스크린 리더 제목 탐색의 기준점이 없었다 */}
+      <h1 className="blind">TripMate</h1>
       {todaySchedule.length > 0 && (
         <button type="button" className="home-today-banner" onClick={() => setIsTodaySheetOpen(true)}>
           <span className="home-today-banner-badge">{t('home.todayScheduleBadge')}</span>

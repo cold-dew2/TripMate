@@ -211,6 +211,8 @@ const MoimDetail = () => {
                     confirmText: t('account.login'),
                     onConfirm: () => navigate('/auth'),
                   });
+                } else if (code === 'MOIM_FULL') {
+                  showAlert(t('moim.applyFull'));
                 } else {
                   showAlert(t('moim.applyError'));
                 }
